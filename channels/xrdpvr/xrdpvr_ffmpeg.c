@@ -1,5 +1,16 @@
+
 #include <libavcodec/avcodec.h>
+
+#if LIBAVCODEC_VERSION_MAJOR == 52 && LIBAVCODEC_VERSION_MINOR == 72 && LIBAVCODEC_VERSION_MICRO == 2
+#define AVCODEC_J 1
+#else
+#define AVCODEC_LK 1
+#endif
+
+#ifdef AVCODEC_LK
 #include <libavformat/avformat.h>
+#endif
+
 #include "xrdpvr_common.h"
 #include "freerdp/types.h"
 #include "freerdp/utils/svc_plugin.h"
@@ -66,7 +77,7 @@ typedef struct _XrdpMpegDecoder
 	AVFrame*        frame;
 	int             prepared;
 
-	uint8*           decoded_data;
+	uint8*          decoded_data;
 	uint32          decoded_size;
 	uint32          decoded_size_max;
 } XrdpMpegDecoder;
@@ -77,11 +88,17 @@ void *xrdpvr_init(void)
 {
 	XrdpMpegDecoder *decoder;
 
+	printf("xrdpvr_init\n");
 	decoder = (XrdpMpegDecoder *) calloc(1, sizeof(XrdpMpegDecoder));
 	if (!decoder)
 		return NULL;
 
+#ifdef AVCODEC_LK
 	av_register_all();
+#else
+	avcodec_init();
+	avcodec_register_all();
+#endif
 	return decoder;
 }
 
@@ -101,7 +118,11 @@ int xrdpvr_init_context(void *dec)
 {
 	XrdpMpegDecoder* mdecoder = (XrdpMpegDecoder *) dec;
 
+#ifdef AVCODEC_LK
 	mdecoder->codec_context = avcodec_alloc_context3(NULL);
+#else
+	mdecoder->codec_context = avcodec_alloc_context();
+#endif
 	if (!mdecoder->codec_context)
 	{
 		DEBUG_WARN("avcodec_alloc_context failed.");
@@ -117,6 +138,7 @@ int xrdpvr_init_video_stream(void *dec, XrdpMediaInfo* vinfo)
 {
 	XrdpMpegDecoder* mdecoder = (XrdpMpegDecoder *) dec;
 
+	printf("xrdpvr_init_video_stream\n");
 	mdecoder->codec_context->width = vinfo->width;
 	mdecoder->codec_context->height = vinfo->height;
 	mdecoder->codec_context->bit_rate = vinfo->bit_rate;
@@ -218,7 +240,11 @@ int xrdpvr_prepare(void *dec)
 {
 	XrdpMpegDecoder* mdecoder = (XrdpMpegDecoder *) dec;
 
+#ifdef AVCODEC_LK
 	if (avcodec_open2(mdecoder->codec_context, mdecoder->codec, NULL) < 0)
+#else
+	if (avcodec_open(mdecoder->codec_context, mdecoder->codec) < 0)
+#endif
 	{
 		DEBUG_WARN("avcodec_open2 failed.");
 		return -1;
@@ -354,6 +380,7 @@ int xrdpvr_decode_video(void *dec, uint32 data_size, const uint8* data,
 	}
 #endif
 
+	printf("xrdpvr_decode_video: avcodec_decode_video2 returned %d\n", len);
 	if (len < 0)
 	{
 		DEBUG_WARN("data_size %d, avcodec_decode_video failed (%d)", data_size, len);
@@ -432,8 +459,9 @@ int xrdpvr_decode(void* dec, const uint32 data_size, const uint8* data,
 
 /*
  ******************************************************************************/
-uint8* xrdpv_get_decoded_data(XrdpMpegDecoder* mdecoder, uint32* size)
+uint8* xrdpv_get_decoded_data(void* dec, uint32* size)
 {
+	XrdpMpegDecoder* mdecoder = dec;
 	uint8* buf;
 
 	*size = mdecoder->decoded_size;
@@ -445,8 +473,10 @@ uint8* xrdpv_get_decoded_data(XrdpMpegDecoder* mdecoder, uint32* size)
 
 /*
  ******************************************************************************/
-uint32 xrdpvr_get_decoded_format(XrdpMpegDecoder* mdecoder)
+uint32 xrdpvr_get_decoded_format(void* dec)
 {
+	XrdpMpegDecoder* mdecoder = dec;
+
 	switch (mdecoder->codec_context->pix_fmt)
 	{
 		case PIX_FMT_YUV420P:
@@ -461,9 +491,11 @@ uint32 xrdpvr_get_decoded_format(XrdpMpegDecoder* mdecoder)
 
 /* @return 0 on success, -1 on failure
  ******************************************************************************/
-int xrdpvr_get_decoded_dimension(XrdpMpegDecoder* mdecoder, uint32* width,
+int xrdpvr_get_decoded_dimension(void* dec, uint32* width,
 								 uint32* height)
 {
+	XrdpMpegDecoder* mdecoder = dec;
+
 	if (mdecoder->codec_context->width > 0 && mdecoder->codec_context->height > 0)
 	{
 		*width = mdecoder->codec_context->width;
@@ -478,8 +510,10 @@ int xrdpvr_get_decoded_dimension(XrdpMpegDecoder* mdecoder, uint32* width,
 
 /*
  ******************************************************************************/
-void xrdpvr_free(XrdpMpegDecoder* mdecoder)
+void xrdpvr_free(void* dec)
 {
+	XrdpMpegDecoder* mdecoder = dec;
+
 	if (mdecoder->frame)
 		av_free(mdecoder->frame);
 

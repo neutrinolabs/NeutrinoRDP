@@ -37,12 +37,12 @@
 #include <freerdp/utils/list.h>
 #include <freerdp/utils/load_plugin.h>
 #include <freerdp/utils/svc_plugin.h>
+#include <freerdp/utils/event.h>
+#include <freerdp/plugins/tsmf.h>
 
 #include "xrdpvr_common.h"
 #include "xrdpvr_main.h"
-#include "freerdp/utils/svc_plugin.h"
-#include "freerdp/utils/memory.h"
-#include "freerdp/utils/stream.h"
+
 
 struct xrdpvr_plugin
 {
@@ -53,12 +53,14 @@ struct xrdpvr_plugin
 	int				bytes_needed;
 };
 
+#if 0
 /*
  ******************************************************************************/
 static void xrdpvr_process_interval(rdpSvcPlugin* plugin)
 {
 	printf("xrdpvr: xrdpvr_process_interval:\n");
 }
+#endif
 
 /*
  ******************************************************************************/
@@ -69,11 +71,16 @@ static void xrdpvr_process_receive(rdpSvcPlugin* plugin, STREAM* data_in)
 	int				rv;
 	int				bytes_to_process;
 	int				i;
+	int error;
 	uint32			cmd;
 	uint32			data_len;
 	uint32			tmp;
 	XrdpMediaInfo	media_info;
+	RDP_VIDEO_FRAME_EVENT* vevent;
+	uint8* dd;
+	uint32 ii, ww, hh, ff;
 
+    //printf("xrdpvr_process_receive\n");
 	if (xrdpvr == NULL)
 	{
 		stream_free(data_in);
@@ -147,7 +154,7 @@ start:
 #if 0
 			rv = xrdpvr_decode((void *) xrdpvr->decoder, data_len, s->p, 0);
 #else
-			rv = xrdpvr_decode((void *) xrdpvr->decoder, data_len, s->p, 1);
+			rv = xrdpvr_decode(xrdpvr->decoder, data_len, s->p, 1);
 
 #endif
 			s->p += data_len;
@@ -155,6 +162,46 @@ start:
 			{
 				/* LK_TODO need to handle error */
 				goto end;
+			}
+
+			dd = xrdpv_get_decoded_data(xrdpvr->decoder, &ii);
+			if (dd == 0)
+			{
+				break;
+			}
+			error = xrdpvr_get_decoded_dimension(xrdpvr->decoder, &ww, &hh);
+			if (error != 0)
+			{
+				break;
+			}
+			ff = xrdpvr_get_decoded_format(xrdpvr->decoder);
+			if (ff == 0xffffffff)
+			{
+				break;
+			}
+			vevent = (RDP_VIDEO_FRAME_EVENT*)
+					freerdp_event_new(RDP_EVENT_CLASS_TSMF,
+							RDP_EVENT_TYPE_TSMF_VIDEO_FRAME,
+							NULL, NULL);
+			vevent->frame_data = dd;
+			vevent->frame_size = ii;
+			vevent->frame_pixfmt = ff;
+			vevent->frame_width = ww;
+			vevent->frame_height = hh;
+			vevent->x = 0;
+			vevent->y = 0;
+			vevent->width = 1024;
+			vevent->height = 768;
+			vevent->num_visible_rects = 1;
+			vevent->visible_rects = xmalloc(sizeof(RDP_RECT));
+			vevent->visible_rects->x = 0;
+			vevent->visible_rects->y = 0;
+			vevent->visible_rects->width = 10;
+			vevent->visible_rects->height = 10;
+			error = svc_plugin_send_event(plugin, (RDP_EVENT*) vevent);
+			if (error != 0)
+			{
+				freerdp_event_free((RDP_EVENT*) vevent);
 			}
 			break;
 

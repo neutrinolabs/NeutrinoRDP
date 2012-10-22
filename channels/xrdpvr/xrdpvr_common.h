@@ -30,9 +30,9 @@ int xrdpvr_set_format(void *dec, XrdpMediaInfo* media_info);
 int xrdpvr_decode_video(void* dec, uint32 data_size, const uint8* data, uint32 extensions);
 int xrdpvr_decode_audio(void* dec, uint32 data_size, const uint8* data, uint32 extensions);
 int xrdpvr_decode(void* dec, uint32 data_size, const uint8* data, uint32 extensions);
-//uint8* xrdpv_get_decoded_data(XrdpMpegDecoder* mdecoder, uint32* size);
-//uint32 xrdpvr_get_decoded_format(XrdpMpegDecoder* mdecoder);
-//int xrdpvr_get_decoded_dimension(XrdpMpegDecoder* mdecoder, uint32* width, uint32* height);
-//void xrdpvr_free(XrdpMpegDecoder* mdecoder);
+uint8* xrdpv_get_decoded_data(void* dec, uint32* size);
+uint32 xrdpvr_get_decoded_format(void* dec);
+int xrdpvr_get_decoded_dimension(void* dec, uint32* width, uint32* height);
+void xrdpvr_free(void* dec);
 
 #endif
