@@ -20,7 +20,7 @@ set(XRDPVR_SRCS
 add_library(xrdpvr ${XRDPVR_SRCS})
 set_target_properties(xrdpvr PROPERTIES PREFIX "")
 
-target_link_libraries(xrdpvr freerdp-utils -lavcodec -lavutil -lavformat)
+target_link_libraries(xrdpvr freerdp-utils ${FFMPEG_LIBRARIES})
 
 install(TARGETS xrdpvr DESTINATION ${FREERDP_PLUGIN_PATH})
 
