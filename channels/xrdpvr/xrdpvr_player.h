@@ -17,21 +17,18 @@
  * limitations under the License.
  */
 
-#ifndef __XRDPVR_MAIN_H
-#define __XRDPVR_MAIN_H
+#ifndef __XRDPVR_PLAYER_H
+#define __XRDPVR_PLAYER_H
 
-typedef struct xrdpvr_plugin xrdpvrPlugin;
+#include <freerdp/types.h>
 
-#define CMD_SET_VIDEO_FORMAT        1
-#define CMD_SET_AUDIO_FORMAT        2
-#define CMD_SEND_VIDEO_DATA         3
-#define CMD_SEND_AUDIO_DATA         4
-#define CMD_CREATE_META_DATA_FILE   5
-#define CMD_CLOSE_META_DATA_FILE    6
-#define CMD_WRITE_META_DATA         7
-#define CMD_DEINIT_XRDPVR           8
+extern int g_meta_data_fd;
 
-/* TODO need to support Windows paths */
-#define META_DATA_FILEAME           "/tmp/xrdpvr_metadata.dat"
+void  *init_player(void *plugin, char *filename);
+void   deinit_player(void *psi);
+int    process_video(void *vp, uint8 *data, int data_len);
+int    process_audio(void *vp, uint8 *data, int data_len);
+uint8 *get_decoded_audio_data(void *vp, uint32 *size);
+void   get_audio_config(void *vp, int *samp_per_sec, int *num_channels, int *bits_per_samp);
 
-#endif /* __XRDPVR_MAIN_H */
+#endif
