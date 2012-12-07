@@ -85,6 +85,14 @@ static uint32_t get_decoded_video_format(PLAYER_STATE_INFO *psi);
 static int display_picture(PLAYER_STATE_INFO *psi);
 static int does_file_exist(char *filename);
 
+#ifndef CODEC_TYPE_VIDEO
+#define CODEC_TYPE_VIDEO AVMEDIA_TYPE_VIDEO
+#endif
+
+#ifndef CODEC_TYPE_AUDIO
+#define CODEC_TYPE_AUDIO AVMEDIA_TYPE_AUDIO
+#endif
+
 /**
  ******************************************************************************/
 void *
