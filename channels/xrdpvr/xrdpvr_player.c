@@ -24,6 +24,12 @@
 #include <libavformat/avformat.h>
 
 /*
+centos 5.8
+package qffmpeg-devel
+/usr/include/qffmpeg/libqavcodec
+#define LIBQAVCODEC_VERSION_MAJOR 51
+#define LIBQAVCODEC_VERSION_MINOR 71
+#define LIBQAVCODEC_VERSION_MICRO  0
 
 debian 6
 #define LIBAVCODEC_VERSION_MAJOR 52
