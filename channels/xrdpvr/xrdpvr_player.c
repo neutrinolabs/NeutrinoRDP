@@ -20,7 +20,27 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
+
+/*
+
+debian 6
+#define LIBAVCODEC_VERSION_MAJOR 52
+#define LIBAVCODEC_VERSION_MINOR 20
+#define LIBAVCODEC_VERSION_MICRO  1
+
+ubuntu 11.04
+#define LIBAVCODEC_VERSION_MAJOR 52
+#define LIBAVCODEC_VERSION_MINOR 72
+#define LIBAVCODEC_VERSION_MICRO  2
+
+mint 13
+#define LIBAVCODEC_VERSION_MAJOR 53
+#define LIBAVCODEC_VERSION_MINOR 35
+#define LIBAVCODEC_VERSION_MICRO  0
+
+*/
 
 //#include <freerdp/constants.h>
 #include <freerdp/types.h>
@@ -57,7 +77,7 @@ typedef struct player_state_info
 } PLAYER_STATE_INFO;
 
 /* forward declarations local to this file */
-static int play_video(PLAYER_STATE_INFO *psi, AVPacket *av_pkt);
+static int play_video(PLAYER_STATE_INFO *psi, struct AVPacket *av_pkt);
 static int play_audio(PLAYER_STATE_INFO *psi, AVPacket *av_pkt);
 static uint8_t *get_decoded_video_data(PLAYER_STATE_INFO *psi, uint32_t *size);
 static int get_decoded_video_dimension(PLAYER_STATE_INFO *psi, uint32_t *width, uint32_t *height);
@@ -95,14 +115,16 @@ init_player(void *plugin, char *filename)
 	av_register_all();
 
 	/* open media file - this will read just the header */
-	if (avformat_open_input(&psi->format_ctx, filename, NULL, NULL))
+	//if (avformat_open_input(&psi->format_ctx, filename, NULL, NULL))
+	if (av_open_input_file(&psi->format_ctx, filename, NULL, 0, NULL))
 	{
 		DEBUG_WARN("xrdp_player.c:init_player: ERROR opening %s\n", filename);
 		goto bailout1;
 	}
 
 	/* now get the real stream info */
-	if (avformat_find_stream_info(psi->format_ctx, NULL) < 0)
+	//if (avformat_find_stream_info(psi->format_ctx, NULL) < 0)
+	if (av_find_stream_info(psi->format_ctx) < 0)
 	{
 		DEBUG_WARN("xrdp_player.c:init_player: ERROR reading stream info\n");
 		goto bailout1;
@@ -119,14 +141,16 @@ init_player(void *plugin, char *filename)
 	/* find first audio / video stream */
 	for (i = 0; i < psi->format_ctx->nb_streams; i++)
 	{
-		if (psi->format_ctx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
-		        video_index < 0)
+		//if (psi->format_ctx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
+		//        video_index < 0)
+		if (psi->format_ctx->streams[i]->codec->codec_type == CODEC_TYPE_VIDEO && video_index < 0)
 		{
 			video_index = i;
 		}
 
-		if (psi->format_ctx->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
-		        audio_index < 0)
+		//if (psi->format_ctx->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
+		//        audio_index < 0)
+		if (psi->format_ctx->streams[i]->codec->codec_type == CODEC_TYPE_AUDIO && audio_index < 0)
 		{
 			audio_index = i;
 		}
@@ -168,7 +192,8 @@ init_player(void *plugin, char *filename)
 	}
 
 	/* open decoder for audio stream */
-	if (avcodec_open2(psi->audio_codec_ctx, psi->audio_codec, NULL) < 0)
+	//if (avcodec_open2(psi->audio_codec_ctx, psi->audio_codec, NULL) < 0)
+	if (avcodec_open(psi->audio_codec_ctx, psi->audio_codec) < 0)
 	{
 		DEBUG_WARN("xrdp_player.c:init_player: "
 		           "ERROR: could not open audio decoder\n");
@@ -176,7 +201,8 @@ init_player(void *plugin, char *filename)
 	}
 
 	/* open decoder for video stream */
-	if (avcodec_open2(psi->video_codec_ctx, psi->video_codec, NULL) < 0)
+	//if (avcodec_open2(psi->video_codec_ctx, psi->video_codec, NULL) < 0)
+	if (avcodec_open(psi->video_codec_ctx, psi->video_codec) < 0)
 	{
 		DEBUG_WARN("xrdp_player.c:init_player: "
 		           "ERROR: could not open video decoder\n");
@@ -191,7 +217,8 @@ init_player(void *plugin, char *filename)
 	return psi;
 
 bailout2:
-	avformat_close_input(&psi->format_ctx);
+	//avformat_close_input(&psi->format_ctx);
+	av_close_input_file(psi->format_ctx);
 
 bailout1:
 	free(psi);
@@ -215,7 +242,8 @@ deinit_player(void *vp)
 	av_free(psi->video_frame);
 	avcodec_close(psi->audio_codec_ctx);
 	avcodec_close(psi->video_codec_ctx);
-	avformat_close_input(&psi->format_ctx);
+	//avformat_close_input(&psi->format_ctx);
+	av_close_input_file(psi->format_ctx);
 	free(psi);
 }
 
@@ -307,7 +335,8 @@ get_audio_config(void *vp, int *samp_per_sec, int *num_channels, int *bits_per_s
 
 	switch (psi->audio_codec_ctx->sample_fmt)
 	{
-		case AV_SAMPLE_FMT_U8:
+		//case AV_SAMPLE_FMT_U8:
+		case SAMPLE_FMT_U8:
 			*bits_per_samp = 8;
 			break;
 
@@ -324,7 +353,8 @@ get_audio_config(void *vp, int *samp_per_sec, int *num_channels, int *bits_per_s
 /**
  ******************************************************************************/
 static int
-play_video(PLAYER_STATE_INFO *psi, AVPacket *av_pkt)
+//play_video(PLAYER_STATE_INFO *psi, AVPacket *av_pkt)
+play_video(PLAYER_STATE_INFO *psi, struct AVPacket *av_pkt)
 {
 	AVFrame *frame;
 	int      len;
@@ -337,8 +367,11 @@ play_video(PLAYER_STATE_INFO *psi, AVPacket *av_pkt)
 	}
 
 	/* TODO need to handle older versions - see Vic's code */
-	len = avcodec_decode_video2(psi->video_codec_ctx, psi->video_frame, &got_frame,
-	                            av_pkt);
+#if LIBAVCODEC_VERSION_MAJOR < 52 || (LIBAVCODEC_VERSION_MAJOR == 52 && LIBAVCODEC_VERSION_MINOR <= 20)
+	len = avcodec_decode_video(psi->video_codec_ctx, psi->video_frame, &got_frame, av_pkt->data, av_pkt->size);
+#else
+	len = avcodec_decode_video2(psi->video_codec_ctx, psi->video_frame, &got_frame, av_pkt);
+#endif
 
 	if (len < 0)
 	{
@@ -536,8 +569,15 @@ play_audio(PLAYER_STATE_INFO *psi, AVPacket *av_pkt)
 
 		frame_size = psi->decoded_size_max - psi->audio_decoded_size;
 #if LIBAVCODEC_VERSION_MAJOR < 52 || (LIBAVCODEC_VERSION_MAJOR == 52 && LIBAVCODEC_VERSION_MINOR <= 20)
-		len = avcodec_decode_audio2(psi->codec_context,
-		                            (int16_t *) dst, &frame_size, src, src_size);
+		len = avcodec_decode_audio2(psi->audio_codec_ctx, (int16_t *) dst, &frame_size, src, src_size);
+#elif LIBAVCODEC_VERSION_MAJOR == 52 && LIBAVCODEC_VERSION_MINOR == 72 && LIBAVCODEC_VERSION_MICRO == 2
+		{
+			AVPacket pkt;
+			av_init_packet(&pkt);
+			pkt.data = (uint8_t *) src;
+			pkt.size = src_size;
+			len = avcodec_decode_audio3(psi->audio_codec_ctx, (int16_t *) dst, &frame_size, &pkt);
+		}
 #else
 		{
 			AVFrame *decoded_frame = avcodec_alloc_frame();
@@ -547,9 +587,7 @@ play_audio(PLAYER_STATE_INFO *psi, AVPacket *av_pkt)
 			pkt.data = (uint8_t *) src;
 			pkt.size = src_size;
 
-			len = avcodec_decode_audio4(psi->audio_codec_ctx,
-						    decoded_frame,
-						    &got_frame, &pkt);
+			len = avcodec_decode_audio4(psi->audio_codec_ctx, decoded_frame, &got_frame, &pkt);
 
 			if (len >= 0 && got_frame)
 			{
