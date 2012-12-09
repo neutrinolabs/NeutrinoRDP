@@ -30,6 +30,7 @@ typedef struct xrdpvr_plugin xrdpvrPlugin;
 #define CMD_CLOSE_META_DATA_FILE    6
 #define CMD_WRITE_META_DATA         7
 #define CMD_DEINIT_XRDPVR           8
+#define CMD_SET_GEOMETRY            9
 
 /* TODO need to support Windows paths */
 #define META_DATA_FILEAME           "/tmp/xrdpvr_metadata.dat"

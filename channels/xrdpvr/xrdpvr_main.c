@@ -45,6 +45,8 @@
 #include "xrdpvr_audio.h"
 #include "xrdpvr_player.h"
 
+#define DEBUG_XRDPVR(x...) //printf(x)
+
 struct xrdpvr_plugin
 {
 	rdpSvcPlugin       plugin;
@@ -59,6 +61,8 @@ struct xrdpvr_plugin
 void* g_psi = NULL;     /* player state info    */
 int   g_meta_data_fd;   /* media meta data file */
 
+void xrdpvr_process_command(rdpSvcPlugin *plugin, STREAM *data_in);
+
 #if 0
 static void xrdpvr_process_interval(rdpSvcPlugin *plugin)
 {
@@ -71,239 +75,262 @@ static void xrdpvr_process_interval(rdpSvcPlugin *plugin)
 static void xrdpvr_process_receive(rdpSvcPlugin *plugin, STREAM *data_in)
 {
 	xrdpvrPlugin*   xrdpvr = (xrdpvrPlugin *) plugin;
-	STREAM*         s;
-	int             rv;
-	int             bytes_to_process;
-	int             i;
-	uint32          cmd;
-	uint32          data_len;
-	uint32          tmp;
-	uint8*          decoded_data;
-	uint32          uncompressed_size;
+
+	int bytes_to_process;     /* bytes  to process */
+	int cmd_len;           /* # bytes required by current cmd */
+	int i;
 
 	if (xrdpvr == NULL)
 	{
+		DEBUG_XRDPVR("xrdpvr_process_receive: returning coz xrdpvr is NULL\n");
 		stream_free(data_in);
 		return;
 	}
 
-	if (stream_get_size(data_in) <= 0)
+	if ((bytes_to_process = stream_get_size(data_in)) <= 0)
 	{
 		stream_free(data_in);
 		return;
 	}
-
-start:
 
 	if (xrdpvr->got_partial_data)
 	{
-		/* previous pkt was fragmented and could not be processed; */
-		/* if we have enough data, process it now, else defer      */
-		/* processing till next pkt                                */
+		/* handle pkt fragmentation */
 
-		/* how much additional data did we get? */
-		int data_in_len = data_in->size;
-
-#ifdef DEBUG_FRAGMENTS
-		printf("###     partial_pkt has %d bytes\n", data_in_len);
-#endif
-		/* append new data to old */
-		memcpy(xrdpvr->s->p, data_in->p, data_in_len);
-		xrdpvr->s->p += data_in_len;
-
-		if (data_in_len < xrdpvr->bytes_needed)
+		if (xrdpvr->bytes_needed < 0)
 		{
-			/* we still don't have enough data */
-			xrdpvr->bytes_needed -= data_in_len;
-			stream_free(data_in);
-			return;
+			/* cannot compute cmd len bcoz xrdpvr->s contains */
+			/* less than 4 bytes; copy required # of bytes to */
+			/* xrdpvr->s so we have exactly 4 bytes in it     */
+			i = 4 - (xrdpvr->s->p - xrdpvr->s->data);
+			memcpy(xrdpvr->s->p, data_in->p, i);
+			xrdpvr->s->p += i;
+			data_in->p += i;
+			bytes_to_process -= i;
+
+			/* now we can read cmd len from xrdpvr->s and process */
+			/* the data from data_in                              */
+			stream_read_uint32(xrdpvr->s, cmd_len);
+			xrdpvr->got_partial_data = 0;
+			xrdpvr->bytes_needed = 0;
+			goto label1;
 		}
-
-		/* we have enough data */
-		xrdpvr->bytes_needed = 0;
-		xrdpvr->got_partial_data = 0;
-		bytes_to_process = stream_get_length(xrdpvr->s);
-		stream_set_pos(xrdpvr->s, 4); /* point to cmd */
-		s = xrdpvr->s;
-
-#ifdef DEBUG_FRAGMENTS
-		printf("###     pkt complete; bytes_to_process=%d bytes\n", bytes_to_process);
-#endif
-	}
-	else
-	{
-		stream_read_uint32(data_in, data_len);
-
-		if ((data_in->size - 4) < data_len)
+		else
 		{
-#ifdef DEBUG_FRAGMENTS
-			printf("###     pkt is fragmented; this pkt has %d bytes\n", data_len);
-#endif
+			if (bytes_to_process < xrdpvr->bytes_needed)
+			{
+				/* we still don't have enough data; save  */
+				/* current data and wait for next pkt     */
+				memcpy(xrdpvr->s->p, data_in->p, bytes_to_process);
+				xrdpvr->s->p += bytes_to_process;
+				xrdpvr->bytes_needed -= bytes_to_process;
+				stream_free(data_in);
+				return;
+			}
 
-			/* got a fragmented pkt - save it for later processing */
+			/* we have enough data to process cmd */
+			memcpy(xrdpvr->s->p, data_in->p, xrdpvr->bytes_needed);
 			xrdpvr->s->p = xrdpvr->s->data;
-			memcpy(xrdpvr->s->p, data_in->data, data_in->size);
-			xrdpvr->s->p += data_in->size;
+			bytes_to_process -= xrdpvr->bytes_needed;
+			xrdpvr->bytes_needed = 0;
+			xrdpvr->got_partial_data = 0;
+			xrdpvr_process_command(plugin, xrdpvr->s);
+		}
+	}
+
+	while (bytes_to_process > 0)
+	{
+		if (bytes_to_process < 4)
+		{
+			/* not enough data to determine cmd len */
+			xrdpvr->bytes_needed = -1;
 			xrdpvr->got_partial_data = 1;
-			xrdpvr->bytes_needed = data_len - (data_in->size - 4);
+			xrdpvr->s->p = xrdpvr->s->data;
+			memcpy(xrdpvr->s->p, data_in->p, bytes_to_process);
+			xrdpvr->s->p += bytes_to_process;
 			stream_free(data_in);
 			return;
 		}
 
-		/* got complete pkt */
-#ifdef DEBUG_FRAGMENTS
-		printf("### pkt is NOT fragmented and has %d bytes\n", data_len);
-#endif
-		xrdpvr->got_partial_data = 0;
-		xrdpvr->bytes_needed = 0;
-		s = data_in;
+		/* get # bytes required by current cmd */
+		stream_read_uint32(data_in, cmd_len);
+		bytes_to_process -= 4;
+label1:
+		if (bytes_to_process >= cmd_len)
+		{
+			/* we have enough data to process this cmd */
+			xrdpvr_process_command(plugin, data_in);
+			bytes_to_process -= cmd_len;
+		}
+		else
+		{
+			/* we need more data to process this cmd */
+			xrdpvr->bytes_needed = cmd_len - bytes_to_process;
+			xrdpvr->got_partial_data = 1;
+
+			/* save residual data */
+			xrdpvr->s->p = xrdpvr->s->data;
+			memcpy(xrdpvr->s->p, data_in->p, bytes_to_process);
+			xrdpvr->s->p += bytes_to_process;
+			stream_free(data_in);
+			return;
+		}
 	}
+
+	stream_free(data_in);
+}
+
+void xrdpvr_process_command(rdpSvcPlugin *plugin, STREAM *s)
+{
+	xrdpvrPlugin*   xrdpvr = (xrdpvrPlugin *) plugin;
+	uint32          cmd;
+	uint32          tmp;
+	uint32		xpos = 0;
+	uint32		ypos = 0;
+	uint32          data_len;
+	uint8*          decoded_data;
+	uint32          uncompressed_size;
+	int		width = 0;
+	int		height = 0;
+	int             rv;
 
 	stream_read_uint32(s, cmd);
 
 	switch (cmd)
 	{
-		case CMD_SEND_AUDIO_DATA:
-			stream_read_uint32(s, tmp); /* stream id */
-			stream_read_uint32(s, data_len);
+	case CMD_SEND_AUDIO_DATA:
+		DEBUG_XRDPVR("###### got CMD_SEND_AUDIO_DATA\n");
+		stream_read_uint32(s, tmp); /* stream id */
+		stream_read_uint32(s, data_len);
 
-			/* send decoded data to ALSA */
-			if (xrdpvr->audio_inited)
-			{
-				/* TODO check for return */
-				process_audio(g_psi, s->p, data_len);
-				s->p += data_len;
-
-				decoded_data = get_decoded_audio_data(g_psi,
-				                                      &uncompressed_size);
-
-				if ((decoded_data == NULL) ||
-				        (uncompressed_size == 0))
-				{
-					break;
-				}
-
-				(xrdpvr->audio_device->Play)(xrdpvr->audio_device,
-				                             decoded_data,
-				                             uncompressed_size);
-			}
-
-			break;
-
-		case CMD_SEND_VIDEO_DATA:
-			stream_read_uint32(s, tmp); /* stream id */
-			stream_read_uint32(s, data_len);
-
-			/* TODO check for return */
-			process_video(g_psi, s->p, data_len);
-			s->p += data_len;
-
-			/* TODO do we need this: av_free_packet(&av_pkt); */
-			break;
-
-		case CMD_SET_VIDEO_FORMAT:
-			stream_read_uint32(s, tmp); /* stream id */
-			g_psi = init_player((void *) plugin, META_DATA_FILEAME);
-
-			if (g_psi == NULL)
-			{
-				printf("init_player() failed\n");
-			}
-
-			break;
-
-		case CMD_SET_AUDIO_FORMAT:
-			stream_read_uint32(s, tmp); /* stream id */
-
-			if (xrdpvr->audio_inited)
-			{
-				int samp_per_sec;
-				int num_channels;
-				int bits_per_samp;
-
-				get_audio_config(g_psi, &samp_per_sec,
-				                 &num_channels, &bits_per_samp);
-
-				rv = (xrdpvr->audio_device->SetFormat)(xrdpvr->audio_device,
-				                                       samp_per_sec,
-				                                       num_channels,
-				                                       bits_per_samp);
-
-				if (!rv)
-				{
-					DEBUG_WARN("ERROR setting audio format\n");
-				}
-			}
-
-			break;
-
-		case CMD_CREATE_META_DATA_FILE:
-
-			if ((g_meta_data_fd = open(META_DATA_FILEAME,
-			                           O_RDWR | O_CREAT | O_TRUNC,
-			                           0755)) < 0)
-			{
-				DEBUG_WARN("ERROR opening %s; "
-				           "video redirection disabled!\n",
-				           META_DATA_FILEAME);
-			}
-
-			break;
-
-		case CMD_CLOSE_META_DATA_FILE:
-			close(g_meta_data_fd);
-			break;
-
-		case CMD_WRITE_META_DATA:
-			stream_read_uint32(s, data_len);
-
-			if ((rv = write(g_meta_data_fd, s->p, data_len)) != data_len)
-			{
-				close(g_meta_data_fd);
-				g_meta_data_fd = -1;
-				DEBUG_WARN("ERROR writing to %s; "
-				           "video redirection disabled!\n",
-				           META_DATA_FILEAME);
-			}
-
-			s->p += data_len;
-			break;
-
-		case CMD_DEINIT_XRDPVR:
-			stream_read_uint32(s, tmp); /* stream id */
-			deinit_player(g_psi);
-			break;
-
-		default:
-			printf("### got unknown command 0x%x %d(.)\n", cmd, cmd);
-			break;
-	}
-
-	if (s == xrdpvr->s)
-	{
-		/* we just finished processing a fragmented pkt; */
-		/* did we get part of the next command as well?  */
-
-		i = stream_get_length(xrdpvr->s);
-
-		if (bytes_to_process > i)
+		/* send decoded data to ALSA */
+		if (xrdpvr->audio_inited)
 		{
-			/* yes we did - copy this to data_in and start all over */
-#ifdef DEBUG_FRAGMENTS
-			printf("### xrdpvr_process_receive: got part of next command\n");
-			printf("### xrdpvr_process_receive: bytes_to_process=%d diff=%d\n",
-			       bytes_to_process, bytes_to_process - i);
-#endif
-			memcpy(data_in->data, s->p, bytes_to_process - i);
-			data_in->p = data_in->data;
-			xrdpvr->got_partial_data = 0;
-			xrdpvr->bytes_needed = 0;
-			bytes_to_process = 0;
-			goto start;
+			/* TODO check for return */
+			process_audio(g_psi, s->p, data_len);
+			s->p += data_len;
+
+			decoded_data = get_decoded_audio_data(g_psi,
+			                                      &uncompressed_size);
+
+			if ((decoded_data == NULL) ||
+			        (uncompressed_size == 0))
+			{
+				break;
+			}
+
+			(xrdpvr->audio_device->Play)(xrdpvr->audio_device,
+			                             decoded_data,
+			                             uncompressed_size);
 		}
+
+		break;
+
+	case CMD_SEND_VIDEO_DATA:
+		DEBUG_XRDPVR("###### got CMD_SEND_VIDEO_DATA\n");
+		stream_read_uint32(s, tmp); /* stream id */
+		stream_read_uint32(s, data_len);
+
+		/* TODO check for return */
+		process_video(g_psi, s->p, data_len);
+		s->p += data_len;
+
+		/* TODO do we need this: av_free_packet(&av_pkt); */
+		break;
+
+	case CMD_SET_GEOMETRY:
+		DEBUG_XRDPVR("###### got CMD_SET_GEOMETRY\n");
+		stream_read_uint32(s, tmp); /* stream id */
+		stream_read_uint32(s, xpos);
+		stream_read_uint32(s, ypos);
+		stream_read_uint32(s, width);
+		stream_read_uint32(s, height);
+		set_geometry(g_psi, xpos, ypos, width, height);
+		break;
+
+	case CMD_SET_VIDEO_FORMAT:
+		DEBUG_XRDPVR("###### got CMD_SET_VIDEO_FORMAT\n");
+		stream_read_uint32(s, tmp); /* stream id */
+		g_psi = init_player((void *) plugin, META_DATA_FILEAME);
+		if (g_psi == NULL)
+		{
+			printf("init_player() failed\n");
+		}
+
+		break;
+
+	case CMD_SET_AUDIO_FORMAT:
+		DEBUG_XRDPVR("###### got CMD_SET_AUDIO_FORMAT\n");
+		stream_read_uint32(s, tmp); /* stream id */
+
+		if (xrdpvr->audio_inited)
+		{
+			int samp_per_sec;
+			int num_channels;
+			int bits_per_samp;
+
+			get_audio_config(g_psi, &samp_per_sec,
+			                 &num_channels, &bits_per_samp);
+
+			rv = (xrdpvr->audio_device->SetFormat)(xrdpvr->audio_device,
+			                                       samp_per_sec,
+			                                       num_channels,
+			                                       bits_per_samp);
+
+			if (!rv)
+			{
+				DEBUG_WARN("ERROR setting audio format\n");
+			}
+		}
+
+		break;
+
+	case CMD_CREATE_META_DATA_FILE:
+		DEBUG_XRDPVR("###### got CMD_CREATE_META_DATA_FILE\n");
+		if ((g_meta_data_fd = open(META_DATA_FILEAME,
+		                           O_RDWR | O_CREAT | O_TRUNC,
+		                           0755)) < 0)
+		{
+			DEBUG_WARN("ERROR opening %s; "
+			           "video redirection disabled!\n",
+			           META_DATA_FILEAME);
+		}
+
+		break;
+
+	case CMD_CLOSE_META_DATA_FILE:
+		DEBUG_XRDPVR("###### got CMD_CLOSE_META_DATA_FILE\n");
+		close(g_meta_data_fd);
+		break;
+
+	case CMD_WRITE_META_DATA:
+		DEBUG_XRDPVR("###### got CMD_WRITE_META_DATA\n");
+		stream_read_uint32(s, data_len);
+
+		if ((rv = write(g_meta_data_fd, s->p, data_len)) != data_len)
+		{
+			close(g_meta_data_fd);
+			g_meta_data_fd = -1;
+			DEBUG_WARN("ERROR writing to %s; "
+			           "video redirection disabled!\n",
+			           META_DATA_FILEAME);
+		}
+
+		s->p += data_len;
+		break;
+
+	case CMD_DEINIT_XRDPVR:
+		DEBUG_XRDPVR("###### got CMD_DEINIT_XRDPVR\n");
+		stream_read_uint32(s, tmp); /* stream id */
+		deinit_player(g_psi);
+		break;
+
+	default:
+		// LK_TODO change to DEBUG_XRDPVR
+		printf("### got unknown command 0x%x %d(.)\n", cmd, cmd);
+		break;
 	}
 
-	stream_free(data_in);
 }
 
 /*
@@ -324,7 +351,7 @@ static void xrdpvr_process_connect(rdpSvcPlugin *plugin_p)
 #endif
 
 	/* setup stream */
-	plugin->s = stream_new(1024 * 1024);
+	plugin->s = stream_new(1024 * 1024 * 2);
 	plugin->got_partial_data = 0;
 	plugin->bytes_needed = 0;
 
