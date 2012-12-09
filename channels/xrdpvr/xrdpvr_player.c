@@ -54,6 +54,10 @@ typedef struct player_state_info
 	void            *plugin;
 	int              player_inited;
 
+	int		xpos;
+	int		ypos;
+	int		width;
+	int		height;
 } PLAYER_STATE_INFO;
 
 /* forward declarations local to this file */
@@ -76,20 +80,18 @@ init_player(void *plugin, char *filename)
 	int audio_index = -1;
 	int i;
 
+	printf("############# init_player() entered\n");
+
 	/* to hold player state information */
 	psi = (PLAYER_STATE_INFO *) calloc(1, sizeof(PLAYER_STATE_INFO));
 
 	if (psi == NULL)
-	{
 		return NULL;
-	}
 
 	psi->plugin = plugin;
 
 	if ((g_meta_data_fd < 0) || (does_file_exist(filename) == 0))
-	{
 		return NULL;
-	}
 
 	/* register all available fileformats and codecs */
 	av_register_all();
@@ -108,7 +110,8 @@ init_player(void *plugin, char *filename)
 		goto bailout1;
 	}
 
-#if 0
+// LK_TODO
+#if 1
 	/* display basic media info */
 	av_dump_format(psi->format_ctx, 0, filename, 0);
 #endif
@@ -149,7 +152,6 @@ init_player(void *plugin, char *filename)
 
 	/* find decoder for audio stream */
 	psi->audio_codec = avcodec_find_decoder(psi->audio_codec_ctx->codec_id);
-
 	if (psi->audio_codec == NULL)
 	{
 		DEBUG_WARN("xrdp_player.c:init_player: "
@@ -159,7 +161,6 @@ init_player(void *plugin, char *filename)
 
 	/* find decoder for video stream */
 	psi->video_codec = avcodec_find_decoder(psi->video_codec_ctx->codec_id);
-
 	if (psi->video_codec == NULL)
 	{
 		DEBUG_WARN("xrdp_player.c:init_player: "
@@ -317,6 +318,24 @@ get_audio_config(void *vp, int *samp_per_sec, int *num_channels, int *bits_per_s
 	}
 }
 
+void
+set_geometry(void *vp, int xpos, int ypos, int width, int height)
+{
+	PLAYER_STATE_INFO *psi = (PLAYER_STATE_INFO *) vp;
+
+	printf("set_geometry: x=%d y=%d with=%d height=%d\n", xpos, ypos, width, height);
+	if ((psi == NULL) || (!psi->player_inited))
+	{
+		DEBUG_WARN("xrdpvr player is NULL or not inited");
+		return;
+	}
+
+	psi->xpos = xpos;
+	psi->ypos = ypos;
+	psi->width = width;
+	psi->height = height;
+}
+
 /*******************************************************************************
                            functions local to this file
 *******************************************************************************/
@@ -327,7 +346,7 @@ static int
 play_video(PLAYER_STATE_INFO *psi, AVPacket *av_pkt)
 {
 	AVFrame *frame;
-	int      len;
+	int      len = -1;
 	int      got_frame;
 
 	if ((psi == NULL) || (!psi->player_inited))
@@ -339,7 +358,6 @@ play_video(PLAYER_STATE_INFO *psi, AVPacket *av_pkt)
 	/* TODO need to handle older versions - see Vic's code */
 	len = avcodec_decode_video2(psi->video_codec_ctx, psi->video_frame, &got_frame,
 	                            av_pkt);
-
 	if (len < 0)
 	{
 		DEBUG_WARN("xrdp_player.c:play_video: frame decode error\n");
@@ -418,11 +436,17 @@ display_picture(PLAYER_STATE_INFO *psi)
 	vevent->frame_width = width;
 	vevent->frame_height = height;
 
-	/* TODO these hard coded values need to change */
-	vevent->x = 0;
-	vevent->y = 0;
+        //printf("display: x=%d y=%d with=%d height=%d\n", psi->xpos, psi->ypos, psi->width, psi->height);
+
+	vevent->x = psi->xpos;
+	vevent->y = psi->ypos;
+#if 0
 	vevent->width = psi->video_codec_ctx->width;
 	vevent->height = psi->video_codec_ctx->height;
+#else
+	vevent->width = psi->width;
+	vevent->height = psi->height;
+#endif
 	vevent->num_visible_rects = 1;
 	vevent->visible_rects = xmalloc(sizeof(RDP_RECT));
 	vevent->visible_rects->x = 0;
@@ -487,7 +511,7 @@ get_decoded_video_format(PLAYER_STATE_INFO *psi)
 static int
 play_audio(PLAYER_STATE_INFO *psi, AVPacket *av_pkt)
 {
-	int         len;
+	int         len = 0;
 	int         frame_size;
 	uint32_t    src_size;
 	int         dst_offset;
@@ -546,11 +570,11 @@ play_audio(PLAYER_STATE_INFO *psi, AVPacket *av_pkt)
 			av_init_packet(&pkt);
 			pkt.data = (uint8_t *) src;
 			pkt.size = src_size;
-
+#if 1
 			len = avcodec_decode_audio4(psi->audio_codec_ctx,
 						    decoded_frame,
 						    &got_frame, &pkt);
-
+#endif
 			if (len >= 0 && got_frame)
 			{
 				frame_size = av_samples_get_buffer_size(NULL,
