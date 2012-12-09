@@ -47,6 +47,8 @@ struct xf_xv_context
 	int xv_shmid;
 	char* xv_shmaddr;
 	uint32* xv_pixfmts;
+	int can_do_FOURCC_I420;
+	int can_do_FOURCC_YV12;
 };
 
 #ifdef WITH_DEBUG_XV
@@ -139,6 +141,14 @@ void xf_tsmf_init(xfInfo* xfi, long xv_port)
 		for (i = 0; i < ret; i++)
 		{
 			xv->xv_pixfmts[i] = fo[i].id;
+			if (xv->xv_pixfmts[i] == RDP_PIXFMT_I420)
+			{
+				xv->can_do_FOURCC_I420 = 1;
+			}
+			else if (xv->xv_pixfmts[i] == RDP_PIXFMT_YV12)
+			{
+				xv->can_do_FOURCC_YV12 = 1;
+			}
 #ifdef WITH_DEBUG_XV
 			printf("%c%c%c%c ", ((char*)(xv->xv_pixfmts + i))[0], ((char*)(xv->xv_pixfmts + i))[1],
 				((char*)(xv->xv_pixfmts + i))[2], ((char*)(xv->xv_pixfmts + i))[3]);
@@ -195,7 +205,8 @@ static void xf_process_tsmf_video_frame_event(xfInfo* xfi, RDP_VIDEO_FRAME_EVENT
 	int i;
 	uint8* data1;
 	uint8* data2;
-	uint32 pixfmt;
+	uint32 dst_pixfmt;
+	uint32 src_pixfmt;
 	XvImage * image;
 	int colorkey = 0;
 	XShmSegmentInfo shminfo;
@@ -224,9 +235,29 @@ static void xf_process_tsmf_video_frame_event(xfInfo* xfi, RDP_VIDEO_FRAME_EVENT
 		}
 	}
 
-	pixfmt = vevent->frame_pixfmt;
+	src_pixfmt = vevent->frame_pixfmt;
+	if (xf_tsmf_is_format_supported(xv, src_pixfmt))
+	{
+		dst_pixfmt = src_pixfmt;
+	}
+	else
+	{
+		if (src_pixfmt == RDP_PIXFMT_I420 && xv->can_do_FOURCC_YV12)
+		{
+			dst_pixfmt = RDP_PIXFMT_YV12;
+		}
+		else if (src_pixfmt == RDP_PIXFMT_YV12 && xv->can_do_FOURCC_I420)
+		{
+			dst_pixfmt = RDP_PIXFMT_I420;
+		}
+		else
+		{
+			printf("xf_process_tsmf_video_frame_event: error src_pixfmt 0x%8.8x\n", src_pixfmt);
+			return;
+		}
+	}
 	image = XvShmCreateImage(xfi->display, xv->xv_port,
-		pixfmt, 0, vevent->frame_width, vevent->frame_height, &shminfo);
+		dst_pixfmt, 0, vevent->frame_width, vevent->frame_height, &shminfo);
 	if (xv->xv_image_size != image->data_size)
 	{
 		if (xv->xv_image_size > 0)
@@ -251,16 +282,10 @@ static void xf_process_tsmf_video_frame_event(xfInfo* xfi, RDP_VIDEO_FRAME_EVENT
 
 	/* The video driver may align each line to a different size
 	   and we need to convert our original image data. */
-	switch (pixfmt)
+	switch (dst_pixfmt)
 	{
 		case RDP_PIXFMT_I420:
 		case RDP_PIXFMT_YV12:
-			if (!xf_tsmf_is_format_supported(xv, RDP_PIXFMT_I420) &&
-				!xf_tsmf_is_format_supported(xv, RDP_PIXFMT_YV12))
-			{
-				DEBUG_XV("pixel format 0x%X not supported by hardware.", pixfmt);
-				break;
-			}
 			/* Y */
 			if (image->pitches[0] == vevent->frame_width)
 			{
@@ -279,7 +304,7 @@ static void xf_process_tsmf_video_frame_event(xfInfo* xfi, RDP_VIDEO_FRAME_EVENT
 			}
 			/* UV */
 			/* Conversion between I420 and YV12 is to simply swap U and V */
-			if (xf_tsmf_is_format_supported(xv, pixfmt))
+			if (src_pixfmt == dst_pixfmt)
 			{
 				data1 = vevent->frame_data + vevent->frame_width * vevent->frame_height;
 				data2 = vevent->frame_data + vevent->frame_width * vevent->frame_height +
@@ -290,7 +315,6 @@ static void xf_process_tsmf_video_frame_event(xfInfo* xfi, RDP_VIDEO_FRAME_EVENT
 				data2 = vevent->frame_data + vevent->frame_width * vevent->frame_height;
 				data1 = vevent->frame_data + vevent->frame_width * vevent->frame_height +
 					vevent->frame_width * vevent->frame_height / 4;
-				image->id = pixfmt == RDP_PIXFMT_I420 ? RDP_PIXFMT_YV12 : RDP_PIXFMT_I420;
 			}
 			if (image->pitches[1] * 2 == vevent->frame_width)
 			{
