@@ -48,6 +48,22 @@ mint 13
 
 */
 
+#if LIBAVCODEC_VERSION_MAJOR == 52 && LIBAVCODEC_VERSION_MINOR == 20
+#define DISTRO_DEBIAN6
+#endif
+
+#if LIBAVCODEC_VERSION_MAJOR == 52 && LIBAVCODEC_VERSION_MINOR == 72
+#define DISTRO_UBUNTU1104
+#endif
+
+#if LIBAVCODEC_VERSION_MAJOR == 53 && LIBAVCODEC_VERSION_MINOR == 35
+#define DISTRO_UBUNTU1204
+#endif
+
+#if !defined(DISTRO_DEBIAN6) && !defined(DISTRO_UBUNTU1104) && !defined(DISTRO_UBUNTU1204)
+#warning unsupported distro
+#endif
+
 //#include <freerdp/constants.h>
 #include <freerdp/types.h>
 #include <freerdp/utils/memory.h>
@@ -95,11 +111,8 @@ static uint32_t get_decoded_video_format(PLAYER_STATE_INFO *psi);
 static int display_picture(PLAYER_STATE_INFO *psi);
 static int does_file_exist(char *filename);
 
-#ifndef CODEC_TYPE_VIDEO
+#ifdef DISTRO_UBUNTU1204
 #define CODEC_TYPE_VIDEO AVMEDIA_TYPE_VIDEO
-#endif
-
-#ifndef CODEC_TYPE_AUDIO
 #define CODEC_TYPE_AUDIO AVMEDIA_TYPE_AUDIO
 #endif
 
@@ -396,8 +409,7 @@ play_video(PLAYER_STATE_INFO *psi, struct AVPacket *av_pkt)
 		return -1;
 	}
 
-	/* TODO need to handle older versions - see Vic's code */
-#if LIBAVCODEC_VERSION_MAJOR < 52 || (LIBAVCODEC_VERSION_MAJOR == 52 && LIBAVCODEC_VERSION_MINOR <= 20)
+#ifdef DISTRO_DEBIAN6
 	len = avcodec_decode_video(psi->video_codec_ctx, psi->video_frame, &got_frame, av_pkt->data, av_pkt->size);
 #else
 	len = avcodec_decode_video2(psi->video_codec_ctx, psi->video_frame, &got_frame, av_pkt);
@@ -496,8 +508,8 @@ display_picture(PLAYER_STATE_INFO *psi)
 	vevent->visible_rects = xmalloc(sizeof(RDP_RECT));
 	vevent->visible_rects->x = 0;
 	vevent->visible_rects->y = 0;
-	vevent->visible_rects->width = 10;
-	vevent->visible_rects->height = 10;
+	vevent->visible_rects->width = vevent->width;
+	vevent->visible_rects->height = vevent->height;
 
 	if (svc_plugin_send_event(psi->plugin, (RDP_EVENT *) vevent) != 0)
 	{
@@ -604,9 +616,10 @@ play_audio(PLAYER_STATE_INFO *psi, AVPacket *av_pkt)
 		}
 
 		frame_size = psi->decoded_size_max - psi->audio_decoded_size;
-#if LIBAVCODEC_VERSION_MAJOR < 52 || (LIBAVCODEC_VERSION_MAJOR == 52 && LIBAVCODEC_VERSION_MINOR <= 20)
+#ifdef DISTRO_DEBIAN6
 		len = avcodec_decode_audio2(psi->audio_codec_ctx, (int16_t *) dst, &frame_size, src, src_size);
-#elif LIBAVCODEC_VERSION_MAJOR == 52 && LIBAVCODEC_VERSION_MINOR == 72 && LIBAVCODEC_VERSION_MICRO == 2
+#endif
+#ifdef DISTRO_UBUNTU1104
 		{
 			AVPacket pkt;
 			av_init_packet(&pkt);
@@ -614,7 +627,8 @@ play_audio(PLAYER_STATE_INFO *psi, AVPacket *av_pkt)
 			pkt.size = src_size;
 			len = avcodec_decode_audio3(psi->audio_codec_ctx, (int16_t *) dst, &frame_size, &pkt);
 		}
-#else
+#endif
+#ifdef DISTRO_UBUNTU1204
 		{
 			AVFrame *decoded_frame = avcodec_alloc_frame();
 			int got_frame = 0;
@@ -632,14 +646,11 @@ play_audio(PLAYER_STATE_INFO *psi, AVPacket *av_pkt)
 				                                        decoded_frame->nb_samples,
 									psi->audio_codec_ctx->sample_fmt,
 									1);
-
 				memcpy(dst, decoded_frame->data[0], frame_size);
 			}
-
 			av_free(decoded_frame);
 		}
 #endif
-
 		if (len <= 0 || frame_size <= 0)
 		{
 			DEBUG_WARN("error decoding");
