@@ -137,7 +137,7 @@ uint16 LOMhash(uint16 key)
 {
 	return ((key & 0x1f) ^ (key  >> 5) ^ (key >> 9));
 }
-			
+
 uint16 miniLEChash(uint16 key)
 {
 	uint16 h;
@@ -165,9 +165,9 @@ uint16 getLOMindex(uint16 huff)
 {
 	uint16 h = HuffIndexLOM[LOMhash(huff)];
 	if((h ^ huff) >> 5)
-	{	
+	{
 		return h & 0x1f;
-	}	
+	}
 	else
 		return HuffIndexLOM[LOMHTab[miniLOMhash(huff)]];
 }
@@ -1158,7 +1158,7 @@ int decompress_rdp_6(rdpRdp* rdp, uint8* cbuf, int len, int ctype, uint32* roff,
 		history_ptr = history_buf + 32768;
 		*roff = 32768;
 	}
-	
+
 	if (ctype & PACKET_FLUSHED)
 	{
 		/* re-init history buffer */

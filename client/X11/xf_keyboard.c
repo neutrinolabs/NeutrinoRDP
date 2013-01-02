@@ -174,8 +174,10 @@ boolean xf_kbd_handle_special_keys(xfInfo* xfi, KeySym keysym)
 {
 	if (keysym == XK_Return)
 	{
-		if ((xf_kbd_key_pressed(xfi, XK_Alt_L) || xf_kbd_key_pressed(xfi, XK_Alt_R))
-		    && (xf_kbd_key_pressed(xfi, XK_Control_L) || xf_kbd_key_pressed(xfi, XK_Control_R)))
+		if ((xf_kbd_key_pressed(xfi, XK_Alt_L) ||
+				xf_kbd_key_pressed(xfi, XK_Alt_R)) &&
+				(xf_kbd_key_pressed(xfi, XK_Control_L) ||
+				xf_kbd_key_pressed(xfi, XK_Control_R)))
 		{
 			/* Ctrl-Alt-Enter: toggle full screen */
 			xf_toggle_fullscreen(xfi);
@@ -185,4 +187,3 @@ boolean xf_kbd_handle_special_keys(xfInfo* xfi, KeySym keysym)
 
 	return false;
 }
-

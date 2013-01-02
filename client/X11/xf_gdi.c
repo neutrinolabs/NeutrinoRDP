@@ -211,7 +211,7 @@ Pixmap xf_brush_new(xfInfo* xfi, int width, int height, int bpp, uint8* data)
 
 		cdata = freerdp_image_convert(data, NULL, width, height, bpp, xfi->bpp, xfi->clrconv);
 		image = XCreateImage(xfi->display, xfi->visual, xfi->depth,
-						ZPixmap, 0, (char*) cdata, width, height, xfi->scanline_pad, 0);
+				ZPixmap, 0, (char*) cdata, width, height, xfi->scanline_pad, 0);
 
 		gc = XCreateGC(xfi->display, xfi->drawable, 0, NULL);
 		XPutImage(xfi->display, bitmap, gc, image, 0, 0, 0, 0, width, height);
@@ -785,4 +785,3 @@ void xf_gdi_register_update_callbacks(rdpUpdate* update)
 	update->SurfaceBits = xf_gdi_surface_bits;
 	update->SurfaceFrameMarker = xf_gdi_surface_frame_marker;
 }
-
