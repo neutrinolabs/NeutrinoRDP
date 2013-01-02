@@ -456,6 +456,16 @@ int transport_check_fds(rdpTransport* transport)
 
 		if (status < 0)
 			return status;
+
+		if (transport->process_single_pdu)
+		{
+			/* one at a time but set event if data buffered
+			 * so the main loop will call freerdp_check_fds asap */
+			if (stream_get_pos(transport->recv_buffer) > 0)
+				wait_obj_set(transport->recv_event);
+			break;
+		}
+
 	}
 
 	return 0;
