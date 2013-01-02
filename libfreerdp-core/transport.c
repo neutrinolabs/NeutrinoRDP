@@ -344,13 +344,6 @@ int transport_write(rdpTransport* transport, STREAM* s)
 			/* blocking while sending */
 			freerdp_usleep(transport->usleep_interval);
 
-			/* when sending is blocked in nonblocking mode, the receiving buffer should be checked */
-			if (!transport->blocking)
-			{
-				/* and in case we do have buffered some data, we set the event so next loop will get it */
-				if (transport_read_nonblocking(transport) > 0)
-					wait_obj_set(transport->recv_event);
-			}
 		}
 
 		length -= status;
@@ -370,7 +363,6 @@ void transport_get_fds(rdpTransport* transport, void** rfds, int* rcount)
 {
 	rfds[*rcount] = (void*)(long)(transport->tcp->sockfd);
 	(*rcount)++;
-	wait_obj_get_fds(transport->recv_event, rfds, rcount);
 }
 
 int transport_check_fds(rdpTransport* transport)
@@ -379,8 +371,6 @@ int transport_check_fds(rdpTransport* transport)
 	int status;
 	uint16 length;
 	STREAM* received;
-
-	wait_obj_clear(transport->recv_event);
 
 	status = transport_read_nonblocking(transport);
 
@@ -459,10 +449,6 @@ int transport_check_fds(rdpTransport* transport)
 
 		if (transport->process_single_pdu)
 		{
-			/* one at a time but set event if data buffered
-			 * so the main loop will call freerdp_check_fds asap */
-			if (stream_get_pos(transport->recv_buffer) > 0)
-				wait_obj_set(transport->recv_event);
 			break;
 		}
 
@@ -493,7 +479,6 @@ rdpTransport* transport_new(rdpSettings* settings)
 
 		/* receive buffer for non-blocking read. */
 		transport->recv_buffer = stream_new(BUFFER_SIZE);
-		transport->recv_event = wait_obj_new();
 
 		/* buffers for blocking read/write */
 		transport->recv_stream = stream_new(BUFFER_SIZE);
@@ -514,7 +499,6 @@ void transport_free(rdpTransport* transport)
 		stream_free(transport->recv_buffer);
 		stream_free(transport->recv_stream);
 		stream_free(transport->send_stream);
-		wait_obj_free(transport->recv_event);
 		if (transport->tls)
 			tls_free(transport->tls);
 		tcp_free(transport->tcp);

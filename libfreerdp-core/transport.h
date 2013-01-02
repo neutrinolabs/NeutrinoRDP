@@ -54,7 +54,6 @@ struct rdp_transport
 	void* recv_extra;
 	STREAM* recv_buffer;
 	TransportRecv recv_callback;
-	struct wait_obj* recv_event;
 	boolean blocking;
 	boolean process_single_pdu; /* process single pdu in transport_check_fds */
 };
