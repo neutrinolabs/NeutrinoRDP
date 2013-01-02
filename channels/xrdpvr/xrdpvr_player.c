@@ -96,10 +96,10 @@ typedef struct player_state_info
 	void            *plugin;
 	int              player_inited;
 
-	int		xpos;
-	int		ypos;
-	int		width;
-	int		height;
+	int              xpos;
+	int              ypos;
+	int              width;
+	int              height;
 } PLAYER_STATE_INFO;
 
 /* forward declarations local to this file */
@@ -203,7 +203,7 @@ init_player(void *plugin, char *filename)
 	if (psi->audio_codec == NULL)
 	{
 		DEBUG_WARN("xrdp_player.c:init_player: "
-		           "ERROR: audio codec not supported\n");
+				"ERROR: audio codec not supported\n");
 		goto bailout2;
 	}
 
@@ -212,7 +212,7 @@ init_player(void *plugin, char *filename)
 	if (psi->video_codec == NULL)
 	{
 		DEBUG_WARN("xrdp_player.c:init_player: "
-		           "ERROR: video codec not supported\n");
+				"ERROR: video codec not supported\n");
 		goto bailout2;
 	}
 
@@ -221,7 +221,7 @@ init_player(void *plugin, char *filename)
 	if (avcodec_open(psi->audio_codec_ctx, psi->audio_codec) < 0)
 	{
 		DEBUG_WARN("xrdp_player.c:init_player: "
-		           "ERROR: could not open audio decoder\n");
+				"ERROR: could not open audio decoder\n");
 		goto bailout2;
 	}
 
@@ -230,7 +230,7 @@ init_player(void *plugin, char *filename)
 	if (avcodec_open(psi->video_codec_ctx, psi->video_codec) < 0)
 	{
 		DEBUG_WARN("xrdp_player.c:init_player: "
-		           "ERROR: could not open video decoder\n");
+				"ERROR: could not open video decoder\n");
 		goto bailout2;
 	}
 
@@ -642,10 +642,10 @@ play_audio(PLAYER_STATE_INFO *psi, AVPacket *av_pkt)
 			if (len >= 0 && got_frame)
 			{
 				frame_size = av_samples_get_buffer_size(NULL,
-									psi->audio_codec_ctx->channels,
-				                                        decoded_frame->nb_samples,
-									psi->audio_codec_ctx->sample_fmt,
-									1);
+						psi->audio_codec_ctx->channels,
+						decoded_frame->nb_samples,
+						psi->audio_codec_ctx->sample_fmt,
+						1);
 				memcpy(dst, decoded_frame->data[0], frame_size);
 			}
 			av_free(decoded_frame);
