@@ -171,42 +171,138 @@ boolean transport_accept_nla(rdpTransport* transport)
 	return true;
 }
 
-int transport_read(rdpTransport* transport, STREAM* s)
+int transport_read_layer(rdpTransport* transport, uint8* data, int bytes)
 {
+	int read = 0;
 	int status = -1;
 
-	while (true)
+	while (read < bytes)
 	{
 		if (transport->layer == TRANSPORT_LAYER_TLS)
-			status = tls_read(transport->tls, stream_get_tail(s), stream_get_left(s));
+			status = tls_read(transport->tls, data + read, bytes - read);
 		else if (transport->layer == TRANSPORT_LAYER_TCP)
-			status = tcp_read(transport->tcp, stream_get_tail(s), stream_get_left(s));
+			status = tcp_read(transport->tcp, data + read, bytes - read);
+		//else if (transport->layer == TRANSPORT_LAYER_TSG)
+		//	status = tsg_read(transport->tsg, data + read, bytes - read);
 
-		if (status == 0 && transport->blocking)
+		/* blocking means that we can't continue until this is read */
+
+		if (!transport->blocking)
+			return status;
+
+		if (status < 0)
+			return status;
+
+		read += status;
+
+		if (status == 0)
 		{
+			/*
+			 * instead of sleeping, we should wait timeout on the
+			 * socket but this only happens on initial connection
+			 */
 			freerdp_usleep(transport->usleep_interval);
-			continue;
 		}
-
-		break;
 	}
 
+	return read;
+}
+
+int transport_read(rdpTransport* transport, STREAM* s)
+{
+	int status;
+	int pdu_bytes;
+	int stream_bytes;
+	int transport_status;
+
+	transport_status = 0;
+
+	/* first check if we have header */
+	stream_bytes = stream_get_length(s);
+
+	if (stream_bytes < 4)
+	{
+		status = transport_read_layer(transport, s->data + stream_bytes,
+				4 - stream_bytes);
+
+		if (status < 0)
+			return status;
+
+		transport_status += status;
+
+		if ((status + stream_bytes) < 4)
+			return transport_status;
+
+		stream_bytes += status;
+	}
+
+	pdu_bytes = 0;
+	/* if header is present, read in exactly one PDU */
+	if (s->data[0] == 0x03)
+	{
+		/* TPKT header */
+		pdu_bytes = (s->data[2] << 8) | s->data[3];
+	}
+	else if (s->data[0] == 0x30)
+	{
+		/* TSRequest (NLA) */
+		if (s->data[1] & 0x80)
+		{
+			if ((s->data[1] & ~(0x80)) == 1)
+			{
+				pdu_bytes = s->data[2];
+				pdu_bytes += 3;
+			}
+			else if ((s->data[1] & ~(0x80)) == 2)
+			{
+				pdu_bytes = (s->data[2] << 8) | s->data[3];
+				pdu_bytes += 4;
+			}
+			else
+			{
+				printf("Error reading TSRequest!\n");
+			}
+		}
+		else
+		{
+			pdu_bytes = s->data[1];
+			pdu_bytes += 2;
+		}
+	}
+	else
+	{
+		/* Fast-Path Header */
+		if (s->data[1] & 0x80)
+			pdu_bytes = ((s->data[1] & 0x7f) << 8) | s->data[2];
+		else
+			pdu_bytes = s->data[1];
+	}
+
+	status = transport_read_layer(transport, s->data + stream_bytes,
+			pdu_bytes - stream_bytes);
+
+	if (status < 0)
+		return status;
+
+	transport_status += status;
+
 #ifdef WITH_DEBUG_TRANSPORT
-	if (status > 0)
+	/* dump when whole PDU is read */
+	if (stream_bytes + status >= pdu_bytes)
 	{
 		printf("Local < Remote\n");
-		freerdp_hexdump(s->data, status);
+		freerdp_hexdump(s->data, pdu_bytes);
 	}
 #endif
 
-	return status;
+	return transport_status;
 }
 
 static int transport_read_nonblocking(rdpTransport* transport)
 {
 	int status;
 
-	stream_check_size(transport->recv_buffer, 4096);
+	stream_check_size(transport->recv_buffer, 32 * 1024);
 	status = transport_read(transport, transport->recv_buffer);
 
 	if (status <= 0)
@@ -352,10 +448,10 @@ int transport_check_fds(rdpTransport* transport)
 		stream_set_pos(received, length);
 		stream_seal(received);
 		stream_set_pos(received, 0);
-		
+
 		if (transport->recv_callback(transport, received, transport->recv_extra) == false)
 			status = -1;
-	
+
 		stream_free(received);
 
 		if (status < 0)
