@@ -137,6 +137,22 @@ static const TSMFMediaTypeMap tsmf_sub_type_map[] =
 		"MEDIASUBTYPE_DOLBY_AC3",
 		TSMF_SUB_TYPE_AC3
 	},
+	
+	/* 5634504D-0000-0010-8000-00AA00389B71 */
+	/* Video: mpeg4, yuv420p, 1280x720 [PAR 1:1 DAR 16:9], 24 tbr, 24 tbn, 24 tbc */
+	{
+		{ 0x4D, 0x50, 0x34, 0x56, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71 },
+		"MEDIASUBTYPE_MPEG4",
+		TSMF_SUB_TYPE_MPEG4
+	},
+
+	/* 00002000-0000-0010-8000-00AA00389B71 */
+	/* Audio: ac3, 48000 Hz, 5.1, s16, 448 kb/s */
+	{
+		{ 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71 },
+		"MEDIASUBTYPE_DOLBY_AC3",
+		TSMF_SUB_TYPE_AC3
+	},
 
 	{
 		{ 0 },

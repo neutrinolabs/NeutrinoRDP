@@ -241,6 +241,9 @@ static boolean tsmf_ffmpeg_set_format(ITSMFDecoder* decoder, TS_AM_MEDIA_TYPE* m
 		case TSMF_SUB_TYPE_AC3:
 			mdecoder->codec_id = CODEC_ID_AC3;
 			break;
+		case TSMF_SUB_TYPE_MPEG4:
+			mdecoder->codec_id = CODEC_ID_MPEG4;
+			break;
 		default:
 			return false;
 	}
