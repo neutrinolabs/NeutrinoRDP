@@ -59,7 +59,7 @@ static int BitBlt_WHITENESS_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nW
 {
 	int y;
 	uint8* dstp;
-	
+
 	for (y = 0; y < nHeight; y++)
 	{
 		dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
@@ -78,7 +78,7 @@ static int BitBlt_SRCCOPY_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWid
 	uint8* dstp;
 
 	if ((hdcDest->selectedObject != hdcSrc->selectedObject) ||
-	    gdi_CopyOverlap(nXDest, nYDest, nWidth, nHeight, nXSrc, nYSrc) == 0)
+			gdi_CopyOverlap(nXDest, nYDest, nWidth, nHeight, nXSrc, nYSrc) == 0)
 	{
 		for (y = 0; y < nHeight; y++)
 		{
@@ -91,7 +91,7 @@ static int BitBlt_SRCCOPY_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWid
 
 		return 0;
 	}
-	
+
 	if (nYSrc < nYDest)
 	{
 		/* copy down (bottom to top) */
@@ -128,7 +128,7 @@ static int BitBlt_SRCCOPY_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWid
 				memmove(dstp, srcp, nWidth * hdcDest->bytesPerPixel);
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -137,7 +137,7 @@ static int BitBlt_NOTSRCCOPY_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int n
 	int x, y;
 	uint8* srcp;
 	uint8* dstp;
-	
+
 	for (y = 0; y < nHeight; y++)
 	{
 		srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc + y);
@@ -161,7 +161,7 @@ static int BitBlt_DSTINVERT_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nW
 {
 	int x, y;
 	uint8* dstp;
-		
+
 	for (y = 0; y < nHeight; y++)
 	{
 		dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
@@ -184,7 +184,7 @@ static int BitBlt_SRCERASE_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWi
 	int x, y;
 	uint8* srcp;
 	uint8* dstp;
-		
+
 	for (y = 0; y < nHeight; y++)
 	{
 		srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc + y);
@@ -209,7 +209,7 @@ static int BitBlt_NOTSRCERASE_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int 
 	int x, y;
 	uint8* srcp;
 	uint8* dstp;
-		
+
 	for (y = 0; y < nHeight; y++)
 	{
 		srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc + y);
@@ -234,7 +234,7 @@ static int BitBlt_SRCINVERT_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nW
 	int x, y;
 	uint8* srcp;
 	uint8* dstp;
-		
+
 	for (y = 0; y < nHeight; y++)
 	{
 		srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc + y);
@@ -259,7 +259,7 @@ static int BitBlt_SRCAND_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidt
 	int x, y;
 	uint8* srcp;
 	uint8* dstp;
-		
+
 	for (y = 0; y < nHeight; y++)
 	{
 		srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc + y);
@@ -284,7 +284,7 @@ static int BitBlt_SRCPAINT_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWi
 	int x, y;
 	uint8* srcp;
 	uint8* dstp;
-		
+
 	for (y = 0; y < nHeight; y++)
 	{
 		srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc + y);
@@ -316,18 +316,18 @@ static int BitBlt_SPna_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth,
 	uint8* srcp;
 	uint8* dstp;
 	uint8* patp;
-	
+
 	for (y = 0; y < nHeight; y++)
 	{
 		srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc + y);
-		dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);		
+		dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
 
 		if (dstp != 0)
 		{
 			for (x = 0; x < nWidth; x++)
 			{
 				patp = gdi_get_brush_pointer(hdcDest, x, y);
-				
+
 				*dstp = *srcp & ~(*patp);
 				patp++;
 				srcp++;
@@ -335,7 +335,7 @@ static int BitBlt_SPna_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth,
 			}
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -396,7 +396,7 @@ static int BitBlt_MERGECOPY_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nW
 	uint8* srcp;
 	uint8* dstp;
 	uint8* patp;
-	
+
 	for (y = 0; y < nHeight; y++)
 	{
 		srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc + y);
@@ -407,7 +407,7 @@ static int BitBlt_MERGECOPY_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nW
 			for (x = 0; x < nWidth; x++)
 			{
 				patp = gdi_get_brush_pointer(hdcDest, x, y);
-				
+
 				*dstp = *srcp & *patp;
 				patp++;
 				srcp++;
@@ -415,7 +415,7 @@ static int BitBlt_MERGECOPY_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nW
 			}
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -424,7 +424,7 @@ static int BitBlt_MERGEPAINT_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int n
 	int x, y;
 	uint8* srcp;
 	uint8* dstp;
-	
+
 	for (y = 0; y < nHeight; y++)
 	{
 		srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc + y);
@@ -433,14 +433,14 @@ static int BitBlt_MERGEPAINT_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int n
 		if (dstp != 0)
 		{
 			for (x = 0; x < nWidth; x++)
-			{				
+			{
 				*dstp = ~(*srcp) | *dstp;
 				srcp++;
 				dstp++;
 			}
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -532,7 +532,7 @@ static int BitBlt_PATINVERT_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nW
 			}
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -542,7 +542,7 @@ static int BitBlt_PATPAINT_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWi
 	uint8* srcp;
 	uint8* dstp;
 	uint8* patp;
-	
+
 	for (y = 0; y < nHeight; y++)
 	{
 		srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc + y);
@@ -553,7 +553,7 @@ static int BitBlt_PATPAINT_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWi
 			for (x = 0; x < nWidth; x++)
 			{
 				patp = gdi_get_brush_pointer(hdcDest, x, y);
-				
+
 				*dstp = *dstp | (*patp | ~(*srcp));
 				patp++;
 				srcp++;
@@ -561,7 +561,7 @@ static int BitBlt_PATPAINT_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWi
 			}
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -577,9 +577,9 @@ int BitBlt_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight
 		if (gdi_ClipCoords(hdcDest, &nXDest, &nYDest, &nWidth, &nHeight, NULL, NULL) == 0)
 			return 0;
 	}
-	
+
 	gdi_InvalidateRegion(hdcDest, nXDest, nYDest, nWidth, nHeight);
-	
+
 	switch (rop)
 	{
 		case GDI_BLACKNESS:
@@ -605,7 +605,7 @@ int BitBlt_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight
 		case GDI_DSPDxax:
 			return BitBlt_DSPDxax_8bpp(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc);
 			break;
-			
+
 		case GDI_NOTSRCCOPY:
 			return BitBlt_NOTSRCCOPY_8bpp(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc);
 			break;
@@ -654,7 +654,7 @@ int BitBlt_8bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight
 			return BitBlt_PATPAINT_8bpp(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc);
 			break;
 	}
-	
+
 	printf("BitBlt: unknown rop: 0x%08X\n", rop);
 	return 1;
 }
@@ -663,7 +663,7 @@ int PatBlt_8bpp(HGDI_DC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, in
 {
 	if (gdi_ClipCoords(hdc, &nXLeft, &nYLeft, &nWidth, &nHeight, NULL, NULL) == 0)
 		return 0;
-	
+
 	gdi_InvalidateRegion(hdc, nXLeft, nYLeft, nWidth, nHeight);
 
 	switch (rop)
@@ -675,7 +675,7 @@ int PatBlt_8bpp(HGDI_DC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, in
 		case GDI_PATINVERT:
 			return BitBlt_PATINVERT_8bpp(hdc, nXLeft, nYLeft, nWidth, nHeight);
 			break;
-			
+
 		case GDI_DSTINVERT:
 			return BitBlt_DSTINVERT_8bpp(hdc, nXLeft, nYLeft, nWidth, nHeight);
 			break;
@@ -695,7 +695,7 @@ int PatBlt_8bpp(HGDI_DC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, in
 		default:
 			break;
 	}
-	
+
 	printf("PatBlt: unknown rop: 0x%08X\n", rop);
 	return 1;
 }
