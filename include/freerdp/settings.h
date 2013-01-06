@@ -2,7 +2,7 @@
  * FreeRDP: A Remote Desktop Protocol Client
  * RDP Settings
  *
- * Copyright 2009-2011 Jay Sorg
+ * Copyright 2009-2013 Jay Sorg <jay.sorg@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -368,7 +368,11 @@ struct rdp_settings
 	uint32 ns_codec_id; /* 283 */
 	uint32 rfx_codec_mode; /* 284 */
 	boolean frame_acknowledge; /* 285 */
-	uint32 paddingM[296 - 286]; /* 286 */
+	boolean jpeg_codec; /* 286 */
+	uint32 jpeg_codec_id; /* 287 */
+	uint32 jpeg_quality; /* 288 */
+	uint32 v3_codec_id; /* 289 */
+	uint32 paddingM[296 - 290]; /* 290 */
 
 	/* Recording */
 	boolean dump_rfx; /* 296 */

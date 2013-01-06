@@ -3,6 +3,7 @@
  * RDP Constants
  *
  * Copyright 2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
+ * Copyright 2009-2013 Jay Sorg <jay.sorg@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +28,7 @@ enum RDP_CODEC_ID
 {
 	CODEC_ID_NONE = 0x00,
 	CODEC_ID_NSCODEC = 0x01,
+	CODEC_ID_JPEG = 0x02,
 	CODEC_ID_REMOTEFX = 0x03
 };
 
