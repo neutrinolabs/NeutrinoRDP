@@ -65,7 +65,7 @@ void* brush_cache_get(rdpBrushCache* brush, uint32 index, uint32* bpp)
 	}
 	else
 	{
-		if (index > brush->maxEntries)
+		if (index >= brush->maxEntries)
 		{
 			printf("invalid brush (%d bpp) index: 0x%04X\n", *bpp, index);
 			return NULL;
@@ -90,7 +90,7 @@ void brush_cache_put(rdpBrushCache* brush, uint32 index, void* entry, uint32 bpp
 
 	if (bpp == 1)
 	{
-		if (index > brush->maxMonoEntries)
+		if (index >= brush->maxMonoEntries)
 		{
 			printf("invalid brush (%d bpp) index: 0x%04X\n", bpp, index);
 			return;
@@ -106,7 +106,7 @@ void brush_cache_put(rdpBrushCache* brush, uint32 index, void* entry, uint32 bpp
 	}
 	else
 	{
-		if (index > brush->maxEntries)
+		if (index >= brush->maxEntries)
 		{
 			printf("invalid brush (%d bpp) index: 0x%04X\n", bpp, index);
 			return;
