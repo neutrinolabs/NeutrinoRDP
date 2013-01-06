@@ -899,36 +899,36 @@ void update_read_glyph_index_order(STREAM* s, ORDER_INFO* orderInfo, GLYPH_INDEX
 		update_read_color(s, &glyph_index->foreColor);
 
 	if (orderInfo->fieldFlags & ORDER_FIELD_07)
-		stream_read_uint16(s, glyph_index->bkLeft);
+		stream_read_sint16(s, glyph_index->bkLeft);
 
 	if (orderInfo->fieldFlags & ORDER_FIELD_08)
-		stream_read_uint16(s, glyph_index->bkTop);
+		stream_read_sint16(s, glyph_index->bkTop);
 
 	if (orderInfo->fieldFlags & ORDER_FIELD_09)
-		stream_read_uint16(s, glyph_index->bkRight);
+		stream_read_sint16(s, glyph_index->bkRight);
 
 	if (orderInfo->fieldFlags & ORDER_FIELD_10)
-		stream_read_uint16(s, glyph_index->bkBottom);
+		stream_read_sint16(s, glyph_index->bkBottom);
 
 	if (orderInfo->fieldFlags & ORDER_FIELD_11)
-		stream_read_uint16(s, glyph_index->opLeft);
+		stream_read_sint16(s, glyph_index->opLeft);
 
 	if (orderInfo->fieldFlags & ORDER_FIELD_12)
-		stream_read_uint16(s, glyph_index->opTop);
+		stream_read_sint16(s, glyph_index->opTop);
 
 	if (orderInfo->fieldFlags & ORDER_FIELD_13)
-		stream_read_uint16(s, glyph_index->opRight);
+		stream_read_sint16(s, glyph_index->opRight);
 
 	if (orderInfo->fieldFlags & ORDER_FIELD_14)
-		stream_read_uint16(s, glyph_index->opBottom);
+		stream_read_sint16(s, glyph_index->opBottom);
 
 	update_read_brush(s, &glyph_index->brush, orderInfo->fieldFlags >> 14);
 
 	if (orderInfo->fieldFlags & ORDER_FIELD_20)
-		stream_read_uint16(s, glyph_index->x);
+		stream_read_sint16(s, glyph_index->x);
 
 	if (orderInfo->fieldFlags & ORDER_FIELD_21)
-		stream_read_uint16(s, glyph_index->y);
+		stream_read_sint16(s, glyph_index->y);
 
 	if (orderInfo->fieldFlags & ORDER_FIELD_22)
 	{
@@ -2017,4 +2017,3 @@ void update_recv_order(rdpUpdate* update, STREAM* s)
 	else
 		update_recv_primary_order(update, s, controlFlags);
 }
-
