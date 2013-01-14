@@ -258,6 +258,48 @@ static boolean tsmf_ffmpeg_set_format(ITSMFDecoder* decoder, TS_AM_MEDIA_TYPE* m
 	return true;
 }
 
+#define SAVE_VIDEO 0
+
+#if SAVE_VIDEO
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+static int n_save_data(const uint8* data, uint32 data_size, int width, int height)
+{
+	int fd;
+	struct _header
+	{
+		char tag[4];
+		int width;
+		int height;
+		int bytes_follow;
+	} header;
+	
+	fd = open("video.bin", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+	lseek(fd, 0, SEEK_END);
+	header.tag[0] = 'B';
+	header.tag[1] = 'E';
+	header.tag[2] = 'E';
+	header.tag[3] = 'F';
+	header.width = width;
+	header.height = height;
+	header.bytes_follow = data_size;
+	if (write(fd, &header, 16) != 16)
+	{
+		printf("save_data: write failed\n");
+	}
+
+	if (write(fd, data, data_size) != data_size)
+	{
+		printf("save_data: write failed\n");
+	}
+	close(fd);
+	return 0;
+}
+#endif
+
 static boolean tsmf_ffmpeg_decode_video(ITSMFDecoder* decoder, const uint8* data, uint32 data_size, uint32 extensions)
 {
 	TSMFFFmpegDecoder* mdecoder = (TSMFFFmpegDecoder*) decoder;
@@ -313,6 +355,10 @@ static boolean tsmf_ffmpeg_decode_video(ITSMFDecoder* decoder, const uint8* data
 
 		av_free(frame);
 	}
+
+#if SAVE_VIDEO
+	n_save_data(data, data_size, mdecoder->codec_context->width, mdecoder->codec_context->height);
+#endif
 
 	return ret;
 }
