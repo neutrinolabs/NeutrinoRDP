@@ -44,6 +44,7 @@ struct xf_xv_context
 {
 	long xv_port;
 	Atom xv_colorkey_atom;
+	Atom xv_autopaint_colorkey_atom;
 	int xv_image_size;
 	int xv_shmid;
 	char* xv_shmaddr;
@@ -77,6 +78,7 @@ void xf_tsmf_init(xfInfo* xfi, long xv_port)
 	xfi->xv_context = xv;
 
 	xv->xv_colorkey_atom = None;
+	xv->xv_autopaint_colorkey_atom = None;
 	xv->xv_image_size = 0;
 	xv->xv_port = xv_port;
 
@@ -125,9 +127,15 @@ void xf_tsmf_init(xfInfo* xfi, long xv_port)
 	{
 		if (strcmp(attr[i].name, "XV_COLORKEY") == 0)
 		{
-			xv->xv_colorkey_atom = XInternAtom(xfi->display, "XV_COLORKEY", false);
-			XvSetPortAttribute(xfi->display, xv->xv_port, xv->xv_colorkey_atom, attr[i].min_value + 1);
-			break;
+			xv->xv_colorkey_atom =
+					XInternAtom(xfi->display, "XV_COLORKEY", false);
+			XvSetPortAttribute(xfi->display, xv->xv_port, xv->xv_colorkey_atom, 1);
+		}
+		if (strcmp(attr[i].name, "XV_AUTOPAINT_COLORKEY") == 0)
+		{
+			xv->xv_autopaint_colorkey_atom =
+					XInternAtom(xfi->display, "XV_AUTOPAINT_COLORKEY", false);
+			XvSetPortAttribute(xfi->display, xv->xv_port, xv->xv_autopaint_colorkey_atom, 0);
 		}
 	}
 	XFree(attr);
@@ -220,7 +228,7 @@ static void xf_process_tsmf_video_frame_event(xfInfo* xfi, RDP_VIDEO_FRAME_EVENT
 	if (vevent->x < -2048 || vevent->y < -2048 || vevent->num_visible_rects <= 0)
 		return;
 
-	if (xv->xv_colorkey_atom != None)
+	if (xv->xv_colorkey_atom != None && 0)
 	{
 		XvGetPortAttribute(xfi->display, xv->xv_port, xv->xv_colorkey_atom, &colorkey);
 		XSetFunction(xfi->display, xfi->gc, GXcopy);
