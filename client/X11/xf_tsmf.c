@@ -3,6 +3,7 @@
  * X11 Video Redirection
  *
  * Copyright 2010-2011 Vic Lee
+ * Copyright 2012-2013 Jay Sorg <jay.sorg@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -210,7 +211,7 @@ static void xf_process_tsmf_video_frame_event(xfInfo* xfi, RDP_VIDEO_FRAME_EVENT
 	XvImage * image;
 	int colorkey = 0;
 	XShmSegmentInfo shminfo;
-	xfXvContext* xv = (xfXvContext*) xfi->xv_context;
+	xfXvContext* xv = (xfXvContext*) (xfi->xv_context);
 
 	if (xv->xv_port == 0)
 		return;
