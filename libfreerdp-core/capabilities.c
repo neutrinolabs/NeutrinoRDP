@@ -1832,19 +1832,12 @@ boolean rdp_read_capability_sets(STREAM* s, rdpSettings* settings, uint16 number
 	return true;
 }
 
-boolean rdp_recv_demand_active(rdpRdp* rdp, STREAM* s)
+boolean rdp_recv_get_active_header(rdpRdp* rdp, STREAM* s, uint16* pChannelId)
 {
 	uint16 length;
-	uint16 channelId;
-	uint16 pduType;
-	uint16 pduLength;
-	uint16 pduSource;
-	uint16 numberCapabilities;
-	uint16 lengthSourceDescriptor;
-	uint16 lengthCombinedCapabilities;
 	uint16 securityFlags;
 
-	if (!rdp_read_header(rdp, s, &length, &channelId))
+	if (!rdp_read_header(rdp, s, &length, pChannelId))
 		return false;
 
 	if (rdp->disconnect)
@@ -1863,11 +1856,30 @@ boolean rdp_recv_demand_active(rdpRdp* rdp, STREAM* s)
 		}
 	}
 
-	if (channelId != MCS_GLOBAL_CHANNEL_ID)
+	if (*pChannelId != MCS_GLOBAL_CHANNEL_ID)
 	{
 		printf("channelId bad\n");
 		return false;
 	}
+
+	return true;
+}
+
+boolean rdp_recv_demand_active(rdpRdp* rdp, STREAM* s)
+{
+	uint16 channelId;
+	uint16 pduType;
+	uint16 pduLength;
+	uint16 pduSource;
+	uint16 numberCapabilities;
+	uint16 lengthSourceDescriptor;
+	uint16 lengthCombinedCapabilities;
+
+	if (!rdp_recv_get_active_header(rdp, s, &channelId))
+		return false;
+
+	if (rdp->disconnect)
+		return true;
 
 	if (!rdp_read_share_control_header(s, &pduLength, &pduType, &pduSource))
 	{
@@ -1966,7 +1978,6 @@ boolean rdp_send_demand_active(rdpRdp* rdp)
 
 boolean rdp_recv_confirm_active(rdpRdp* rdp, STREAM* s)
 {
-	uint16 length;
 	uint16 channelId;
 	uint16 pduType;
 	uint16 pduLength;
@@ -1974,25 +1985,8 @@ boolean rdp_recv_confirm_active(rdpRdp* rdp, STREAM* s)
 	uint16 lengthSourceDescriptor;
 	uint16 lengthCombinedCapabilities;
 	uint16 numberCapabilities;
-	uint16 securityFlags;
 
-	if (!rdp_read_header(rdp, s, &length, &channelId))
-		return false;
-
-	if (rdp->settings->encryption)
-	{
-		rdp_read_security_header(s, &securityFlags);
-		if (securityFlags & SEC_ENCRYPT)
-		{
-			if (!rdp_decrypt(rdp, s, length - 4, securityFlags))
-			{
-				printf("rdp_decrypt failed\n");
-				return false;
-			}
-		}
-	}
-
-	if (channelId != MCS_GLOBAL_CHANNEL_ID)
+	if (!rdp_recv_get_active_header(rdp, s, &channelId))
 		return false;
 
 	if (!rdp_read_share_control_header(s, &pduLength, &pduType, &pduSource))

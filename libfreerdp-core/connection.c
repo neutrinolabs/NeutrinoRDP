@@ -435,6 +435,7 @@ boolean rdp_client_connect_demand_active(rdpRdp* rdp, STREAM* s)
 	uint8* mark;
 	uint16 width;
 	uint16 height;
+	uint16 channelId;
 
 	width = rdp->settings->width;
 	height = rdp->settings->height;
@@ -444,9 +445,13 @@ boolean rdp_client_connect_demand_active(rdpRdp* rdp, STREAM* s)
 	if (!rdp_recv_demand_active(rdp, s))
 	{
 		stream_set_mark(s, mark);
-		stream_seek(s, RDP_PACKET_HEADER_MAX_LENGTH);
+		rdp_recv_get_active_header(rdp, s, &channelId);
+		/* Was stream_seek(s, RDP_PACKET_HEADER_MAX_LENGTH);
+		 * but the headers aren't always that length,
+		 * so that could result in a bad offset.
+		 */
 
-		if (rdp_recv_out_of_sequence_pdu(rdp, s) != true)
+		if (rdp_recv_out_of_sequence_pdu(rdp, s) == false)
 			return false;
 
 		return true;
