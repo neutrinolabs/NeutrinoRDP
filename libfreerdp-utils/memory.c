@@ -2,7 +2,7 @@
  * FreeRDP: A Remote Desktop Protocol Client
  * Memory Utils
  *
- * Copyright 2009-2011 Jay Sorg
+ * Copyright 2009-2013 Jay Sorg
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
 
 #include <freerdp/utils/memory.h>
 
@@ -130,4 +132,32 @@ char* xstrdup(const char* str)
 		perror("strdup");
 
 	return mem;
+}
+
+struct shm_info_t* create_shm_info(size_t size)
+{
+	struct shm_info_t* rv;
+
+	rv = xnew(struct shm_info_t);
+	rv->bytes = (int)size;
+#ifdef _WIN32
+	rv->ptr = xmalloc(size);
+#else
+	rv->shmid = shmget(IPC_PRIVATE, size, IPC_CREAT | 0777);
+	rv->ptr = shmat(rv->shmid, 0, 0);
+#endif
+	return rv;
+}
+
+void delete_shm_info(struct shm_info_t* shm_info)
+{
+	if (shm_info == NULL)
+		return;
+#ifdef _WIN32
+	xfree(shm_info->ptr);
+#else
+	shmdt(shm_info->ptr);
+	shmctl(shm_info->shmid, IPC_RMID, NULL);
+#endif
+	xfree(shm_info);
 }

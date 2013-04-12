@@ -3,6 +3,7 @@
  * X11 Graphical Objects
  *
  * Copyright 2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
+ * Copyright 2013 Jay Sorg <jay.sorg@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +21,10 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <X11/extensions/XShm.h>
+
 #ifdef WITH_XCURSOR
 #include <X11/Xcursor/Xcursor.h>
 #endif
@@ -35,36 +40,50 @@
 
 void xf_Bitmap_New(rdpContext* context, rdpBitmap* bitmap)
 {
-	uint8* data;
 	Pixmap pixmap;
 	XImage* image;
 	xfInfo* xfi = ((xfContext*) context)->xfi;
+	int bytes;
+	XShmSegmentInfo shminfo;
 
 	XSetFunction(xfi->display, xfi->gc, GXcopy);
 	pixmap = XCreatePixmap(xfi->display, xfi->drawable, bitmap->width, bitmap->height, xfi->depth);
 
 	if (bitmap->data != NULL)
 	{
-		data = freerdp_image_convert(bitmap->data, NULL,
-				bitmap->width, bitmap->height, bitmap->bpp, xfi->bpp, xfi->clrconv);
-
-		if (bitmap->ephemeral != true)
+		bytes = bitmap->width * bitmap->height * 4;
+		if (xfi->shm_info == 0)
 		{
-			image = XCreateImage(xfi->display, xfi->visual, xfi->depth,
-				ZPixmap, 0, (char*) data, bitmap->width, bitmap->height, xfi->scanline_pad, 0);
-
-			XPutImage(xfi->display, pixmap, xfi->gc, image, 0, 0, 0, 0, bitmap->width, bitmap->height);
+			xfi->shm_info = create_shm_info(bytes);
+		}
+		else if (xfi->shm_info->bytes < bytes)
+		{
+			delete_shm_info(xfi->shm_info);
+			xfi->shm_info = create_shm_info(bytes);
+		}
+		if (bitmap->ephemeral == false)
+		{
+			freerdp_image_convert(bitmap->data, xfi->shm_info->ptr,
+					bitmap->width, bitmap->height, bitmap->bpp,
+					xfi->bpp, xfi->clrconv);
+			memset(&shminfo, 0, sizeof(shminfo));
+			shminfo.shmid = xfi->shm_info->shmid;
+			shminfo.shmaddr = xfi->shm_info->ptr;
+			image = XShmCreateImage(xfi->display, xfi->visual, xfi->depth,
+					ZPixmap, xfi->shm_info->ptr, &shminfo,
+					bitmap->width, bitmap->height);
+			XShmAttach(xfi->display, &shminfo);
+			XShmPutImage(xfi->display, pixmap, xfi->gc, image, 0, 0, 0, 0,
+					bitmap->width, bitmap->height, false);
+			XSync(xfi->display, false);
+			XShmDetach(xfi->display, &shminfo);
 			XFree(image);
-
-			if (data != bitmap->data)
-				xfree(data);
 		}
 		else
 		{
-			if (data != bitmap->data)
-				xfree(bitmap->data);
-
-			bitmap->data = data;
+			freerdp_image_convert(bitmap->data, xfi->shm_info->ptr,
+					bitmap->width, bitmap->height, bitmap->bpp,
+					xfi->bpp, xfi->clrconv);
 		}
 	}
 
@@ -84,21 +103,28 @@ void xf_Bitmap_Paint(rdpContext* context, rdpBitmap* bitmap)
 	XImage* image;
 	int width, height;
 	xfInfo* xfi = ((xfContext*) context)->xfi;
+	XShmSegmentInfo shminfo;
 
 	width = bitmap->right - bitmap->left + 1;
 	height = bitmap->bottom - bitmap->top + 1;
 
 	XSetFunction(xfi->display, xfi->gc, GXcopy);
 
-	image = XCreateImage(xfi->display, xfi->visual, xfi->depth,
-			ZPixmap, 0, (char*) bitmap->data, bitmap->width, bitmap->height, xfi->scanline_pad, 0);
-
-	XPutImage(xfi->display, xfi->primary, xfi->gc,
-			image, 0, 0, bitmap->left, bitmap->top, width, height);
-
+	memset(&shminfo, 0, sizeof(shminfo));
+	shminfo.shmid = xfi->shm_info->shmid;
+	shminfo.shmaddr = xfi->shm_info->ptr;
+	image = XShmCreateImage(xfi->display, xfi->visual, xfi->depth,
+			ZPixmap, xfi->shm_info->ptr, &shminfo,
+			bitmap->width, bitmap->height);
+	XShmAttach(xfi->display, &shminfo);
+	XShmPutImage(xfi->display, xfi->primary, xfi->gc, image, 0, 0,
+			bitmap->left, bitmap->top,
+			width, height, false);
+	XSync(xfi->display, false);
+	XShmDetach(xfi->display, &shminfo);
 	XFree(image);
 
-	if (xfi->remote_app != true)
+	if (xfi->remote_app == false)
 	{
 		XCopyArea(xfi->display, xfi->primary, xfi->drawable, xfi->gc,
 				bitmap->left, bitmap->top, width, height, bitmap->left, bitmap->top);

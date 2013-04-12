@@ -64,6 +64,7 @@ struct rdp_bitmap
 	boolean compressed; /* 32 */
 	boolean ephemeral; /* 33 */
 	uint32 paddingC[64 - 34]; /* 34 */
+
 };
 
 FREERDP_API rdpBitmap* Bitmap_Alloc(rdpContext* context);

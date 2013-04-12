@@ -50,10 +50,7 @@ void Bitmap_Free(rdpContext* context, rdpBitmap* bitmap)
 	if (bitmap != NULL)
 	{
 		bitmap->Free(context, bitmap);
-
-		if (bitmap->data != NULL)
-			xfree(bitmap->data);
-
+		xfree(bitmap->data);
 		xfree(bitmap);
 	}
 }

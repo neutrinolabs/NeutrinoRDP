@@ -2,7 +2,7 @@
  * FreeRDP: A Remote Desktop Protocol Client
  * Memory Utils
  *
- * Copyright 2009-2011 Jay Sorg
+ * Copyright 2009-2013 Jay Sorg
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,21 @@
 #include <stddef.h>
 #include <freerdp/api.h>
 
+struct shm_info_t
+{
+	int shmid;
+	int bytes;
+	void* ptr;
+};
+
 FREERDP_API void* xmalloc(size_t size);
 FREERDP_API void* xzalloc(size_t size);
 FREERDP_API void* xrealloc(void* ptr, size_t size);
 FREERDP_API void xfree(void* ptr);
 FREERDP_API char* xstrdup(const char* str);
+
+FREERDP_API struct shm_info_t* create_shm_info(size_t size);
+FREERDP_API void delete_shm_info(struct shm_info_t* shm_info);
 
 #define xnew(_type) (_type*)xzalloc(sizeof(_type))
 
