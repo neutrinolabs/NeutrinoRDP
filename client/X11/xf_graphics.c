@@ -3,7 +3,7 @@
  * X11 Graphical Objects
  *
  * Copyright 2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
- * Copyright 2013 Jay Sorg <jay.sorg@gmail.com>
+ * Copyright 2012-2013 Jay Sorg <jay.sorg@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,16 +100,16 @@ void xf_Bitmap_Free(rdpContext* context, rdpBitmap* bitmap)
 
 void xf_Bitmap_Paint(rdpContext* context, rdpBitmap* bitmap)
 {
+	Drawable dst;
 	XImage* image;
 	int width, height;
 	xfInfo* xfi = ((xfContext*) context)->xfi;
 	XShmSegmentInfo shminfo;
 
+	GET_DST(xfi, dst);
 	width = bitmap->right - bitmap->left + 1;
 	height = bitmap->bottom - bitmap->top + 1;
-
 	XSetFunction(xfi->display, xfi->gc, GXcopy);
-
 	memset(&shminfo, 0, sizeof(shminfo));
 	shminfo.shmid = xfi->shm_info->shmid;
 	shminfo.shmaddr = xfi->shm_info->ptr;
@@ -117,19 +117,17 @@ void xf_Bitmap_Paint(rdpContext* context, rdpBitmap* bitmap)
 			ZPixmap, xfi->shm_info->ptr, &shminfo,
 			bitmap->width, bitmap->height);
 	XShmAttach(xfi->display, &shminfo);
-	XShmPutImage(xfi->display, xfi->primary, xfi->gc, image, 0, 0,
+	XShmPutImage(xfi->display, dst, xfi->gc, image, 0, 0,
 			bitmap->left, bitmap->top,
 			width, height, false);
 	XSync(xfi->display, false);
 	XShmDetach(xfi->display, &shminfo);
 	XFree(image);
-
-	if (xfi->remote_app == false)
+	if (!xfi->remote_app && !xfi->skip_bs)
 	{
 		XCopyArea(xfi->display, xfi->primary, xfi->drawable, xfi->gc,
 				bitmap->left, bitmap->top, width, height, bitmap->left, bitmap->top);
 	}
-
 	gdi_InvalidateRegion(xfi->hdc, bitmap->left, bitmap->top, width, height);
 }
 
@@ -302,34 +300,34 @@ void xf_Glyph_Free(rdpContext* context, rdpGlyph* glyph)
 
 void xf_Glyph_Draw(rdpContext* context, rdpGlyph* glyph, int x, int y)
 {
+	Drawable dst;
 	xfGlyph* xf_glyph;
 	xfInfo* xfi = ((xfContext*) context)->xfi;
 
 	xf_glyph = (xfGlyph*) glyph;
-
+	GET_DST(xfi, dst);
 	XSetStipple(xfi->display, xfi->gc, xf_glyph->pixmap);
 	XSetTSOrigin(xfi->display, xfi->gc, x, y);
-	XFillRectangle(xfi->display, xfi->drawing, xfi->gc, x, y, glyph->cx, glyph->cy);
+	XFillRectangle(xfi->display, dst, xfi->gc, x, y, glyph->cx, glyph->cy);
 	XSetStipple(xfi->display, xfi->gc, xfi->bitmap_mono);
 }
 
 void xf_Glyph_BeginDraw(rdpContext* context, int x, int y, int width, int height, uint32 bgcolor, uint32 fgcolor)
 {
+	Drawable dst;
 	xfInfo* xfi = ((xfContext*) context)->xfi;
 
-	bgcolor = (xfi->clrconv->invert)?
-		freerdp_color_convert_var_bgr(bgcolor, xfi->srcBpp, 32, xfi->clrconv):
-		freerdp_color_convert_var_rgb(bgcolor, xfi->srcBpp, 32, xfi->clrconv);
-
+	bgcolor = (xfi->clrconv->invert) ?
+			freerdp_color_convert_var_bgr(bgcolor, xfi->srcBpp, 32, xfi->clrconv) :
+			freerdp_color_convert_var_rgb(bgcolor, xfi->srcBpp, 32, xfi->clrconv);
 	fgcolor = (xfi->clrconv->invert)?
-		freerdp_color_convert_var_bgr(fgcolor, xfi->srcBpp, 32, xfi->clrconv):
-		freerdp_color_convert_var_rgb(fgcolor, xfi->srcBpp, 32, xfi->clrconv);
-
+			freerdp_color_convert_var_bgr(fgcolor, xfi->srcBpp, 32, xfi->clrconv) :
+			freerdp_color_convert_var_rgb(fgcolor, xfi->srcBpp, 32, xfi->clrconv);
+	GET_DST(xfi, dst);
 	XSetFunction(xfi->display, xfi->gc, GXcopy);
 	XSetFillStyle(xfi->display, xfi->gc, FillSolid);
 	XSetForeground(xfi->display, xfi->gc, fgcolor);
-	XFillRectangle(xfi->display, xfi->drawing, xfi->gc, x, y, width, height);
-
+	XFillRectangle(xfi->display, dst, xfi->gc, x, y, width, height);
 	XSetForeground(xfi->display, xfi->gc, bgcolor);
 	XSetBackground(xfi->display, xfi->gc, fgcolor);
 	XSetFillStyle(xfi->display, xfi->gc, FillStippled);
@@ -341,11 +339,10 @@ void xf_Glyph_EndDraw(rdpContext* context, int x, int y, int width, int height, 
 
 	if (xfi->drawing == xfi->primary)
 	{
-		if (xfi->remote_app != true)
+		if (!xfi->remote_app && !xfi->skip_bs)
 		{
 			XCopyArea(xfi->display, xfi->primary, xfi->drawable, xfi->gc, x, y, width, height, x, y);
 		}
-
 		gdi_InvalidateRegion(xfi->hdc, x, y, width, height);
 	}
 }

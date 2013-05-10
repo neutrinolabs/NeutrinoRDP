@@ -33,6 +33,26 @@ typedef struct xf_info xfInfo;
 #include "xf_window.h"
 #include "xf_monitor.h"
 
+#define GET_DST(_xfi, _dst) \
+do \
+{ \
+  if (xfi->drawing == xfi->primary) \
+  { \
+    if (_xfi->skip_bs) \
+    { \
+      _dst = _xfi->drawable; \
+    } \
+    else \
+    { \
+      _dst = _xfi->primary; \
+    } \
+  } \
+  else \
+  { \
+    _dst = _xfi->drawing; \
+  } \
+} while (0)
+
 struct xf_WorkArea
 {
 	uint32 x;
@@ -156,6 +176,7 @@ struct xf_info
 	Atom WM_DELETE_WINDOW;
 
 	struct shm_info_t* shm_info;
+	int skip_bs;
 };
 
 void xf_toggle_fullscreen(xfInfo* xfi);

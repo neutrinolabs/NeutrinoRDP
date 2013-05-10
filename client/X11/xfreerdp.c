@@ -615,6 +615,8 @@ boolean xf_post_connect(freerdp* instance)
 	cache = instance->context->cache;
 	channels = xfi->_context->channels;
 
+	xfi->skip_bs = 0;
+
 	if (xf_get_pixmap_info(xfi) != true)
 		return false;
 
