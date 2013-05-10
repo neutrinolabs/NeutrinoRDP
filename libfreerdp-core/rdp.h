@@ -192,6 +192,8 @@ boolean rdp_send(rdpRdp* rdp, STREAM* s, uint16 channel_id);
 void rdp_recv(rdpRdp* rdp);
 
 int rdp_send_channel_data(rdpRdp* rdp, int channel_id, uint8* data, int size);
+int rdp_send_frame_ack(rdpRdp* rdp, int frame);
+int rdp_send_invalidate(rdpRdp* rdp, int code, int x, int y, int w, int h);
 
 boolean rdp_recv_out_of_sequence_pdu(rdpRdp* rdp, STREAM* s);
 

@@ -52,6 +52,8 @@ typedef boolean (*pAuthenticate)(freerdp* instance, char** username, char** pass
 typedef boolean (*pVerifyCertificate)(freerdp* instance, char* subject, char* issuer, char* fingerprint);
 
 typedef int (*pSendChannelData)(freerdp* instance, int channelId, uint8* data, int size);
+typedef int (*pSendFrameAck)(freerdp* instance, int frame);
+typedef int (*pSendInvalidate)(freerdp* instance, int code, int x, int y, int w, int h);
 typedef int (*pReceiveChannelData)(freerdp* instance, int channelId, uint8* data, int size, int flags, int total_size);
 
 struct rdp_context
@@ -96,7 +98,10 @@ struct rdp_freerdp
 
 	pSendChannelData SendChannelData; /* 64 */
 	pReceiveChannelData ReceiveChannelData; /* 65 */
-	uint32 paddingE[80 - 66]; /* 66 */
+	pSendFrameAck SendFrameAck; /* 66 */
+	pSendInvalidate SendInvalidate; /* 67 */
+
+	uint32 paddingE[80 - 68]; /* 68 */
 };
 
 FREERDP_API void freerdp_context_new(freerdp* instance);

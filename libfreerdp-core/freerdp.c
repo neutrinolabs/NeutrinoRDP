@@ -137,6 +137,16 @@ static int freerdp_send_channel_data(freerdp* instance, int channel_id, uint8* d
 	return rdp_send_channel_data(instance->context->rdp, channel_id, data, size);
 }
 
+static int freerdp_send_frame_ack(freerdp* instance, int frame)
+{
+	return rdp_send_frame_ack(instance->context->rdp, frame);
+}
+
+static int freerdp_send_invalidate(freerdp* instance, int code, int x, int y, int w, int h)
+{
+	return rdp_send_invalidate(instance->context->rdp, code, x, y, w, h);
+}
+
 boolean freerdp_disconnect(freerdp* instance)
 {
 	rdpRdp* rdp;
@@ -214,6 +224,8 @@ freerdp* freerdp_new()
 	{
 		instance->context_size = sizeof(rdpContext);
 		instance->SendChannelData = freerdp_send_channel_data;
+		instance->SendFrameAck = freerdp_send_frame_ack;
+		instance->SendInvalidate = freerdp_send_invalidate;
 	}
 
 	return instance;

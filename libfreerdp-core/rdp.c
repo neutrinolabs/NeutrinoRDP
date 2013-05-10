@@ -874,6 +874,58 @@ int rdp_send_channel_data(rdpRdp* rdp, int channel_id, uint8* data, int size)
 	return freerdp_channel_send(rdp, channel_id, data, size);
 }
 
+int rdp_send_frame_ack(rdpRdp* rdp, int frame)
+{
+	STREAM* s;
+
+	if (rdp->settings->frame_acknowledge == 0)
+	{
+		return 0;
+	}
+	s = rdp_data_pdu_init(rdp);
+	stream_write_uint32(s, frame);
+	rdp_send_data_pdu(rdp, s, 56, rdp->mcs->user_id);
+	return 0;
+}
+
+int rdp_send_invalidate(rdpRdp* rdp, int code, int x, int y, int w, int h)
+{
+	STREAM* s;
+
+	s = rdp_data_pdu_init(rdp);
+	stream_write_uint8(s, 1);
+	stream_seek(s, 3);
+	stream_write_uint16(s, x);
+	stream_write_uint16(s, y);
+	stream_write_uint16(s, x + w);
+	stream_write_uint16(s, y + h);
+	rdp_send_data_pdu(rdp, s, 33, rdp->mcs->user_id); /* PDUTYPE2_REFRESH_RECT */
+	return 0;
+}
+
+/* this one is not hooked up yet */
+int rdp_send_suppress_output(rdpRdp* rdp, int code, int x, int y, int w, int h)
+{
+	STREAM* s;
+
+	s = rdp_data_pdu_init(rdp);
+	stream_write_uint32(s, code);
+	switch (code)
+	{
+		case 0:	/* shut the server up */
+			break;
+		case 1:	/* receive data again */
+			printf("x %d y %d w %d h %d\n", x, y, w, h);
+			stream_write_uint16(s, x);
+			stream_write_uint16(s, y);
+			stream_write_uint16(s, w);
+			stream_write_uint16(s, h);
+			break;
+	}
+	rdp_send_data_pdu(rdp, s, 35, rdp->mcs->user_id); /* RDP_DATA_PDU_SUPPRESS_OUTPUT */
+	return 0;
+}
+
 /**
  * Set non-blocking mode information.
  * @param rdp RDP module

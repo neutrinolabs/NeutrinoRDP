@@ -85,6 +85,7 @@ boolean xf_event_Expose(xfInfo* xfi, XEvent* event, boolean app)
 
 	if (xfi->skip_bs)
 	{
+		xfi->instance->SendInvalidate(xfi->instance, -1, x, y, w, h);
 		return true;
 	}
 	if (app != true)
