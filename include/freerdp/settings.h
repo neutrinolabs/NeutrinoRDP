@@ -441,6 +441,8 @@ struct rdp_settings
 	/* Extensions */
 	int num_extensions;
 	struct rdp_ext_set extensions[16];
+
+	int skip_bs;
 };
 typedef struct rdp_settings rdpSettings;
 

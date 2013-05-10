@@ -83,6 +83,10 @@ boolean xf_event_Expose(xfInfo* xfi, XEvent* event, boolean app)
 	w = event->xexpose.width;
 	h = event->xexpose.height;
 
+	if (xfi->skip_bs)
+	{
+		return true;
+	}
 	if (app != true)
 	{
 		XCopyArea(xfi->display, xfi->primary, xfi->window->handle, xfi->gc, x, y, w, h, x, y);

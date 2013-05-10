@@ -109,6 +109,7 @@ int freerdp_parse_args(rdpSettings* settings, int argc, char** argv,
 				"  --sec: force protocol security (rdp, tls or nla)\n"
 				"  --secure-checksum: use salted checksums with Standard RDP encryption\n"
 				"  --version: print version information\n"
+				"  --skip-bs: do not keep backing store\n"
 				"\n", argv[0]);
 			return FREERDP_ARGS_PARSE_HELP; //TODO: What is the correct return
 		}
@@ -686,6 +687,10 @@ int freerdp_parse_args(rdpSettings* settings, int argc, char** argv,
 		{
 			printf("This is FreeRDP version %s\n", FREERDP_VERSION_FULL);
 			return FREERDP_ARGS_PARSE_VERSION;
+		}
+		else if (strcmp("--skip-bs", argv[index]) == 0)
+		{
+			settings->skip_bs = true;
 		}
 		else if (argv[index][0] != '-')
 		{

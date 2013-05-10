@@ -568,6 +568,8 @@ boolean xf_pre_connect(freerdp* instance)
 
 	xf_detect_monitors(xfi, settings);
 
+	xfi->skip_bs = settings->skip_bs;
+
 	return true;
 }
 
@@ -614,8 +616,6 @@ boolean xf_post_connect(freerdp* instance)
 	xfi = ((xfContext*) instance->context)->xfi;
 	cache = instance->context->cache;
 	channels = xfi->_context->channels;
-
-	xfi->skip_bs = 0;
 
 	if (xf_get_pixmap_info(xfi) != true)
 		return false;
