@@ -106,7 +106,8 @@ void xf_Bitmap_Paint(rdpContext* context, rdpBitmap* bitmap)
 	xfInfo* xfi = ((xfContext*) context)->xfi;
 	XShmSegmentInfo shminfo;
 
-	GET_DST(xfi, dst);
+	/* can't use GET_DST here, this is not an order */
+	dst = xfi->skip_bs ? xfi->drawable : xfi->primary;
 	width = bitmap->right - bitmap->left + 1;
 	height = bitmap->bottom - bitmap->top + 1;
 	XSetFunction(xfi->display, xfi->gc, GXcopy);
