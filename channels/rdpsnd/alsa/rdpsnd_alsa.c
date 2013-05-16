@@ -169,6 +169,7 @@ static void rdpsnd_alsa_open(rdpsndDevicePlugin* device, rdpsndFormat* format, i
 	}
 	else
 	{
+		snd_config_update_free_global();
 		memset(&alsa->adpcm, 0, sizeof(ADPCM));
 		rdpsnd_alsa_set_format(device, format, latency);
 	}
