@@ -95,7 +95,7 @@ void gdi_Bitmap_Paint(rdpContext* context, rdpBitmap* bitmap)
 
 void gdi_Bitmap_Decompress(rdpContext* context, rdpBitmap* bitmap,
 		uint8* data, int width, int height, int bpp, int length,
-		boolean compressed, int codec_id)
+		tbool compressed, int codec_id)
 {
 	uint16 size;
 	RFX_MESSAGE* msg;
@@ -104,7 +104,7 @@ void gdi_Bitmap_Decompress(rdpContext* context, rdpBitmap* bitmap,
 	int yindex;
 	int xindex;
 	rdpGdi* gdi;
-	boolean status;
+	tbool status;
 
 	size = width * height * (bpp + 7) / 8;
 
@@ -173,7 +173,7 @@ void gdi_Bitmap_Decompress(rdpContext* context, rdpBitmap* bitmap,
 	bitmap->bpp = bpp;
 }
 
-void gdi_Bitmap_SetSurface(rdpContext* context, rdpBitmap* bitmap, boolean primary)
+void gdi_Bitmap_SetSurface(rdpContext* context, rdpBitmap* bitmap, tbool primary)
 {
 	rdpGdi* gdi = context->gdi;
 

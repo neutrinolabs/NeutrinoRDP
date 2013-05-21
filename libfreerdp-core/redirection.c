@@ -55,7 +55,7 @@ void rdp_print_redirection_flags(uint32 flags)
 	printf("}\n");
 }
 
-boolean rdp_recv_server_redirection_pdu(rdpRdp* rdp, STREAM* s)
+tbool rdp_recv_server_redirection_pdu(rdpRdp* rdp, STREAM* s)
 {
 	uint16 flags;
 	uint16 length;
@@ -161,13 +161,13 @@ boolean rdp_recv_server_redirection_pdu(rdpRdp* rdp, STREAM* s)
 		return rdp_client_redirect(rdp);
 }
 
-boolean rdp_recv_redirection_packet(rdpRdp* rdp, STREAM* s)
+tbool rdp_recv_redirection_packet(rdpRdp* rdp, STREAM* s)
 {
 	rdp_recv_server_redirection_pdu(rdp, s);
 	return true;
 }
 
-boolean rdp_recv_enhanced_security_redirection_packet(rdpRdp* rdp, STREAM* s)
+tbool rdp_recv_enhanced_security_redirection_packet(rdpRdp* rdp, STREAM* s)
 {
 	stream_seek_uint16(s); /* pad2Octets (2 bytes) */
 	rdp_recv_server_redirection_pdu(rdp, s);

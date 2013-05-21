@@ -181,7 +181,7 @@ static rdpPrintJob* printer_cups_create_printjob(rdpPrinter* printer, uint32 id)
 #endif
 
 	cups_printer->printjob = cups_printjob;
-	
+
 	return (rdpPrintJob*)cups_printjob;
 }
 
@@ -207,7 +207,7 @@ static void printer_cups_free_printer(rdpPrinter* printer)
 	xfree(printer);
 }
 
-static rdpPrinter* printer_cups_new_printer(rdpCupsPrinterDriver* cups_driver, const char* name, boolean is_default)
+static rdpPrinter* printer_cups_new_printer(rdpCupsPrinterDriver* cups_driver, const char* name, tbool is_default)
 {
 	rdpCupsPrinter* cups_printer;
 

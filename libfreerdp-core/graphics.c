@@ -70,7 +70,7 @@ void Bitmap_SetDimensions(rdpContext* context, rdpBitmap* bitmap, uint16 width, 
 }
 
 /* static method */
-void Bitmap_SetSurface(rdpContext* context, rdpBitmap* bitmap, boolean primary)
+void Bitmap_SetSurface(rdpContext* context, rdpBitmap* bitmap, tbool primary)
 {
 	context->graphics->Bitmap_Prototype->SetSurface(context, bitmap, primary);
 }

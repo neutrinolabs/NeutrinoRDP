@@ -24,7 +24,7 @@
 
 #ifdef WITH_JPEG
 
-#define HAVE_BOOLEAN
+//#define HAVE_BOOLEAN
 #include <jpeglib.h>
 
 struct mydata_decomp

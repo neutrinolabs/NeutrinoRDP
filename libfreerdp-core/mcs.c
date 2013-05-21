@@ -33,59 +33,59 @@
 /**
  * Connect-Initial ::= [APPLICATION 101] IMPLICIT SEQUENCE
  * {
- * 	callingDomainSelector		OCTET_STRING,
- * 	calledDomainSelector		OCTET_STRING,
- * 	upwardFlag			BOOLEAN,
- * 	targetParameters		DomainParameters,
- * 	minimumParameters		DomainParameters,
- * 	maximumParameters		DomainParameters,
- * 	userData			OCTET_STRING
+ *   callingDomainSelector OCTET_STRING,
+ *   calledDomainSelector  OCTET_STRING,
+ *   upwardFlag            BOOLEAN,
+ *   targetParameters      DomainParameters,
+ *   minimumParameters     DomainParameters,
+ *   maximumParameters     DomainParameters,
+ *   userData              OCTET_STRING
  * }
  *
  * DomainParameters ::= SEQUENCE
  * {
- * 	maxChannelIds			INTEGER (0..MAX),
- * 	maxUserIds			INTEGER (0..MAX),
- * 	maxTokenIds			INTEGER (0..MAX),
- * 	numPriorities			INTEGER (0..MAX),
- * 	minThroughput			INTEGER (0..MAX),
- * 	maxHeight			INTEGER (0..MAX),
- * 	maxMCSPDUsize			INTEGER (0..MAX),
- * 	protocolVersion			INTEGER (0..MAX)
+ *   maxChannelIds   INTEGER (0..MAX),
+ *   maxUserIds      INTEGER (0..MAX),
+ *   maxTokenIds     INTEGER (0..MAX),
+ *   numPriorities   INTEGER (0..MAX),
+ *   minThroughput   INTEGER (0..MAX),
+ *   maxHeight       INTEGER (0..MAX),
+ *   maxMCSPDUsize   INTEGER (0..MAX),
+ *   protocolVersion INTEGER (0..MAX)
  * }
  *
  * Connect-Response ::= [APPLICATION 102] IMPLICIT SEQUENCE
  * {
- * 	result				Result,
- * 	calledConnectId			INTEGER (0..MAX),
- * 	domainParameters		DomainParameters,
- * 	userData			OCTET_STRING
+ *   result           Result,
+ *   calledConnectId  INTEGER (0..MAX),
+ *   domainParameters DomainParameters,
+ *   userData         OCTET_STRING
  * }
  *
  * Result ::= ENUMERATED
  * {
- * 	rt-successful			(0),
- * 	rt-domain-merging		(1),
- * 	rt-domain-not-hierarchical	(2),
- * 	rt-no-such-channel		(3),
- * 	rt-no-such-domain		(4),
- * 	rt-no-such-user			(5),
- * 	rt-not-admitted			(6),
- * 	rt-other-user-id		(7),
- * 	rt-parameters-unacceptable	(8),
- * 	rt-token-not-available		(9),
- * 	rt-token-not-possessed		(10),
- * 	rt-too-many-channels		(11),
- * 	rt-too-many-tokens		(12),
- * 	rt-too-many-users		(13),
- * 	rt-unspecified-failure		(14),
- * 	rt-user-rejected		(15)
+ *   rt-successful              (0),
+ *   rt-domain-merging          (1),
+ *   rt-domain-not-hierarchical (2),
+ *   rt-no-such-channel         (3),
+ *   rt-no-such-domain          (4),
+ *   rt-no-such-user            (5),
+ *   rt-not-admitted            (6),
+ *   rt-other-user-id           (7),
+ *   rt-parameters-unacceptable (8),
+ *   rt-token-not-available     (9),
+ *   rt-token-not-possessed     (10),
+ *   rt-too-many-channels       (11),
+ *   rt-too-many-tokens         (12),
+ *   rt-too-many-users          (13),
+ *   rt-unspecified-failure     (14),
+ *   rt-user-rejected           (15)
  * }
  *
  * ErectDomainRequest ::= [APPLICATION 1] IMPLICIT SEQUENCE
  * {
- * 	subHeight			INTEGER (0..MAX),
- * 	subInterval			INTEGER (0..MAX)
+ *   subHeight   INTEGER (0..MAX),
+ *   subInterval INTEGER (0..MAX)
  * }
  *
  * AttachUserRequest ::= [APPPLICATION 10] IMPLICIT SEQUENCE
@@ -94,62 +94,59 @@
  *
  * AttachUserConfirm ::= [APPLICATION 11] IMPLICIT SEQUENCE
  * {
- * 	result				Result,
- * 	initiator			UserId OPTIONAL
+ *   result    Result,
+ *   initiator UserId OPTIONAL
  * }
  *
  * ChannelJoinRequest ::= [APPLICATION 14] IMPLICIT SEQUENCE
  * {
- * 	initiator			UserId,
- * 	channelId			ChannelId
+ *   initiator UserId,
+ *   channelId ChannelId
  * }
  *
  * ChannelJoinConfirm ::= [APPLICATION 15] IMPLICIT SEQUENCE
  * {
- * 	result				Result,
- * 	initiator			UserId,
- * 	requested			ChannelId,
- * 	channelId			ChannelId OPTIONAL
+ *   result    Result,
+ *   initiator UserId,
+ *   requested ChannelId,
+ *   channelId ChannelId OPTIONAL
  * }
  *
  * SendDataRequest ::= [APPLICATION 25] IMPLICIT SEQUENCE
  * {
- * 	initiator			UserId,
- * 	channelId			ChannelId,
- * 	dataPriority			DataPriority,
- * 	segmentation			Segmentation,
- * 	userData			OCTET_STRING
+ *   initiator    UserId,
+ *   channelId    ChannelId,
+ *   dataPriority DataPriority,
+ *   segmentation Segmentation,
+ *   userData     OCTET_STRING
  * }
  *
  * DataPriority ::= CHOICE
  * {
- * 	top				NULL,
- * 	high				NULL,
- * 	medium				NULL,
- * 	low				NULL,
- * 	...
+ *   top    NULL,
+ *   high   NULL,
+ *   medium NULL,
+ *   low    NULL
  * }
  *
  * Segmentation ::= BIT_STRING
  * {
- * 	begin				(0),
- * 	end				(1)
+ *   begin (0),
+ *   end   (1)
  * } (SIZE(2))
  *
  * SendDataIndication ::= SEQUENCE
  * {
- * 	initiator			UserId,
- * 	channelId			ChannelId,
- * 	reliability			BOOLEAN,
- * 	domainReferenceID		INTEGER (0..65535) OPTIONAL,
- * 	dataPriority			DataPriority,
- * 	segmentation			Segmentation,
- * 	userData			OCTET_STRING,
- * 	totalDataSize			INTEGER OPTIONAL,
- * 	nonStandard			SEQUENCE OF NonStandardParameter OPTIONAL,
- * 	...
+ *   initiator         UserId,
+ *   channelId         ChannelId,
+ *   reliability       BOOLEAN,
+ *   domainReferenceID INTEGER (0..65535) OPTIONAL,
+ *   dataPriority      DataPriority,
+ *   segmentation      Segmentation,
+ *   userData          OCTET_STRING,
+ *   totalDataSize     INTEGER OPTIONAL,
+ *   nonStandard       SEQUENCE OF NonStandardParameter OPTIONAL
  * }
- *
  */
 
 static const uint8 callingDomainSelector[1] = "\x01";

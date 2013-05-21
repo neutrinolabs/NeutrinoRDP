@@ -89,7 +89,7 @@ void rdp_write_security_header(STREAM* s, uint16 flags)
 	stream_write_uint16(s, 0); /* flagsHi (unused) */
 }
 
-boolean rdp_read_share_control_header(STREAM* s, uint16* length, uint16* type, uint16* channel_id)
+tbool rdp_read_share_control_header(STREAM* s, uint16* length, uint16* type, uint16* channel_id)
 {
 	/* Share Control Header */
 	stream_read_uint16(s, *length); /* totalLength */
@@ -118,7 +118,7 @@ void rdp_write_share_control_header(STREAM* s, uint16 length, uint16 type, uint1
 	stream_write_uint16(s, channel_id); /* pduSource */
 }
 
-boolean rdp_read_share_data_header(STREAM* s, uint16* length, uint8* type, uint32* share_id,
+tbool rdp_read_share_data_header(STREAM* s, uint16* length, uint8* type, uint32* share_id,
 					uint8 *compressed_type, uint16 *compressed_len)
 {
 	if (stream_get_left(s) < 12)
@@ -217,7 +217,7 @@ STREAM* rdp_data_pdu_init(rdpRdp* rdp)
  * @param channel_id channel id
  */
 
-boolean rdp_read_header(rdpRdp* rdp, STREAM* s, uint16* length, uint16* channel_id)
+tbool rdp_read_header(rdpRdp* rdp, STREAM* s, uint16* length, uint16* channel_id)
 {
 	uint16 initiator;
 	enum DomainMCSPDU MCSPDU;
@@ -374,7 +374,7 @@ static uint32 rdp_get_sec_bytes(rdpRdp* rdp)
  * @param channel_id channel id
  */
 
-boolean rdp_send(rdpRdp* rdp, STREAM* s, uint16 channel_id)
+tbool rdp_send(rdpRdp* rdp, STREAM* s, uint16 channel_id)
 {
 	uint16 length;
 	uint32 sec_bytes;
@@ -399,7 +399,7 @@ boolean rdp_send(rdpRdp* rdp, STREAM* s, uint16 channel_id)
 	return true;
 }
 
-boolean rdp_send_pdu(rdpRdp* rdp, STREAM* s, uint16 type, uint16 channel_id)
+tbool rdp_send_pdu(rdpRdp* rdp, STREAM* s, uint16 type, uint16 channel_id)
 {
 	uint16 length;
 	uint32 sec_bytes;
@@ -426,7 +426,7 @@ boolean rdp_send_pdu(rdpRdp* rdp, STREAM* s, uint16 type, uint16 channel_id)
 	return true;
 }
 
-boolean rdp_send_data_pdu(rdpRdp* rdp, STREAM* s, uint8 type, uint16 channel_id)
+tbool rdp_send_data_pdu(rdpRdp* rdp, STREAM* s, uint8 type, uint16 channel_id)
 {
 	uint16 length;
 	uint32 sec_bytes;
@@ -462,7 +462,7 @@ void rdp_recv_set_error_info_data_pdu(rdpRdp* rdp, STREAM* s)
 		rdp_print_errinfo(rdp->errorInfo);
 }
 
-boolean rdp_recv_data_pdu(rdpRdp* rdp, STREAM* s)
+tbool rdp_recv_data_pdu(rdpRdp* rdp, STREAM* s)
 {
 	uint8 type;
 	uint16 length;
@@ -593,7 +593,7 @@ boolean rdp_recv_data_pdu(rdpRdp* rdp, STREAM* s)
 	return true;
 }
 
-boolean rdp_recv_out_of_sequence_pdu(rdpRdp* rdp, STREAM* s)
+tbool rdp_recv_out_of_sequence_pdu(rdpRdp* rdp, STREAM* s)
 {
 	uint16 type;
 	uint16 length;
@@ -623,7 +623,7 @@ boolean rdp_recv_out_of_sequence_pdu(rdpRdp* rdp, STREAM* s)
  * @param length int
  */
 
-boolean rdp_decrypt(rdpRdp* rdp, STREAM* s, int length, uint16 securityFlags)
+tbool rdp_decrypt(rdpRdp* rdp, STREAM* s, int length, uint16 securityFlags)
 {
 	uint8 cmac[8], wmac[8];
 
@@ -687,7 +687,7 @@ boolean rdp_decrypt(rdpRdp* rdp, STREAM* s, int length, uint16 securityFlags)
  * @param s stream
  */
 
-static boolean rdp_recv_tpkt_pdu(rdpRdp* rdp, STREAM* s)
+static tbool rdp_recv_tpkt_pdu(rdpRdp* rdp, STREAM* s)
 {
 	uint16 length;
 	uint16 pduType;
@@ -770,7 +770,7 @@ static boolean rdp_recv_tpkt_pdu(rdpRdp* rdp, STREAM* s)
 	return true;
 }
 
-static boolean rdp_recv_fastpath_pdu(rdpRdp* rdp, STREAM* s)
+static tbool rdp_recv_fastpath_pdu(rdpRdp* rdp, STREAM* s)
 {
 	uint16 length;
 	rdpFastPath* fastpath;
@@ -792,7 +792,7 @@ static boolean rdp_recv_fastpath_pdu(rdpRdp* rdp, STREAM* s)
 	return fastpath_recv_updates(rdp->fastpath, s);
 }
 
-static boolean rdp_recv_pdu(rdpRdp* rdp, STREAM* s)
+static tbool rdp_recv_pdu(rdpRdp* rdp, STREAM* s)
 {
 	if (tpkt_verify_header(s))
 		return rdp_recv_tpkt_pdu(rdp, s);
@@ -815,7 +815,7 @@ void rdp_recv(rdpRdp* rdp)
 	rdp_recv_pdu(rdp, s);
 }
 
-static boolean rdp_recv_callback(rdpTransport* transport, STREAM* s, void* extra)
+static tbool rdp_recv_callback(rdpTransport* transport, STREAM* s, void* extra)
 {
 	rdpRdp* rdp = (rdpRdp*) extra;
 
@@ -931,7 +931,7 @@ int rdp_send_suppress_output(rdpRdp* rdp, int code, int x, int y, int w, int h)
  * @param rdp RDP module
  * @param blocking blocking mode
  */
-void rdp_set_blocking_mode(rdpRdp* rdp, boolean blocking)
+void rdp_set_blocking_mode(rdpRdp* rdp, tbool blocking)
 {
 	rdp->transport->recv_callback = rdp_recv_callback;
 	rdp->transport->recv_extra = rdp;

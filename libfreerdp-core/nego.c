@@ -50,7 +50,7 @@ static const char PROTOCOL_SECURITY_STRINGS[3][4] =
  * @return
  */
 
-boolean nego_connect(rdpNego* nego)
+tbool nego_connect(rdpNego* nego)
 {
 	if (nego->state == NEGO_STATE_INITIAL)
 	{
@@ -102,7 +102,7 @@ boolean nego_connect(rdpNego* nego)
  * @return
  */
 
-boolean nego_tcp_connect(rdpNego* nego)
+tbool nego_tcp_connect(rdpNego* nego)
 {
 	if (nego->tcp_connected == 0)
 	{
@@ -253,7 +253,7 @@ void nego_attempt_rdp(rdpNego* nego)
  * @param nego
  */
 
-boolean nego_recv_response(rdpNego* nego)
+tbool nego_recv_response(rdpNego* nego)
 {
 	STREAM* s = transport_recv_stream_init(nego->transport, 1024);
 	if (transport_read(nego->transport, s) < 0)
@@ -269,7 +269,7 @@ boolean nego_recv_response(rdpNego* nego)
  * @param extra nego pointer
  */
 
-boolean nego_recv(rdpTransport* transport, STREAM* s, void* extra)
+tbool nego_recv(rdpTransport* transport, STREAM* s, void* extra)
 {
 	uint8 li;
 	uint8 type;
@@ -311,7 +311,7 @@ boolean nego_recv(rdpTransport* transport, STREAM* s, void* extra)
  * @param s stream
  */
 
-boolean nego_read_request(rdpNego* nego, STREAM* s)
+tbool nego_read_request(rdpNego* nego, STREAM* s)
 {
 	uint8 li;
 	uint8 c;
@@ -383,7 +383,7 @@ void nego_send(rdpNego* nego)
  * @param nego
  */
 
-boolean nego_send_negotiation_request(rdpNego* nego)
+tbool nego_send_negotiation_request(rdpNego* nego)
 {
 	STREAM* s;
 	int length;
@@ -518,13 +518,13 @@ void nego_process_negotiation_failure(rdpNego* nego, STREAM* s)
  * @param nego
  */
 
-boolean nego_send_negotiation_response(rdpNego* nego)
+tbool nego_send_negotiation_response(rdpNego* nego)
 {
 	STREAM* s;
 	rdpSettings* settings;
 	int length;
 	uint8 *bm, *em;
-	boolean ret;
+	tbool ret;
 
 	ret = true;
 	settings = nego->transport->settings;
@@ -667,7 +667,7 @@ void nego_set_target(rdpNego* nego, char* hostname, int port)
  * @param enable_rdp whether to enable normal RDP protocol (true for enabled, false for disabled)
  */
 
-void nego_enable_rdp(rdpNego* nego, boolean enable_rdp)
+void nego_enable_rdp(rdpNego* nego, tbool enable_rdp)
 {
 	DEBUG_NEGO("Enabling RDP security: %s", enable_rdp ? "true" : "false");
 	nego->enabled_protocols[PROTOCOL_RDP] = enable_rdp;
@@ -678,7 +678,7 @@ void nego_enable_rdp(rdpNego* nego, boolean enable_rdp)
  * @param nego pointer to the negotiation structure
  * @param enable_tls whether to enable TLS + RDP protocol (true for enabled, false for disabled)
  */
-void nego_enable_tls(rdpNego* nego, boolean enable_tls)
+void nego_enable_tls(rdpNego* nego, tbool enable_tls)
 {
 	DEBUG_NEGO("Enabling TLS security: %s", enable_tls ? "true" : "false");
 	nego->enabled_protocols[PROTOCOL_TLS] = enable_tls;
@@ -691,7 +691,7 @@ void nego_enable_tls(rdpNego* nego, boolean enable_tls)
  * @param enable_nla whether to enable network level authentication protocol (true for enabled, false for disabled)
  */
 
-void nego_enable_nla(rdpNego* nego, boolean enable_nla)
+void nego_enable_nla(rdpNego* nego, tbool enable_nla)
 {
 	DEBUG_NEGO("Enabling NLA security: %s", enable_nla ? "true" : "false");
 	nego->enabled_protocols[PROTOCOL_NLA] = enable_nla;

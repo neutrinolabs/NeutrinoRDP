@@ -117,7 +117,7 @@ void pcap_add_record(rdpPcap* pcap, void* data, uint32 length)
 	record->header.ts_usec = tp.tv_usec;
 }
 
-boolean pcap_has_next_record(rdpPcap* pcap)
+tbool pcap_has_next_record(rdpPcap* pcap)
 {
 	if (pcap->file_size - (ftell(pcap->fp)) <= 16)
 		return false;
@@ -125,7 +125,7 @@ boolean pcap_has_next_record(rdpPcap* pcap)
 	return true;
 }
 
-boolean pcap_get_next_record_header(rdpPcap* pcap, pcap_record* record)
+tbool pcap_get_next_record_header(rdpPcap* pcap, pcap_record* record)
 {
 	if (pcap_has_next_record(pcap) != true)
 		return false;
@@ -137,13 +137,13 @@ boolean pcap_get_next_record_header(rdpPcap* pcap, pcap_record* record)
 	return true;
 }
 
-boolean pcap_get_next_record_content(rdpPcap* pcap, pcap_record* record)
+tbool pcap_get_next_record_content(rdpPcap* pcap, pcap_record* record)
 {
 	fread(record->data, record->length, 1, pcap->fp);
 	return true;
 }
 
-boolean pcap_get_next_record(rdpPcap* pcap, pcap_record* record)
+tbool pcap_get_next_record(rdpPcap* pcap, pcap_record* record)
 {
 	if (pcap_has_next_record(pcap) != true)
 		return false;
@@ -153,7 +153,7 @@ boolean pcap_get_next_record(rdpPcap* pcap, pcap_record* record)
 	return true;
 }
 
-rdpPcap* pcap_open(char* name, boolean write)
+rdpPcap* pcap_open(char* name, tbool write)
 {
 	rdpPcap* pcap;
 

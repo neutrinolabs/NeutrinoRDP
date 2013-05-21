@@ -251,7 +251,7 @@ void security_mac_signature(rdpRdp *rdp, uint8* data, uint32 length, uint8* outp
 	memcpy(output, md5_digest, 8);
 }
 
-void security_salted_mac_signature(rdpRdp *rdp, uint8* data, uint32 length, boolean encryption, uint8* output)
+void security_salted_mac_signature(rdpRdp *rdp, uint8* data, uint32 length, tbool encryption, uint8* output)
 {
 	CryptoMd5 md5;
 	CryptoSha1 sha1;
@@ -338,7 +338,7 @@ static void fips_expand_key_bits(uint8* in, uint8* out)
 		out[i] = fips_oddparity_table[fips_reverse_table[out[i]]];
 }
 
-boolean security_establish_keys(uint8* client_random, rdpRdp* rdp)
+tbool security_establish_keys(uint8* client_random, rdpRdp* rdp)
 {
 	uint8 pre_master_secret[48];
 	uint8 master_secret[48];
@@ -418,7 +418,7 @@ boolean security_establish_keys(uint8* client_random, rdpRdp* rdp)
 	return true;
 }
 
-boolean security_key_update(uint8* key, uint8* update_key, int key_len)
+tbool security_key_update(uint8* key, uint8* update_key, int key_len)
 {
 	uint8 sha1h[CRYPTO_SHA1_DIGEST_LENGTH];
 	CryptoMd5 md5;
@@ -448,7 +448,7 @@ boolean security_key_update(uint8* key, uint8* update_key, int key_len)
 	return true;
 }
 
-boolean security_encrypt(uint8* data, int length, rdpRdp* rdp)
+tbool security_encrypt(uint8* data, int length, rdpRdp* rdp)
 {
 	if (rdp->encrypt_use_count >= 4096)
 	{
@@ -462,7 +462,7 @@ boolean security_encrypt(uint8* data, int length, rdpRdp* rdp)
 	return true;
 }
 
-boolean security_decrypt(uint8* data, int length, rdpRdp* rdp)
+tbool security_decrypt(uint8* data, int length, rdpRdp* rdp)
 {
 	if (rdp->decrypt_use_count >= 4096)
 	{
@@ -491,20 +491,20 @@ void security_hmac_signature(uint8* data, int length, uint8* output, rdpRdp* rdp
 	memmove(output, buf, 8);
 }
 
-boolean security_fips_encrypt(uint8* data, int length, rdpRdp* rdp)
+tbool security_fips_encrypt(uint8* data, int length, rdpRdp* rdp)
 {
 	crypto_des3_encrypt(rdp->fips_encrypt, length, data, data);
 	rdp->encrypt_use_count++;
 	return true;
 }
 
-boolean security_fips_decrypt(uint8* data, int length, rdpRdp* rdp)
+tbool security_fips_decrypt(uint8* data, int length, rdpRdp* rdp)
 {
 	crypto_des3_decrypt(rdp->fips_decrypt, length, data, data);
 	return true;
 }
 
-boolean security_fips_check_signature(uint8* data, int length, uint8* sig, rdpRdp* rdp)
+tbool security_fips_check_signature(uint8* data, int length, uint8* sig, rdpRdp* rdp)
 {
 	uint8 buf[20];
 	uint8 use_count_le[4];

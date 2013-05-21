@@ -138,7 +138,7 @@ void tf_process_channel_event(rdpChannels* channels, freerdp* instance)
 	}
 }
 
-boolean tf_pre_connect(freerdp* instance)
+tbool tf_pre_connect(freerdp* instance)
 {
 	tfInfo* tfi;
 	tfContext* context;
@@ -178,7 +178,7 @@ boolean tf_pre_connect(freerdp* instance)
 	return true;
 }
 
-boolean tf_post_connect(freerdp* instance)
+tbool tf_post_connect(freerdp* instance)
 {
 	rdpGdi* gdi;
 
