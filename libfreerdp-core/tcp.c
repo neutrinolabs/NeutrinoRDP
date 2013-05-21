@@ -109,7 +109,7 @@ void tcp_get_mac_address(rdpTcp * tcp)
 		mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]); */
 }
 
-boolean tcp_connect(rdpTcp* tcp, const char* hostname, uint16 port)
+tbool tcp_connect(rdpTcp* tcp, const char* hostname, uint16 port)
 {
 	int status;
 	char servname[10];
@@ -227,7 +227,7 @@ int tcp_write(rdpTcp* tcp, uint8* data, int length)
 		/* No data available */
 		if (wsa_error == WSAEWOULDBLOCK)
 			status = 0;
-                else 
+                else
                         perror("send");
 #else
 		if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -240,7 +240,7 @@ int tcp_write(rdpTcp* tcp, uint8* data, int length)
 	return status;
 }
 
-boolean tcp_disconnect(rdpTcp * tcp)
+tbool tcp_disconnect(rdpTcp * tcp)
 {
 	if (tcp->sockfd != -1)
 	{
@@ -252,7 +252,7 @@ boolean tcp_disconnect(rdpTcp * tcp)
 	return true;
 }
 
-boolean tcp_set_blocking_mode(rdpTcp* tcp, boolean blocking)
+tbool tcp_set_blocking_mode(rdpTcp* tcp, tbool blocking)
 {
 #ifndef _WIN32
 	int flags;
@@ -278,7 +278,7 @@ boolean tcp_set_blocking_mode(rdpTcp* tcp, boolean blocking)
 	return true;
 }
 
-boolean tcp_set_keep_alive_mode(rdpTcp* tcp)
+tbool tcp_set_keep_alive_mode(rdpTcp* tcp)
 {
 #ifndef _WIN32
 	uint32 option_value;

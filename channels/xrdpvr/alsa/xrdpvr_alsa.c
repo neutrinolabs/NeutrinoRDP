@@ -43,7 +43,7 @@ typedef struct _XrdpvrALSAAudioDevice
 	uint32 bytes_per_sample;
 } XrdpvrALSAAudioDevice;
 
-static boolean xrdpvr_alsa_open_device(XrdpvrALSAAudioDevice *alsa)
+static tbool xrdpvr_alsa_open_device(XrdpvrALSAAudioDevice *alsa)
 {
 	int error;
 
@@ -59,7 +59,7 @@ static boolean xrdpvr_alsa_open_device(XrdpvrALSAAudioDevice *alsa)
 	return true;
 }
 
-static boolean xrdpvr_alsa_open(XrdpvrAudioDevice *audio, const char *device)
+static tbool xrdpvr_alsa_open(XrdpvrAudioDevice *audio, const char *device)
 {
 	XrdpvrALSAAudioDevice *alsa = (XrdpvrALSAAudioDevice *) audio;
 
@@ -78,8 +78,8 @@ static boolean xrdpvr_alsa_open(XrdpvrAudioDevice *audio, const char *device)
 	return xrdpvr_alsa_open_device(alsa);
 }
 
-static boolean xrdpvr_alsa_set_format(XrdpvrAudioDevice *audio,
-                                      uint32 sample_rate, uint32 channels,
+static tbool xrdpvr_alsa_set_format(XrdpvrAudioDevice *audio,
+                                    uint32 sample_rate, uint32 channels,
 				      uint32 bits_per_sample)
 {
 	int error;
@@ -154,7 +154,7 @@ static boolean xrdpvr_alsa_set_format(XrdpvrAudioDevice *audio,
 	return true;
 }
 
-static boolean xrdpvr_alsa_play(XrdpvrAudioDevice *audio, uint8 *data, uint32 data_size)
+static tbool xrdpvr_alsa_play(XrdpvrAudioDevice *audio, uint8 *data, uint32 data_size)
 {
 	int len;
 	int error;

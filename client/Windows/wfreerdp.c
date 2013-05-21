@@ -129,7 +129,7 @@ void wf_hw_end_paint(rdpContext* context)
 
 }
 
-boolean wf_pre_connect(freerdp* instance)
+tbool wf_pre_connect(freerdp* instance)
 {
 	int i1;
 	wfInfo* wfi;
@@ -236,7 +236,7 @@ void cpuid(unsigned info, unsigned *eax, unsigned *ebx, unsigned *ecx, unsigned 
 	*edx = a[3];
 #endif
 }
- 
+
 uint32 wfi_detect_cpu()
 {
 	uint32 cpu_opt = 0;
@@ -252,7 +252,7 @@ uint32 wfi_detect_cpu()
 	return cpu_opt;
 }
 
-boolean wf_post_connect(freerdp* instance)
+tbool wf_post_connect(freerdp* instance)
 {
 	rdpGdi* gdi;
 	wfInfo* wfi;
@@ -383,7 +383,7 @@ boolean wf_post_connect(freerdp* instance)
 	return true;
 }
 
-boolean wf_verify_certificate(freerdp* instance, char* subject, char* issuer, char* fingerprint)
+tbool wf_verify_certificate(freerdp* instance, char* subject, char* issuer, char* fingerprint)
 {
 	return true;
 }
@@ -403,12 +403,12 @@ void wf_process_channel_event(rdpChannels* channels, freerdp* instance)
 		freerdp_event_free(event);
 }
 
-boolean wf_get_fds(freerdp* instance, void** rfds, int* rcount, void** wfds, int* wcount)
+tbool wf_get_fds(freerdp* instance, void** rfds, int* rcount, void** wfds, int* wcount)
 {
 	return true;
 }
 
-boolean wf_check_fds(freerdp* instance)
+tbool wf_check_fds(freerdp* instance)
 {
 	return true;
 }
@@ -535,7 +535,7 @@ int wfreerdp_run(freerdp* instance)
 	/* cleanup */
 	freerdp_channels_free(channels);
 	freerdp_free(instance);
-	
+
 	return 0;
 }
 
@@ -655,7 +655,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	//while (1)
 	{
-		data = (thread_data*) xzalloc(sizeof(thread_data)); 
+		data = (thread_data*) xzalloc(sizeof(thread_data));
 		data->instance = instance;
 
 		freerdp_parse_args(instance->settings, __argc, __argv,

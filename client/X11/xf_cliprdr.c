@@ -60,11 +60,11 @@ struct clipboard_context
 	/* client->server data */
 	Window owner;
 	int request_index;
-	boolean sync;
+	tbool sync;
 
 	/* INCR mechanism */
 	Atom incr_atom;
-	boolean incr_starts;
+	tbool incr_starts;
 	uint8* incr_data;
 	int incr_data_length;
 };
@@ -225,7 +225,7 @@ static void be2le(uint8* data, int size)
 	}
 }
 
-static boolean xf_cliprdr_is_self_owned(xfInfo* xfi)
+static tbool xf_cliprdr_is_self_owned(xfInfo* xfi)
 {
 	Atom type;
 	uint32 id = 0;
@@ -639,7 +639,7 @@ static uint8* xf_cliprdr_process_requested_html(uint8* data, int* size)
 	return outbuf;
 }
 
-static void xf_cliprdr_process_requested_data(xfInfo* xfi, boolean has_data, uint8* data, int size)
+static void xf_cliprdr_process_requested_data(xfInfo* xfi, tbool has_data, uint8* data, int size)
 {
 	uint8* outbuf;
 	clipboardContext* cb = (clipboardContext*) xfi->clipboard_context;
@@ -692,12 +692,12 @@ static void xf_cliprdr_process_requested_data(xfInfo* xfi, boolean has_data, uin
 	xf_cliprdr_send_format_list(xfi);
 }
 
-static boolean xf_cliprdr_get_requested_data(xfInfo* xfi, Atom target)
+static tbool xf_cliprdr_get_requested_data(xfInfo* xfi, Atom target)
 {
 	Atom type;
 	int format;
 	uint8* data = NULL;
-	boolean has_data = false;
+	tbool has_data = false;
 	unsigned long length, bytes_left, dummy;
 	clipboardContext* cb = (clipboardContext*) xfi->clipboard_context;
 
@@ -1045,7 +1045,7 @@ void xf_process_cliprdr_event(xfInfo* xfi, RDP_EVENT* event)
 	}
 }
 
-boolean xf_cliprdr_process_selection_notify(xfInfo* xfi, XEvent* xevent)
+tbool xf_cliprdr_process_selection_notify(xfInfo* xfi, XEvent* xevent)
 {
 	clipboardContext* cb = (clipboardContext*) xfi->clipboard_context;
 
@@ -1069,7 +1069,7 @@ boolean xf_cliprdr_process_selection_notify(xfInfo* xfi, XEvent* xevent)
 	}
 }
 
-boolean xf_cliprdr_process_selection_request(xfInfo* xfi, XEvent* xevent)
+tbool xf_cliprdr_process_selection_request(xfInfo* xfi, XEvent* xevent)
 {
 	int i;
 	int fmt;
@@ -1078,7 +1078,7 @@ boolean xf_cliprdr_process_selection_request(xfInfo* xfi, XEvent* xevent)
 	XEvent* respond;
 	uint32 alt_format;
 	uint8* data = NULL;
-	boolean delay_respond;
+	tbool delay_respond;
 	unsigned long length, bytes_left;
 	clipboardContext* cb = (clipboardContext*) xfi->clipboard_context;
 
@@ -1180,7 +1180,7 @@ boolean xf_cliprdr_process_selection_request(xfInfo* xfi, XEvent* xevent)
 	return true;
 }
 
-boolean xf_cliprdr_process_selection_clear(xfInfo* xfi, XEvent* xevent)
+tbool xf_cliprdr_process_selection_clear(xfInfo* xfi, XEvent* xevent)
 {
 	clipboardContext* cb = (clipboardContext*) xfi->clipboard_context;
 
@@ -1192,7 +1192,7 @@ boolean xf_cliprdr_process_selection_clear(xfInfo* xfi, XEvent* xevent)
 	return true;
 }
 
-boolean xf_cliprdr_process_property_notify(xfInfo* xfi, XEvent* xevent)
+tbool xf_cliprdr_process_property_notify(xfInfo* xfi, XEvent* xevent)
 {
 	clipboardContext* cb = (clipboardContext*) xfi->clipboard_context;
 

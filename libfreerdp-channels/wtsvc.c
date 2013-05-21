@@ -81,7 +81,7 @@ static void WTSProcessChannelData(rdpPeerChannel* channel, int channelId, uint8*
 static int WTSReceiveChannelData(freerdp_peer* client, int channelId, uint8* data, int size, int flags, int total_size)
 {
 	int i;
-	boolean result = false;
+	tbool result = false;
 	rdpPeerChannel* channel;
 
 	for (i = 0; i < client->settings->num_channels; i++)
@@ -149,9 +149,9 @@ void WTSVirtualChannelManagerGetFileDescriptor(WTSVirtualChannelManager* vcm,
 	wait_obj_get_fds(vcm->send_event, fds, fds_count);
 }
 
-boolean WTSVirtualChannelManagerCheckFileDescriptor(WTSVirtualChannelManager* vcm)
+tbool WTSVirtualChannelManagerCheckFileDescriptor(WTSVirtualChannelManager* vcm)
 {
-	boolean result = true;
+	tbool result = true;
 	wts_data_item* item;
 
 	wait_obj_clear(vcm->send_event);
@@ -234,7 +234,7 @@ void* WTSVirtualChannelOpenEx(
 	return channel;
 }
 
-boolean WTSVirtualChannelQuery(
+tbool WTSVirtualChannelQuery(
 	/* __in */  void* hChannelHandle,
 	/* __in */  WTS_VIRTUAL_CLASS WtsVirtualClass,
 	/* __out */ void** ppBuffer,
@@ -242,7 +242,7 @@ boolean WTSVirtualChannelQuery(
 {
 	void* fds[10];
 	int fds_count = 0;
-	boolean result = false;
+	tbool result = false;
 	rdpPeerChannel* channel = (rdpPeerChannel*) hChannelHandle;
 
 	switch (WtsVirtualClass)
@@ -267,7 +267,7 @@ void WTSFreeMemory(
 	xfree(pMemory);
 }
 
-boolean WTSVirtualChannelRead(
+tbool WTSVirtualChannelRead(
 	/* __in */  void* hChannelHandle,
 	/* __in */  uint32 TimeOut,
 	/* __out */ uint8* Buffer,
@@ -300,7 +300,7 @@ boolean WTSVirtualChannelRead(
 	return true;
 }
 
-boolean WTSVirtualChannelWrite(
+tbool WTSVirtualChannelWrite(
 	/* __in */  void* hChannelHandle,
 	/* __in */  uint8* Buffer,
 	/* __in */  uint32 Length,
@@ -308,7 +308,7 @@ boolean WTSVirtualChannelWrite(
 {
 	uint32 written = 0;
 	wts_data_item* item;
-	boolean result = false;
+	tbool result = false;
 	rdpPeerChannel* channel = (rdpPeerChannel*) hChannelHandle;
 	WTSVirtualChannelManager* vcm = channel->vcm;
 
@@ -342,7 +342,7 @@ boolean WTSVirtualChannelWrite(
 	return result;
 }
 
-boolean WTSVirtualChannelClose(
+tbool WTSVirtualChannelClose(
 	/* __in */ void* hChannelHandle)
 {
 	wts_data_item* item;

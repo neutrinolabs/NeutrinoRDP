@@ -28,7 +28,7 @@
 
 void xf_kbd_init(xfInfo* xfi)
 {
-	memset(xfi->pressed_keys, 0, 256 * sizeof(boolean));
+	memset(xfi->pressed_keys, 0, 256 * sizeof(tbool));
 	xfi->keyboard_layout_id = xfi->instance->settings->kbd_layout;
 	xfi->keyboard_layout_id = freerdp_kbd_init(xfi->display, xfi->keyboard_layout_id);
 	xfi->instance->settings->kbd_layout = xfi->keyboard_layout_id;
@@ -50,17 +50,17 @@ void xf_kbd_unset_keypress(xfInfo* xfi, uint8 keycode)
 		return;
 }
 
-boolean xf_kbd_key_pressed(xfInfo* xfi, KeySym keysym)
+tbool xf_kbd_key_pressed(xfInfo* xfi, KeySym keysym)
 {
 	KeyCode keycode = XKeysymToKeycode(xfi->display, keysym);
 	return (xfi->pressed_keys[keycode] == keysym);
 }
 
-void xf_kbd_send_key(xfInfo* xfi, boolean down, uint8 keycode)
+void xf_kbd_send_key(xfInfo* xfi, tbool down, uint8 keycode)
 {
 	uint16 flags;
 	uint8 scancode;
-	boolean extended;
+	tbool extended;
 	rdpInput* input;
 
 	input = xfi->instance->input;
@@ -113,7 +113,7 @@ int xf_kbd_read_keyboard_state(xfInfo* xfi)
 	return state;
 }
 
-boolean xf_kbd_get_key_state(xfInfo* xfi, int state, int keysym)
+tbool xf_kbd_get_key_state(xfInfo* xfi, int state, int keysym)
 {
 	int offset;
 	int modifierpos, key, keysymMask = 0;
@@ -170,7 +170,7 @@ void xf_kbd_focus_in(xfInfo* xfi)
 	input->SynchronizeEvent(input, syncFlags);
 }
 
-boolean xf_kbd_handle_special_keys(xfInfo* xfi, KeySym keysym)
+tbool xf_kbd_handle_special_keys(xfInfo* xfi, KeySym keysym)
 {
 	if (keysym == XK_Return)
 	{

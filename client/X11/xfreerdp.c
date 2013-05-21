@@ -218,7 +218,7 @@ void xf_hw_end_paint(rdpContext* context)
 void xf_hw_desktop_resize(rdpContext* context)
 {
 	xfInfo* xfi;
-	boolean same;
+	tbool same;
 	rdpSettings* settings;
 
 	xfi = ((xfContext*) context)->xfi;
@@ -247,7 +247,7 @@ void xf_hw_desktop_resize(rdpContext* context)
 	}
 }
 
-boolean xf_get_fds(freerdp* instance, void** rfds, int* rcount, void** wfds, int* wcount)
+tbool xf_get_fds(freerdp* instance, void** rfds, int* rcount, void** wfds, int* wcount)
 {
 	xfInfo* xfi = ((xfContext*) instance->context)->xfi;
 
@@ -257,7 +257,7 @@ boolean xf_get_fds(freerdp* instance, void** rfds, int* rcount, void** wfds, int
 	return true;
 }
 
-boolean xf_check_fds(freerdp* instance, fd_set* set)
+tbool xf_check_fds(freerdp* instance, fd_set* set)
 {
 	XEvent xevent;
 	xfInfo* xfi = ((xfContext*) instance->context)->xfi;
@@ -343,7 +343,7 @@ void xf_toggle_fullscreen(xfInfo* xfi)
 	XFreePixmap(xfi->display, contents);
 }
 
-boolean xf_get_pixmap_info(xfInfo* xfi)
+tbool xf_get_pixmap_info(xfInfo* xfi)
 {
 	int i;
 	int vi_count;
@@ -406,7 +406,7 @@ boolean xf_get_pixmap_info(xfInfo* xfi)
 		 * (BGR vs RGB, or red being the least significant byte)
 		 */
 
-		if (vi->red_mask & 0xFF) 
+		if (vi->red_mask & 0xFF)
 		{
 			xfi->clrconv->invert = true;
 		}
@@ -450,13 +450,13 @@ int _xf_error_handler(Display* d, XErrorEvent* ev)
 	return xf_error_handler(d, ev);
 }
 
-boolean xf_pre_connect(freerdp* instance)
+tbool xf_pre_connect(freerdp* instance)
 {
 	xfInfo* xfi;
-	boolean bitmap_cache;
+	tbool bitmap_cache;
 	rdpSettings* settings;
 	int arg_parse_result;
-	
+
 	xfi = (xfInfo*) xzalloc(sizeof(xfInfo));
 	((xfContext*) instance->context)->xfi = xfi;
 
@@ -464,15 +464,15 @@ boolean xf_pre_connect(freerdp* instance)
 	xfi->context = (xfContext*) instance->context;
 	xfi->context->settings = instance->settings;
 	xfi->instance = instance;
-	
+
 	arg_parse_result = freerdp_parse_args(instance->settings, instance->context->argc,instance->context->argv,
 				xf_process_plugin_args, instance->context->channels, xf_process_client_args, xfi);
-	
+
 	if (arg_parse_result < 0)
 	{
 		if (arg_parse_result == FREERDP_ARGS_PARSE_FAILURE)
 			printf("failed to parse arguments.\n");
-		
+
 		exit(XF_EXIT_PARSE_ARGUMENTS);
 	}
 
@@ -588,7 +588,7 @@ void cpuid(unsigned info, unsigned *eax, unsigned *ebx, unsigned *ecx, unsigned 
 #endif
 #endif
 }
- 
+
 uint32 xf_detect_cpu()
 {
 	unsigned int eax, ebx, ecx, edx = 0;
@@ -596,7 +596,7 @@ uint32 xf_detect_cpu()
 
 	cpuid(1, &eax, &ebx, &ecx, &edx);
 
-	if (edx & (1<<26)) 
+	if (edx & (1<<26))
 	{
 		DEBUG("SSE2 detected");
 		cpu_opt |= CPU_SSE2;
@@ -605,7 +605,7 @@ uint32 xf_detect_cpu()
 	return cpu_opt;
 }
 
-boolean xf_post_connect(freerdp* instance)
+tbool xf_post_connect(freerdp* instance)
 {
 	xfInfo* xfi;
 	XGCValues gcv;
@@ -725,7 +725,7 @@ boolean xf_post_connect(freerdp* instance)
 	return true;
 }
 
-boolean xf_authenticate(freerdp* instance, char** username, char** password, char** domain)
+tbool xf_authenticate(freerdp* instance, char** username, char** password, char** domain)
 {
 	*password = xmalloc(password_size * sizeof(char));
 
@@ -735,7 +735,7 @@ boolean xf_authenticate(freerdp* instance, char** username, char** password, cha
 	return true;
 }
 
-boolean xf_verify_certificate(freerdp* instance, char* subject, char* issuer, char* fingerprint)
+tbool xf_verify_certificate(freerdp* instance, char* subject, char* issuer, char* fingerprint)
 {
 	char answer;
 
@@ -899,7 +899,7 @@ void xf_window_free(xfInfo* xfi)
 			context->rail = NULL;
 	}
 
-	if (xfi->rfx_context) 
+	if (xfi->rfx_context)
 	{
 		rfx_context_free(xfi->rfx_context);
 		xfi->rfx_context = NULL;

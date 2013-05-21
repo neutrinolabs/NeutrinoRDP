@@ -129,7 +129,7 @@ LRESULT CALLBACK wf_event_proc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam
 	int x, y, w, h;
 	PAINTSTRUCT ps;
 	rdpInput* input;
-	boolean processed;
+	tbool processed;
 
 	processed = true;
 	ptr = GetWindowLongPtr(hWnd, GWLP_USERDATA);
@@ -143,7 +143,7 @@ LRESULT CALLBACK wf_event_proc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam
 		{
 			case WM_PAINT:
 				hdc = BeginPaint(hWnd, &ps);
-				
+
 				x = ps.rcPaint.left;
 				y = ps.rcPaint.top;
 				w = ps.rcPaint.right - ps.rcPaint.left + 1;

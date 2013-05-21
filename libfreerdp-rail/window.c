@@ -30,7 +30,7 @@ struct _WINDOW_STYLE
 {
 	uint32 style;
 	const char* name;
-	boolean multi;
+	tbool multi;
 };
 typedef struct _WINDOW_STYLE WINDOW_STYLE;
 

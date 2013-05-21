@@ -68,12 +68,12 @@ static const char* const X11_EVENT_STRINGS[] =
 	"GenericEvent",
 };
 
-void xf_send_mouse_motion_event(rdpInput* input, boolean down, uint32 button, uint16 x, uint16 y)
+void xf_send_mouse_motion_event(rdpInput* input, tbool down, uint32 button, uint16 x, uint16 y)
 {
 	input->MouseEvent(input, PTR_FLAGS_MOVE, x, y);
 }
 
-boolean xf_event_Expose(xfInfo* xfi, XEvent* event, boolean app)
+tbool xf_event_Expose(xfInfo* xfi, XEvent* event, tbool app)
 {
 	int x, y;
 	int w, h;
@@ -110,13 +110,13 @@ boolean xf_event_Expose(xfInfo* xfi, XEvent* event, boolean app)
 	return true;
 }
 
-boolean xf_event_VisibilityNotify(xfInfo* xfi, XEvent* event, boolean app)
+tbool xf_event_VisibilityNotify(xfInfo* xfi, XEvent* event, tbool app)
 {
 	xfi->unobscured = event->xvisibility.state == VisibilityUnobscured;
 	return true;
 }
 
-boolean xf_event_MotionNotify(xfInfo* xfi, XEvent* event, boolean app)
+tbool xf_event_MotionNotify(xfInfo* xfi, XEvent* event, tbool app)
 {
 	rdpInput* input;
 
@@ -155,11 +155,11 @@ boolean xf_event_MotionNotify(xfInfo* xfi, XEvent* event, boolean app)
 	return true;
 }
 
-boolean xf_event_ButtonPress(xfInfo* xfi, XEvent* event, boolean app)
+tbool xf_event_ButtonPress(xfInfo* xfi, XEvent* event, tbool app)
 {
 	uint16 x, y;
 	uint16 flags;
-	boolean wheel;
+	tbool wheel;
 	rdpInput* input;
 
 	input = xfi->instance->input;
@@ -235,7 +235,7 @@ boolean xf_event_ButtonPress(xfInfo* xfi, XEvent* event, boolean app)
 	return true;
 }
 
-boolean xf_event_ButtonRelease(xfInfo* xfi, XEvent* event, boolean app)
+tbool xf_event_ButtonRelease(xfInfo* xfi, XEvent* event, tbool app)
 {
 	uint16 x, y;
 	uint16 flags;
@@ -294,7 +294,7 @@ boolean xf_event_ButtonRelease(xfInfo* xfi, XEvent* event, boolean app)
 	return true;
 }
 
-boolean xf_event_KeyPress(xfInfo* xfi, XEvent* event, boolean app)
+tbool xf_event_KeyPress(xfInfo* xfi, XEvent* event, tbool app)
 {
 	KeySym keysym;
 	char str[256];
@@ -311,7 +311,7 @@ boolean xf_event_KeyPress(xfInfo* xfi, XEvent* event, boolean app)
 	return true;
 }
 
-boolean xf_event_KeyRelease(xfInfo* xfi, XEvent* event, boolean app)
+tbool xf_event_KeyRelease(xfInfo* xfi, XEvent* event, tbool app)
 {
 	XEvent next_event;
 
@@ -333,7 +333,7 @@ boolean xf_event_KeyRelease(xfInfo* xfi, XEvent* event, boolean app)
 	return true;
 }
 
-boolean xf_event_FocusIn(xfInfo* xfi, XEvent* event, boolean app)
+tbool xf_event_FocusIn(xfInfo* xfi, XEvent* event, tbool app)
 {
 	if (event->xfocus.mode == NotifyGrab)
 		return true;
@@ -354,7 +354,7 @@ boolean xf_event_FocusIn(xfInfo* xfi, XEvent* event, boolean app)
 	return true;
 }
 
-boolean xf_event_FocusOut(xfInfo* xfi, XEvent* event, boolean app)
+tbool xf_event_FocusOut(xfInfo* xfi, XEvent* event, tbool app)
 {
 	if (event->xfocus.mode == NotifyUngrab)
 		return true;
@@ -370,7 +370,7 @@ boolean xf_event_FocusOut(xfInfo* xfi, XEvent* event, boolean app)
 	return true;
 }
 
-boolean xf_event_MappingNotify(xfInfo* xfi, XEvent* event, boolean app)
+tbool xf_event_MappingNotify(xfInfo* xfi, XEvent* event, tbool app)
 {
 	if (event->xmapping.request == MappingModifier)
 	{
@@ -381,7 +381,7 @@ boolean xf_event_MappingNotify(xfInfo* xfi, XEvent* event, boolean app)
 	return true;
 }
 
-boolean xf_event_ClientMessage(xfInfo* xfi, XEvent* event, boolean app)
+tbool xf_event_ClientMessage(xfInfo* xfi, XEvent* event, tbool app)
 {
 	if ((event->xclient.message_type == xfi->WM_PROTOCOLS) &&
 			((Atom) event->xclient.data.l[0] == xfi->WM_DELETE_WINDOW))
@@ -409,7 +409,7 @@ boolean xf_event_ClientMessage(xfInfo* xfi, XEvent* event, boolean app)
 	return true;
 }
 
-boolean xf_event_EnterNotify(xfInfo* xfi, XEvent* event, boolean app)
+tbool xf_event_EnterNotify(xfInfo* xfi, XEvent* event, tbool app)
 {
 	if (app != true)
 	{
@@ -440,7 +440,7 @@ boolean xf_event_EnterNotify(xfInfo* xfi, XEvent* event, boolean app)
 	return true;
 }
 
-boolean xf_event_LeaveNotify(xfInfo* xfi, XEvent* event, boolean app)
+tbool xf_event_LeaveNotify(xfInfo* xfi, XEvent* event, tbool app)
 {
 	if (app != true)
 	{
@@ -451,7 +451,7 @@ boolean xf_event_LeaveNotify(xfInfo* xfi, XEvent* event, boolean app)
 	return true;
 }
 
-boolean xf_event_ConfigureNotify(xfInfo* xfi, XEvent* event, boolean app)
+tbool xf_event_ConfigureNotify(xfInfo* xfi, XEvent* event, tbool app)
 {
 	rdpWindow* window;
 	rdpRail* rail = ((rdpContext*) xfi->context)->rail;
@@ -489,7 +489,7 @@ boolean xf_event_ConfigureNotify(xfInfo* xfi, XEvent* event, boolean app)
 	return True;
 }
 
-boolean xf_event_MapNotify(xfInfo* xfi, XEvent* event, boolean app)
+tbool xf_event_MapNotify(xfInfo* xfi, XEvent* event, tbool app)
 {
 	rdpWindow* window;
 	rdpRail* rail = ((rdpContext*) xfi->context)->rail;
@@ -510,7 +510,7 @@ boolean xf_event_MapNotify(xfInfo* xfi, XEvent* event, boolean app)
 	return true;
 }
 
-boolean xf_event_UnmapNotify(xfInfo* xfi, XEvent* event, boolean app)
+tbool xf_event_UnmapNotify(xfInfo* xfi, XEvent* event, tbool app)
 {
 	rdpWindow* window;
 	rdpRail* rail = ((rdpContext*) xfi->context)->rail;
@@ -529,7 +529,7 @@ boolean xf_event_UnmapNotify(xfInfo* xfi, XEvent* event, boolean app)
 	return true;
 }
 
-boolean xf_event_SelectionNotify(xfInfo* xfi, XEvent* event, boolean app)
+tbool xf_event_SelectionNotify(xfInfo* xfi, XEvent* event, tbool app)
 {
 	if (app != true)
 	{
@@ -540,7 +540,7 @@ boolean xf_event_SelectionNotify(xfInfo* xfi, XEvent* event, boolean app)
 	return true;
 }
 
-boolean xf_event_SelectionRequest(xfInfo* xfi, XEvent* event, boolean app)
+tbool xf_event_SelectionRequest(xfInfo* xfi, XEvent* event, tbool app)
 {
 	if (app != true)
 	{
@@ -551,7 +551,7 @@ boolean xf_event_SelectionRequest(xfInfo* xfi, XEvent* event, boolean app)
 	return true;
 }
 
-boolean xf_event_SelectionClear(xfInfo* xfi, XEvent* event, boolean app)
+tbool xf_event_SelectionClear(xfInfo* xfi, XEvent* event, tbool app)
 {
 	if (app != true)
 	{
@@ -562,7 +562,7 @@ boolean xf_event_SelectionClear(xfInfo* xfi, XEvent* event, boolean app)
 	return true;
 }
 
-boolean xf_event_PropertyNotify(xfInfo* xfi, XEvent* event, boolean app)
+tbool xf_event_PropertyNotify(xfInfo* xfi, XEvent* event, tbool app)
 {
 	if (app != true)
 	{
@@ -573,7 +573,7 @@ boolean xf_event_PropertyNotify(xfInfo* xfi, XEvent* event, boolean app)
 	return true;
 }
 
-boolean xf_event_suppress_events(xfInfo *xfi, rdpWindow *window, XEvent*event)
+tbool xf_event_suppress_events(xfInfo *xfi, rdpWindow *window, XEvent*event)
 {
 	if (! xfi->remote_app)
 		return false;
@@ -647,9 +647,9 @@ boolean xf_event_suppress_events(xfInfo *xfi, rdpWindow *window, XEvent*event)
 }
 
 
-boolean xf_event_process(freerdp* instance, XEvent* event)
+tbool xf_event_process(freerdp* instance, XEvent* event)
 {
-	boolean status = true;
+	tbool status = true;
 	xfInfo* xfi = ((xfContext*) instance->context)->xfi;
 	rdpRail* rail = ((rdpContext*) xfi->context)->rail;
 	rdpWindow* window;

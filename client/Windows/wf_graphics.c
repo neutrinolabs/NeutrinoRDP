@@ -77,7 +77,7 @@ wfBitmap* wf_image_new(wfInfo* wfi, int width, int height, int bpp, uint8* data)
 
 	image->org_bitmap = (HBITMAP) SelectObject(image->hdc, image->bitmap);
 	ReleaseDC(NULL, hdc);
-	
+
 	return image;
 }
 
@@ -92,7 +92,7 @@ wfBitmap* wf_bitmap_new(wfInfo* wfi, int width, int height, int bpp, uint8* data
 	bitmap->bitmap = wf_create_dib(wfi, width, height, bpp, data, &(bitmap->pdata));
 	bitmap->org_bitmap = (HBITMAP) SelectObject(bitmap->hdc, bitmap->bitmap);
 	ReleaseDC(NULL, hdc);
-	
+
 	return bitmap;
 }
 
@@ -132,7 +132,7 @@ void wf_Bitmap_New(rdpContext* context, rdpBitmap* bitmap)
 void wf_Bitmap_Free(rdpContext* context, rdpBitmap* bitmap)
 {
 	wfBitmap* wf_bitmap = (wfBitmap*) bitmap;
-	
+
 	if (wf_bitmap != 0)
 	{
 		SelectObject(wf_bitmap->hdc, wf_bitmap->org_bitmap);
@@ -157,7 +157,7 @@ void wf_Bitmap_Paint(rdpContext* context, rdpBitmap* bitmap)
 }
 
 void wf_Bitmap_Decompress(rdpContext* context, rdpBitmap* bitmap,
-		uint8* data, int width, int height, int bpp, int length, boolean compressed)
+		uint8* data, int width, int height, int bpp, int length, tbool compressed)
 {
 	uint16 size;
 
@@ -170,7 +170,7 @@ void wf_Bitmap_Decompress(rdpContext* context, rdpBitmap* bitmap,
 
 	if (compressed)
 	{
-		boolean status;
+		tbool status;
 
 		status = bitmap_decompress(data, bitmap->data, width, height, length, bpp, bpp);
 
@@ -189,7 +189,7 @@ void wf_Bitmap_Decompress(rdpContext* context, rdpBitmap* bitmap,
 	bitmap->bpp = bpp;
 }
 
-void wf_Bitmap_SetSurface(rdpContext* context, rdpBitmap* bitmap, boolean primary)
+void wf_Bitmap_SetSurface(rdpContext* context, rdpBitmap* bitmap, tbool primary)
 {
 	wfInfo* wfi = ((wfContext*) context)->wfi;
 

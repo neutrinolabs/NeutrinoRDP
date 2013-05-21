@@ -81,7 +81,7 @@ void tsmf_playback_ack(IWTSVirtualChannelCallback* pChannelCallback,
 	stream_write_uint32(s, callback->stream_id); /* StreamId */
 	stream_write_uint64(s, duration); /* DataDuration */
 	stream_write_uint64(s, data_size); /* cbData */
-	
+
 	DEBUG_DVC("response size %d", stream_get_length(s));
 	error = callback->channel->Write(callback->channel, stream_get_length(s), stream_get_head(s), NULL);
 	if (error)
@@ -91,7 +91,7 @@ void tsmf_playback_ack(IWTSVirtualChannelCallback* pChannelCallback,
 	stream_free(s);
 }
 
-boolean tsmf_push_event(IWTSVirtualChannelCallback* pChannelCallback,
+tbool tsmf_push_event(IWTSVirtualChannelCallback* pChannelCallback,
 	RDP_EVENT* event)
 {
 	int error;
@@ -415,7 +415,7 @@ static void tsmf_process_plugin_data(IWTSPlugin* pPlugin, RDP_PLUGIN_DATA* data)
 				tsmf->audio_device = data->data[3];
 			}
 		}
-		
+
 		data = (RDP_PLUGIN_DATA*)(((void*)data) + data->size);
 	}
 }

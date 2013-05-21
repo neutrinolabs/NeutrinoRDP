@@ -137,7 +137,7 @@ static const TSMFMediaTypeMap tsmf_sub_type_map[] =
 		"MEDIASUBTYPE_DOLBY_AC3",
 		TSMF_SUB_TYPE_AC3
 	},
-	
+
 	/* 5634504D-0000-0010-8000-00AA00389B71 */
 	/* Video: mpeg4, yuv420p, 1280x720 [PAR 1:1 DAR 16:9], 24 tbr, 24 tbn, 24 tbc */
 	{
@@ -224,7 +224,7 @@ static void tsmf_print_guid(const uint8* guid)
 }
 
 /* http://msdn.microsoft.com/en-us/library/dd318229.aspx */
-static uint32 tsmf_codec_parse_BITMAPINFOHEADER(TS_AM_MEDIA_TYPE* mediatype, STREAM* s, boolean bypass)
+static uint32 tsmf_codec_parse_BITMAPINFOHEADER(TS_AM_MEDIA_TYPE* mediatype, STREAM* s, tbool bypass)
 {
 	uint32 biSize;
 	uint32 biWidth;
@@ -273,11 +273,11 @@ static uint32 tsmf_codec_parse_VIDEOINFOHEADER2(TS_AM_MEDIA_TYPE* mediatype, STR
 	return 72;
 }
 
-boolean tsmf_codec_parse_media_type(TS_AM_MEDIA_TYPE* mediatype, STREAM* s)
+tbool tsmf_codec_parse_media_type(TS_AM_MEDIA_TYPE* mediatype, STREAM* s)
 {
 	int i;
 	uint32 cbFormat;
-	boolean ret = true;
+	tbool ret = true;
 
 	memset(mediatype, 0, sizeof(TS_AM_MEDIA_TYPE));
 
@@ -371,7 +371,7 @@ boolean tsmf_codec_parse_media_type(TS_AM_MEDIA_TYPE* mediatype, STREAM* s)
 			stream_read_uint16(s, mediatype->ExtraDataSize);
 			if (mediatype->ExtraDataSize > 0)
 				mediatype->ExtraData = stream_get_tail(s);
-			
+
 			break;
 
 		case TSMF_FORMAT_TYPE_MPEG2VIDEOINFO:
@@ -408,10 +408,10 @@ boolean tsmf_codec_parse_media_type(TS_AM_MEDIA_TYPE* mediatype, STREAM* s)
 	return ret;
 }
 
-boolean tsmf_codec_check_media_type(STREAM* s)
+tbool tsmf_codec_check_media_type(STREAM* s)
 {
 	uint8* m;
-	boolean ret;
+	tbool ret;
 	TS_AM_MEDIA_TYPE mediatype;
 
 	stream_get_mark(s, m);

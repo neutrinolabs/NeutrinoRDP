@@ -22,7 +22,7 @@
 
 #include "tls.h"
 
-boolean tls_connect(rdpTls* tls)
+tbool tls_connect(rdpTls* tls)
 {
 	int connection_status;
 
@@ -69,7 +69,7 @@ boolean tls_connect(rdpTls* tls)
 	return true;
 }
 
-boolean tls_accept(rdpTls* tls, const char* cert_file, const char* privatekey_file)
+tbool tls_accept(rdpTls* tls, const char* cert_file, const char* privatekey_file)
 {
 	int connection_status;
 
@@ -120,7 +120,7 @@ boolean tls_accept(rdpTls* tls, const char* cert_file, const char* privatekey_fi
 	return true;
 }
 
-boolean tls_disconnect(rdpTls* tls)
+tbool tls_disconnect(rdpTls* tls)
 {
 	SSL_shutdown(tls->ssl);
 	return true;
@@ -176,7 +176,7 @@ int tls_write(rdpTls* tls, uint8* data, int length)
 	return status;
 }
 
-boolean tls_print_error(char* func, SSL* connection, int value)
+tbool tls_print_error(char* func, SSL* connection, int value)
 {
 	switch (SSL_get_error(connection, value))
 	{
@@ -227,7 +227,7 @@ CryptoCert tls_get_certificate(rdpTls* tls)
 	return cert;
 }
 
-boolean tls_verify_certificate(rdpTls* tls, CryptoCert cert, char* hostname)
+tbool tls_verify_certificate(rdpTls* tls, CryptoCert cert, char* hostname)
 {
 	int match;
 	int index;
@@ -236,8 +236,8 @@ boolean tls_verify_certificate(rdpTls* tls, CryptoCert cert, char* hostname)
 	char** alt_names;
 	int alt_names_count;
 	int* alt_names_lengths;
-	boolean certificate_status;
-	boolean hostname_match = false;
+	tbool certificate_status;
+	tbool hostname_match = false;
 	rdpCertificateData* certificate_data;
 
 	/* ignore certificate verification if user explicitly required it (discouraged) */
@@ -298,8 +298,8 @@ boolean tls_verify_certificate(rdpTls* tls, CryptoCert cert, char* hostname)
 		char* issuer;
 		char* subject;
 		char* fingerprint;
-		boolean accept_certificate = false;
-		boolean verification_status = false;
+		tbool accept_certificate = false;
+		tbool verification_status = false;
 
 		issuer = crypto_cert_issuer(cert->px509);
 		subject = crypto_cert_subject(cert->px509);

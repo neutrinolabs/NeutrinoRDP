@@ -192,7 +192,7 @@ void xf_tsmf_uninit(xfInfo* xfi)
 	}
 }
 
-static boolean
+static tbool
 xf_tsmf_is_format_supported(xfXvContext* xv, uint32 pixfmt)
 {
 	int i;

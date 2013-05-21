@@ -70,7 +70,7 @@
 
 static uint32 tty_write_data(SERIAL_TTY* tty, uint8* data, int len);
 static void tty_set_termios(SERIAL_TTY* tty);
-static boolean tty_get_termios(SERIAL_TTY* tty);
+static tbool tty_get_termios(SERIAL_TTY* tty);
 static int tty_get_error_status();
 
 uint32 serial_tty_control(SERIAL_TTY* tty, uint32 IoControlCode, STREAM* input, STREAM* output, uint32* abort_io)
@@ -364,7 +364,7 @@ uint32 serial_tty_control(SERIAL_TTY* tty, uint32 IoControlCode, STREAM* input, 
 	return ret;
 }
 
-boolean serial_tty_read(SERIAL_TTY* tty, uint8* buffer, uint32* Length)
+tbool serial_tty_read(SERIAL_TTY* tty, uint8* buffer, uint32* Length)
 {
 	long timeout = 90;
 	struct termios *ptermios;
@@ -413,7 +413,7 @@ boolean serial_tty_read(SERIAL_TTY* tty, uint8* buffer, uint32* Length)
 	return true;
 }
 
-boolean serial_tty_write(SERIAL_TTY* tty, uint8* buffer, uint32 Length)
+tbool serial_tty_write(SERIAL_TTY* tty, uint8* buffer, uint32 Length)
 {
 	ssize_t r;
 	uint32 event_txempty = Length;
@@ -505,10 +505,10 @@ SERIAL_TTY* serial_tty_new(const char* path, uint32 id)
 	return tty;
 }
 
-boolean serial_tty_get_event(SERIAL_TTY* tty, uint32* result)
+tbool serial_tty_get_event(SERIAL_TTY* tty, uint32* result)
 {
 	int bytes;
-	boolean ret = false;
+	tbool ret = false;
 
 	DEBUG_SVC("in");
 
@@ -602,7 +602,7 @@ boolean serial_tty_get_event(SERIAL_TTY* tty, uint32* result)
 	return ret;
 }
 
-static boolean tty_get_termios(SERIAL_TTY* tty)
+static tbool tty_get_termios(SERIAL_TTY* tty)
 {
 	speed_t speed;
 	struct termios *ptermios;

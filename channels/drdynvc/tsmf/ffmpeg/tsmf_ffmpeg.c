@@ -50,7 +50,7 @@ typedef struct _TSMFFFmpegDecoder
 	uint32 decoded_size_max;
 } TSMFFFmpegDecoder;
 
-static boolean tsmf_ffmpeg_init_context(ITSMFDecoder* decoder)
+static tbool tsmf_ffmpeg_init_context(ITSMFDecoder* decoder)
 {
 	TSMFFFmpegDecoder* mdecoder = (TSMFFFmpegDecoder*) decoder;
 
@@ -64,7 +64,7 @@ static boolean tsmf_ffmpeg_init_context(ITSMFDecoder* decoder)
 	return true;
 }
 
-static boolean tsmf_ffmpeg_init_video_stream(ITSMFDecoder* decoder, const TS_AM_MEDIA_TYPE* media_type)
+static tbool tsmf_ffmpeg_init_video_stream(ITSMFDecoder* decoder, const TS_AM_MEDIA_TYPE* media_type)
 {
 	TSMFFFmpegDecoder* mdecoder = (TSMFFFmpegDecoder*) decoder;
 
@@ -79,7 +79,7 @@ static boolean tsmf_ffmpeg_init_video_stream(ITSMFDecoder* decoder, const TS_AM_
 	return true;
 }
 
-static boolean tsmf_ffmpeg_init_audio_stream(ITSMFDecoder* decoder, const TS_AM_MEDIA_TYPE* media_type)
+static tbool tsmf_ffmpeg_init_audio_stream(ITSMFDecoder* decoder, const TS_AM_MEDIA_TYPE* media_type)
 {
 	TSMFFFmpegDecoder* mdecoder = (TSMFFFmpegDecoder*) decoder;
 
@@ -101,7 +101,7 @@ static boolean tsmf_ffmpeg_init_audio_stream(ITSMFDecoder* decoder, const TS_AM_
 	return true;
 }
 
-static boolean tsmf_ffmpeg_init_stream(ITSMFDecoder* decoder, const TS_AM_MEDIA_TYPE* media_type)
+static tbool tsmf_ffmpeg_init_stream(ITSMFDecoder* decoder, const TS_AM_MEDIA_TYPE* media_type)
 {
 	TSMFFFmpegDecoder* mdecoder = (TSMFFFmpegDecoder*) decoder;
 	uint32 size;
@@ -170,7 +170,7 @@ static boolean tsmf_ffmpeg_init_stream(ITSMFDecoder* decoder, const TS_AM_MEDIA_
 	return true;
 }
 
-static boolean tsmf_ffmpeg_prepare(ITSMFDecoder* decoder)
+static tbool tsmf_ffmpeg_prepare(ITSMFDecoder* decoder)
 {
 	TSMFFFmpegDecoder* mdecoder = (TSMFFFmpegDecoder*) decoder;
 
@@ -185,7 +185,7 @@ static boolean tsmf_ffmpeg_prepare(ITSMFDecoder* decoder)
 	return true;
 }
 
-static boolean tsmf_ffmpeg_set_format(ITSMFDecoder* decoder, TS_AM_MEDIA_TYPE* media_type)
+static tbool tsmf_ffmpeg_set_format(ITSMFDecoder* decoder, TS_AM_MEDIA_TYPE* media_type)
 {
 	TSMFFFmpegDecoder* mdecoder = (TSMFFFmpegDecoder*) decoder;
 
@@ -276,7 +276,7 @@ static int n_save_data(const uint8* data, uint32 data_size, int width, int heigh
 		int height;
 		int bytes_follow;
 	} header;
-	
+
 	fd = open("video.bin", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
 	lseek(fd, 0, SEEK_END);
 	header.tag[0] = 'B';
@@ -300,13 +300,13 @@ static int n_save_data(const uint8* data, uint32 data_size, int width, int heigh
 }
 #endif
 
-static boolean tsmf_ffmpeg_decode_video(ITSMFDecoder* decoder, const uint8* data, uint32 data_size, uint32 extensions)
+static tbool tsmf_ffmpeg_decode_video(ITSMFDecoder* decoder, const uint8* data, uint32 data_size, uint32 extensions)
 {
 	TSMFFFmpegDecoder* mdecoder = (TSMFFFmpegDecoder*) decoder;
 	int decoded;
 	int len;
 	AVFrame* frame;
-	boolean ret = true;
+	tbool ret = true;
 
 #if LIBAVCODEC_VERSION_MAJOR < 52 || (LIBAVCODEC_VERSION_MAJOR == 52 && LIBAVCODEC_VERSION_MINOR <= 20)
 	len = avcodec_decode_video(mdecoder->codec_context, mdecoder->frame, &decoded, data, data_size);
@@ -363,7 +363,7 @@ static boolean tsmf_ffmpeg_decode_video(ITSMFDecoder* decoder, const uint8* data
 	return ret;
 }
 
-static boolean tsmf_ffmpeg_decode_audio(ITSMFDecoder* decoder, const uint8* data, uint32 data_size, uint32 extensions)
+static tbool tsmf_ffmpeg_decode_audio(ITSMFDecoder* decoder, const uint8* data, uint32 data_size, uint32 extensions)
 {
 	TSMFFFmpegDecoder* mdecoder = (TSMFFFmpegDecoder*) decoder;
 	int len;
@@ -453,7 +453,7 @@ static boolean tsmf_ffmpeg_decode_audio(ITSMFDecoder* decoder, const uint8* data
 	return true;
 }
 
-static boolean tsmf_ffmpeg_decode(ITSMFDecoder* decoder, const uint8* data, uint32 data_size, uint32 extensions)
+static tbool tsmf_ffmpeg_decode(ITSMFDecoder* decoder, const uint8* data, uint32 data_size, uint32 extensions)
 {
 	TSMFFFmpegDecoder* mdecoder = (TSMFFFmpegDecoder*) decoder;
 
@@ -504,7 +504,7 @@ static uint32 tsmf_ffmpeg_get_decoded_format(ITSMFDecoder* decoder)
 	}
 }
 
-static boolean tsmf_ffmpeg_get_decoded_dimension(ITSMFDecoder* decoder, uint32* width, uint32* height)
+static tbool tsmf_ffmpeg_get_decoded_dimension(ITSMFDecoder* decoder, uint32* width, uint32* height)
 {
 	TSMFFFmpegDecoder* mdecoder = (TSMFFFmpegDecoder*) decoder;
 
@@ -539,7 +539,7 @@ static void tsmf_ffmpeg_free(ITSMFDecoder* decoder)
 	xfree(decoder);
 }
 
-static boolean initialized = false;
+static tbool initialized = false;
 
 ITSMFDecoder*
 TSMFDecoderEntry(void)
