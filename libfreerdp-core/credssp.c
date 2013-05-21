@@ -83,7 +83,7 @@ int credssp_ntlmssp_init(rdpCredssp* credssp)
 	{
 		if(instance->Authenticate)
 		{
-			boolean proceed = instance->Authenticate(instance,
+			tbool proceed = instance->Authenticate(instance,
 					&settings->username, &settings->password, &settings->domain);
 			if (!proceed)
 				return 0;
@@ -127,7 +127,7 @@ int credssp_get_public_key(rdpCredssp* credssp)
 {
 	int status;
 	CryptoCert cert;
-	
+
 	cert = tls_get_certificate(credssp->transport->tls);
 
 	if (cert == NULL)

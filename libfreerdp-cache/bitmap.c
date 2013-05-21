@@ -145,7 +145,7 @@ void update_gdi_bitmap_update(rdpContext* context, BITMAP_UPDATE* bitmap_update)
 	int i;
 	rdpBitmap* bitmap;
 	BITMAP_DATA* bitmap_data;
-	boolean reused = true;
+	tbool reused = true;
 	rdpCache* cache = context->cache;
 
 	if (cache->bitmap->bitmap == NULL)

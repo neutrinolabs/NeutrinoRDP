@@ -56,7 +56,7 @@
 	(st.st_mode & S_IWUSR ? 0 : FILE_ATTRIBUTE_READONLY))
 
 
-static boolean disk_file_wildcard_match(const char* pattern, const char* filename)
+static tbool disk_file_wildcard_match(const char* pattern, const char* filename)
 {
 	const char *p = pattern, *f = filename;
 	char c;
@@ -112,13 +112,13 @@ static char* disk_file_combine_fullpath(const char* base_path, const char* path)
 	return fullpath;
 }
 
-static boolean disk_file_remove_dir(const char* path)
+static tbool disk_file_remove_dir(const char* path)
 {
 	DIR* dir;
 	struct dirent* pdirent;
 	struct stat st;
 	char* p;
-	boolean ret = true;
+	tbool ret = true;
 
 	dir = opendir(path);
 	if (dir == NULL)
@@ -183,11 +183,11 @@ static void disk_file_set_fullpath(DISK_FILE* file, char* fullpath)
 		file->filename += 1;
 }
 
-static boolean disk_file_init(DISK_FILE* file, uint32 DesiredAccess, uint32 CreateDisposition, uint32 CreateOptions)
+static tbool disk_file_init(DISK_FILE* file, uint32 DesiredAccess, uint32 CreateDisposition, uint32 CreateOptions)
 {
 	const static int mode = S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH;
 	struct stat st;
-	boolean exists;
+	tbool exists;
 	int oflag = 0;
 
 	if (stat(file->fullpath, &st) == 0)
@@ -310,7 +310,7 @@ void disk_file_free(DISK_FILE* file)
 	xfree(file);
 }
 
-boolean disk_file_seek(DISK_FILE* file, uint64 Offset)
+tbool disk_file_seek(DISK_FILE* file, uint64 Offset)
 {
 	if (file->is_dir || file->fd == -1)
 		return false;
@@ -321,7 +321,7 @@ boolean disk_file_seek(DISK_FILE* file, uint64 Offset)
 	return true;
 }
 
-boolean disk_file_read(DISK_FILE* file, uint8* buffer, uint32* Length)
+tbool disk_file_read(DISK_FILE* file, uint8* buffer, uint32* Length)
 {
 	ssize_t r;
 
@@ -336,7 +336,7 @@ boolean disk_file_read(DISK_FILE* file, uint8* buffer, uint32* Length)
 	return true;
 }
 
-boolean disk_file_write(DISK_FILE* file, uint8* buffer, uint32 Length)
+tbool disk_file_write(DISK_FILE* file, uint8* buffer, uint32 Length)
 {
 	ssize_t r;
 
@@ -355,7 +355,7 @@ boolean disk_file_write(DISK_FILE* file, uint8* buffer, uint32 Length)
 	return true;
 }
 
-boolean disk_file_query_information(DISK_FILE* file, uint32 FsInformationClass, STREAM* output)
+tbool disk_file_query_information(DISK_FILE* file, uint32 FsInformationClass, STREAM* output)
 {
 	struct stat st;
 
@@ -406,7 +406,7 @@ boolean disk_file_query_information(DISK_FILE* file, uint32 FsInformationClass, 
 	return true;
 }
 
-boolean disk_file_set_information(DISK_FILE* file, uint32 FsInformationClass, uint32 Length, STREAM* input)
+tbool disk_file_set_information(DISK_FILE* file, uint32 FsInformationClass, uint32 Length, STREAM* input)
 {
 	char* s;
 	mode_t m;
@@ -502,7 +502,7 @@ boolean disk_file_set_information(DISK_FILE* file, uint32 FsInformationClass, ui
 	return true;
 }
 
-boolean disk_file_query_directory(DISK_FILE* file, uint32 FsInformationClass, uint8 InitialQuery,
+tbool disk_file_query_directory(DISK_FILE* file, uint32 FsInformationClass, uint8 InitialQuery,
 	const char* path, STREAM* output)
 {
 	struct dirent* ent;
@@ -510,7 +510,7 @@ boolean disk_file_query_directory(DISK_FILE* file, uint32 FsInformationClass, ui
 	struct stat st;
 	UNICONV* uniconv;
 	size_t len;
-	boolean ret;
+	tbool ret;
 
 	DEBUG_SVC("path %s FsInformationClass %d InitialQuery %d", path, FsInformationClass, InitialQuery);
 

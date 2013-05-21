@@ -2,7 +2,7 @@
  * FreeRDP: A Remote Desktop Protocol client.
  * Clipboard Virtual Channel
  *
- * Copyright 2009-2011 Jay Sorg
+ * Copyright 2009-2013 Jay Sorg
  * Copyright 2010-2011 Vic Lee
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,11 +36,11 @@ struct cliprdr_plugin
 {
 	rdpSvcPlugin plugin;
 	UNICONV* uniconv;
-	boolean received_caps;
-	boolean use_long_format_names;
-	boolean stream_fileclip_enabled;
-	boolean fileclip_no_file_paths;
-	boolean can_lock_clipdata;
+	tbool received_caps;
+	tbool use_long_format_names;
+	tbool stream_fileclip_enabled;
+	tbool fileclip_no_file_paths;
+	tbool can_lock_clipdata;
 	CLIPRDR_FORMAT_NAME* format_names;
 	int num_format_names;
 };

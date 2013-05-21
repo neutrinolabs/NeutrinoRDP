@@ -2,7 +2,7 @@
  * FreeRDP: A Remote Desktop Protocol client.
  * Virtual Channel Manager
  *
- * Copyright 2009-2011 Jay Sorg
+ * Copyright 2009-2013 Jay Sorg
  * Copyright 2010-2011 Vic Lee
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -932,7 +932,7 @@ static void freerdp_channels_process_sync(rdpChannels* channels, freerdp* instan
 /**
  * called only from main thread
  */
-boolean freerdp_channels_get_fds(rdpChannels* channels, freerdp* instance, void** read_fds,
+tbool freerdp_channels_get_fds(rdpChannels* channels, freerdp* instance, void** read_fds,
 	int* read_count, void** write_fds, int* write_count)
 {
 	wait_obj_get_fds(channels->signal, read_fds, read_count);
@@ -942,7 +942,7 @@ boolean freerdp_channels_get_fds(rdpChannels* channels, freerdp* instance, void*
 /**
  * called only from main thread
  */
-boolean freerdp_channels_check_fds(rdpChannels* channels, freerdp* instance)
+tbool freerdp_channels_check_fds(rdpChannels* channels, freerdp* instance)
 {
 	if (wait_obj_is_set(channels->signal))
 	{

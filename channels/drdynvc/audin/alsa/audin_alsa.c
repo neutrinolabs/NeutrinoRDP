@@ -52,7 +52,7 @@ typedef struct _AudinALSADevice
 	void* user_data;
 } AudinALSADevice;
 
-static boolean audin_alsa_set_params(AudinALSADevice* alsa, snd_pcm_t* capture_handle)
+static tbool audin_alsa_set_params(AudinALSADevice* alsa, snd_pcm_t* capture_handle)
 {
 	int error;
 	snd_pcm_hw_params_t* hw_params;
@@ -87,7 +87,7 @@ static boolean audin_alsa_set_params(AudinALSADevice* alsa, snd_pcm_t* capture_h
 	return true;
 }
 
-static boolean audin_alsa_thread_receive(AudinALSADevice* alsa, uint8* src, int size)
+static tbool audin_alsa_thread_receive(AudinALSADevice* alsa, uint8* src, int size)
 {
 	int frames;
 	int cframes;
@@ -236,7 +236,7 @@ static void audin_alsa_free(IAudinDevice* device)
 	xfree(alsa);
 }
 
-static boolean audin_alsa_format_supported(IAudinDevice* device, audinFormat* format)
+static tbool audin_alsa_format_supported(IAudinDevice* device, audinFormat* format)
 {
 	switch (format->wFormatTag)
 	{

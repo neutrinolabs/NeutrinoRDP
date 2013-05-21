@@ -138,7 +138,7 @@ static const uint8 BMF_BPP[] =
 		0, 1, 0, 8, 16, 24, 32
 };
 
-INLINE void update_read_coord(STREAM* s, sint32* coord, boolean delta)
+INLINE void update_read_coord(STREAM* s, sint32* coord, tbool delta)
 {
 	sint8 lsi8;
 	sint16 lsi16;
@@ -214,7 +214,7 @@ INLINE void update_read_2byte_unsigned(STREAM* s, uint32* value)
 INLINE void update_read_2byte_signed(STREAM* s, sint32* value)
 {
 	uint8 byte;
-	boolean negative;
+	tbool negative;
 
 	stream_read_uint8(s, byte);
 
@@ -1182,7 +1182,7 @@ void update_read_ellipse_cb_order(STREAM* s, ORDER_INFO* orderInfo, ELLIPSE_CB_O
 
 /* Secondary Drawing Orders */
 
-void update_read_cache_bitmap_order(STREAM* s, CACHE_BITMAP_ORDER* cache_bitmap_order, boolean compressed, uint16 flags)
+void update_read_cache_bitmap_order(STREAM* s, CACHE_BITMAP_ORDER* cache_bitmap_order, tbool compressed, uint16 flags)
 {
 	stream_read_uint8(s, cache_bitmap_order->cacheId); /* cacheId (1 byte) */
 	stream_seek_uint8(s); /* pad1Octet (1 byte) */
@@ -1211,7 +1211,7 @@ void update_read_cache_bitmap_order(STREAM* s, CACHE_BITMAP_ORDER* cache_bitmap_
 	cache_bitmap_order->compressed = compressed;
 }
 
-void update_read_cache_bitmap_v2_order(STREAM* s, CACHE_BITMAP_V2_ORDER* cache_bitmap_v2_order, boolean compressed, uint16 flags)
+void update_read_cache_bitmap_v2_order(STREAM* s, CACHE_BITMAP_V2_ORDER* cache_bitmap_v2_order, tbool compressed, uint16 flags)
 {
 	uint8 bitsPerPixelId;
 
@@ -1266,7 +1266,7 @@ void update_read_cache_bitmap_v2_order(STREAM* s, CACHE_BITMAP_V2_ORDER* cache_b
 	cache_bitmap_v2_order->compressed = compressed;
 }
 
-void update_read_cache_bitmap_v3_order(STREAM* s, CACHE_BITMAP_V3_ORDER* cache_bitmap_v3_order, boolean compressed, uint16 flags)
+void update_read_cache_bitmap_v3_order(STREAM* s, CACHE_BITMAP_V3_ORDER* cache_bitmap_v3_order, tbool compressed, uint16 flags)
 {
 	uint8 bitsPerPixelId;
 	BITMAP_DATA_EX* bitmapData;
@@ -1427,7 +1427,7 @@ void update_read_cache_brush_order(STREAM* s, CACHE_BRUSH_ORDER* cache_brush_ord
 	int i;
 	int size;
 	uint8 iBitmapFormat;
-	boolean compressed = false;
+	tbool compressed = false;
 
 	stream_read_uint8(s, cache_brush_order->index); /* cacheEntry (1 byte) */
 
@@ -1493,7 +1493,7 @@ void update_read_cache_brush_order(STREAM* s, CACHE_BRUSH_ORDER* cache_brush_ord
 void update_read_create_offscreen_bitmap_order(STREAM* s, CREATE_OFFSCREEN_BITMAP_ORDER* create_offscreen_bitmap)
 {
 	uint16 flags;
-	boolean deleteListPresent;
+	tbool deleteListPresent;
 	OFFSCREEN_DELETE_LIST* deleteList;
 
 	stream_read_uint16(s, flags); /* flags (2 bytes) */

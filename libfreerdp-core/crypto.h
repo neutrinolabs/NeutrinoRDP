@@ -121,9 +121,9 @@ char* crypto_cert_issuer(X509* xcert);
 void crypto_cert_print_info(X509* xcert);
 void crypto_cert_free(CryptoCert cert);
 
-boolean x509_verify_certificate(CryptoCert cert, char* certificate_store_path);
+tbool x509_verify_certificate(CryptoCert cert, char* certificate_store_path);
 rdpCertificateData* crypto_get_certificate_data(X509* xcert, char* hostname);
-boolean crypto_cert_get_public_key(CryptoCert cert, rdpBlob* public_key);
+tbool crypto_cert_get_public_key(CryptoCert cert, rdpBlob* public_key);
 
 #define	TSSK_KEY_LENGTH	64
 extern const uint8 tssk_modulus[];

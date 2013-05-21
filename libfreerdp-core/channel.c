@@ -29,7 +29,7 @@
 #include "rdp.h"
 #include "channel.h"
 
-boolean freerdp_channel_send(rdpRdp* rdp, uint16 channel_id, uint8* data, int size)
+tbool freerdp_channel_send(rdpRdp* rdp, uint16 channel_id, uint8* data, int size)
 {
 	STREAM* s;
 	uint32 flags;

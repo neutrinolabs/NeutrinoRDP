@@ -34,7 +34,7 @@
  * Fast-Path packet format is defined in [MS-RDPBCGR] 2.2.9.1.2, which revises
  * server output packets from the first byte with the goal of improving
  * bandwidth.
- * 
+ *
  * Slow-Path packet always starts with TPKT header, which has the first
  * byte 0x03, while Fast-Path packet starts with 2 zero bits in the first
  * two less significant bits of the first byte.
@@ -299,7 +299,7 @@ static void fastpath_recv_update_data(rdpFastPath* fastpath, STREAM* s)
 		xfree(comp_stream);
 }
 
-boolean fastpath_recv_updates(rdpFastPath* fastpath, STREAM* s)
+tbool fastpath_recv_updates(rdpFastPath* fastpath, STREAM* s)
 {
 	rdpUpdate* update = fastpath->rdp->update;
 
@@ -315,7 +315,7 @@ boolean fastpath_recv_updates(rdpFastPath* fastpath, STREAM* s)
 	return true;
 }
 
-static boolean fastpath_read_input_event_header(STREAM* s, uint8* eventFlags, uint8* eventCode)
+static tbool fastpath_read_input_event_header(STREAM* s, uint8* eventFlags, uint8* eventCode)
 {
 	uint8 eventHeader;
 
@@ -330,7 +330,7 @@ static boolean fastpath_read_input_event_header(STREAM* s, uint8* eventFlags, ui
 	return true;
 }
 
-static boolean fastpath_recv_input_event_scancode(rdpFastPath* fastpath, STREAM* s, uint8 eventFlags)
+static tbool fastpath_recv_input_event_scancode(rdpFastPath* fastpath, STREAM* s, uint8 eventFlags)
 {
 	uint16 flags;
 	uint16 code;
@@ -354,7 +354,7 @@ static boolean fastpath_recv_input_event_scancode(rdpFastPath* fastpath, STREAM*
 	return true;
 }
 
-static boolean fastpath_recv_input_event_mouse(rdpFastPath* fastpath, STREAM* s, uint8 eventFlags)
+static tbool fastpath_recv_input_event_mouse(rdpFastPath* fastpath, STREAM* s, uint8 eventFlags)
 {
 	uint16 pointerFlags;
 	uint16 xPos;
@@ -372,7 +372,7 @@ static boolean fastpath_recv_input_event_mouse(rdpFastPath* fastpath, STREAM* s,
 	return true;
 }
 
-static boolean fastpath_recv_input_event_mousex(rdpFastPath* fastpath, STREAM* s, uint8 eventFlags)
+static tbool fastpath_recv_input_event_mousex(rdpFastPath* fastpath, STREAM* s, uint8 eventFlags)
 {
 	uint16 pointerFlags;
 	uint16 xPos;
@@ -390,14 +390,14 @@ static boolean fastpath_recv_input_event_mousex(rdpFastPath* fastpath, STREAM* s
 	return true;
 }
 
-static boolean fastpath_recv_input_event_sync(rdpFastPath* fastpath, STREAM* s, uint8 eventFlags)
+static tbool fastpath_recv_input_event_sync(rdpFastPath* fastpath, STREAM* s, uint8 eventFlags)
 {
 	IFCALL(fastpath->rdp->input->SynchronizeEvent, fastpath->rdp->input, eventFlags);
 
 	return true;
 }
 
-static boolean fastpath_recv_input_event_unicode(rdpFastPath* fastpath, STREAM* s, uint8 eventFlags)
+static tbool fastpath_recv_input_event_unicode(rdpFastPath* fastpath, STREAM* s, uint8 eventFlags)
 {
 	uint16 unicodeCode;
 	uint16 flags;
@@ -418,7 +418,7 @@ static boolean fastpath_recv_input_event_unicode(rdpFastPath* fastpath, STREAM* 
 	return true;
 }
 
-static boolean fastpath_recv_input_event(rdpFastPath* fastpath, STREAM* s)
+static tbool fastpath_recv_input_event(rdpFastPath* fastpath, STREAM* s)
 {
 	uint8 eventFlags;
 	uint8 eventCode;
@@ -461,7 +461,7 @@ static boolean fastpath_recv_input_event(rdpFastPath* fastpath, STREAM* s)
 	return true;
 }
 
-boolean fastpath_recv_inputs(rdpFastPath* fastpath, STREAM* s)
+tbool fastpath_recv_inputs(rdpFastPath* fastpath, STREAM* s)
 {
 	uint8 i;
 
@@ -521,7 +521,7 @@ STREAM* fastpath_input_pdu_init(rdpFastPath* fastpath, uint8 eventFlags, uint8 e
 	return s;
 }
 
-boolean fastpath_send_input_pdu(rdpFastPath* fastpath, STREAM* s)
+tbool fastpath_send_input_pdu(rdpFastPath* fastpath, STREAM* s)
 {
 	rdpRdp *rdp;
 	uint16 length;
@@ -586,7 +586,7 @@ STREAM* fastpath_update_pdu_init(rdpFastPath* fastpath)
 	return s;
 }
 
-boolean fastpath_send_update_pdu(rdpFastPath* fastpath, uint8 updateCode, STREAM* s)
+tbool fastpath_send_update_pdu(rdpFastPath* fastpath, uint8 updateCode, STREAM* s)
 {
 	rdpRdp *rdp;
 	uint8* bm;
@@ -594,7 +594,7 @@ boolean fastpath_send_update_pdu(rdpFastPath* fastpath, uint8 updateCode, STREAM
 	int fragment;
 	int sec_bytes;
 	uint16 length;
-	boolean result;
+	tbool result;
 	uint16 pduLength;
 	uint16 maxLength;
 	uint32 totalLength;

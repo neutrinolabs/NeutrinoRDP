@@ -74,7 +74,7 @@ void* freerdp_get_library_symbol(void* library, const char* name)
 	return symbol;
 }
 
-boolean freerdp_close_library(void* library)
+tbool freerdp_close_library(void* library)
 {
 	int status;
 

@@ -122,7 +122,7 @@ STREAM* license_send_stream_init(rdpLicense* license)
  * @param s stream
  */
 
-boolean license_send(rdpLicense* license, STREAM* s, uint8 type)
+tbool license_send(rdpLicense* license, STREAM* s, uint8 type)
 {
 	int length;
 	uint8 flags;
@@ -165,7 +165,7 @@ boolean license_send(rdpLicense* license, STREAM* s, uint8 type)
  * @param s stream
  */
 
-boolean license_recv(rdpLicense* license, STREAM* s)
+tbool license_recv(rdpLicense* license, STREAM* s)
 {
 	uint16 length;
 	uint16 channelId;
@@ -860,7 +860,7 @@ void license_send_platform_challenge_response_packet(rdpLicense* license)
  * @param license license module
  */
 
-boolean license_send_valid_client_error_packet(rdpLicense* license)
+tbool license_send_valid_client_error_packet(rdpLicense* license)
 {
 	STREAM* s;
 

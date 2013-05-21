@@ -196,7 +196,7 @@ void input_send_fastpath_extended_mouse_event(rdpInput* input, uint16 flags, uin
 	fastpath_send_input_pdu(rdp->fastpath, s);
 }
 
-static boolean input_recv_sync_event(rdpInput* input, STREAM* s)
+static tbool input_recv_sync_event(rdpInput* input, STREAM* s)
 {
 	uint32 toggleFlags;
 
@@ -211,7 +211,7 @@ static boolean input_recv_sync_event(rdpInput* input, STREAM* s)
 	return true;
 }
 
-static boolean input_recv_keyboard_event(rdpInput* input, STREAM* s)
+static tbool input_recv_keyboard_event(rdpInput* input, STREAM* s)
 {
 	uint16 keyboardFlags, keyCode;
 
@@ -227,7 +227,7 @@ static boolean input_recv_keyboard_event(rdpInput* input, STREAM* s)
 	return true;
 }
 
-static boolean input_recv_unicode_keyboard_event(rdpInput* input, STREAM* s)
+static tbool input_recv_unicode_keyboard_event(rdpInput* input, STREAM* s)
 {
 	uint16 keyboardFlags, unicodeCode;
 
@@ -256,7 +256,7 @@ static boolean input_recv_unicode_keyboard_event(rdpInput* input, STREAM* s)
 	return true;
 }
 
-static boolean input_recv_mouse_event(rdpInput* input, STREAM* s)
+static tbool input_recv_mouse_event(rdpInput* input, STREAM* s)
 {
 	uint16 pointerFlags, xPos, yPos;
 
@@ -272,7 +272,7 @@ static boolean input_recv_mouse_event(rdpInput* input, STREAM* s)
 	return true;
 }
 
-static boolean input_recv_extended_mouse_event(rdpInput* input, STREAM* s)
+static tbool input_recv_extended_mouse_event(rdpInput* input, STREAM* s)
 {
 	uint16 pointerFlags, xPos, yPos;
 
@@ -288,7 +288,7 @@ static boolean input_recv_extended_mouse_event(rdpInput* input, STREAM* s)
 	return true;
 }
 
-static boolean input_recv_event(rdpInput* input, STREAM* s)
+static tbool input_recv_event(rdpInput* input, STREAM* s)
 {
 	uint16 messageType;
 
@@ -335,7 +335,7 @@ static boolean input_recv_event(rdpInput* input, STREAM* s)
 	return true;
 }
 
-boolean input_recv(rdpInput* input, STREAM* s)
+tbool input_recv(rdpInput* input, STREAM* s)
 {
 	uint16 i, numberEvents;
 

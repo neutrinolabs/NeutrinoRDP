@@ -39,7 +39,7 @@ static void my_init_source(j_decompress_ptr cinfo)
 }
 
 /*****************************************************************************/
-static boolean my_fill_input_buffer(j_decompress_ptr cinfo)
+static tbool my_fill_input_buffer(j_decompress_ptr cinfo)
 {
 	struct mydata_decomp* md;
 
@@ -55,7 +55,7 @@ static void my_skip_input_data(j_decompress_ptr cinfo, long num_bytes)
 }
 
 /*****************************************************************************/
-static boolean my_resync_to_restart(j_decompress_ptr cinfo, int desired)
+static tbool my_resync_to_restart(j_decompress_ptr cinfo, int desired)
 {
 	return 1;
 }
@@ -118,7 +118,7 @@ do_decompress(char* comp_data, int comp_data_bytes,
 }
 
 /* jpeg decompress */
-boolean
+tbool
 jpeg_decompress(uint8 * input, uint8 * output, int width, int height, int size, int bpp)
 {
 	int lwidth;
@@ -145,7 +145,7 @@ jpeg_decompress(uint8 * input, uint8 * output, int width, int height, int size, 
 
 #else
 
-boolean
+tbool
 jpeg_decompress(uint8 * input, uint8 * output, int width, int height, int size, int bpp)
 {
 	return 0;

@@ -82,7 +82,7 @@ void df_end_paint(rdpContext* context)
 	dfi->primary->Blit(dfi->primary, dfi->surface, &(dfi->update_rect), dfi->update_rect.x, dfi->update_rect.y);
 }
 
-boolean df_get_fds(freerdp* instance, void** rfds, int* rcount, void** wfds, int* wcount)
+tbool df_get_fds(freerdp* instance, void** rfds, int* rcount, void** wfds, int* wcount)
 {
 	dfInfo* dfi;
 
@@ -94,7 +94,7 @@ boolean df_get_fds(freerdp* instance, void** rfds, int* rcount, void** wfds, int
 	return true;
 }
 
-boolean df_check_fds(freerdp* instance, fd_set* set)
+tbool df_check_fds(freerdp* instance, fd_set* set)
 {
 	dfInfo* dfi;
 
@@ -109,10 +109,10 @@ boolean df_check_fds(freerdp* instance, fd_set* set)
 	return true;
 }
 
-boolean df_pre_connect(freerdp* instance)
+tbool df_pre_connect(freerdp* instance)
 {
 	dfInfo* dfi;
-	boolean bitmap_cache;
+	tbool bitmap_cache;
 	dfContext* context;
 	rdpSettings* settings;
 
@@ -159,7 +159,7 @@ boolean df_pre_connect(freerdp* instance)
 	return true;
 }
 
-boolean df_post_connect(freerdp* instance)
+tbool df_post_connect(freerdp* instance)
 {
 	rdpGdi* gdi;
 	dfInfo* dfi;
@@ -226,7 +226,7 @@ static int df_process_plugin_args(rdpSettings* settings, const char* name,
 	return 1;
 }
 
-boolean df_verify_certificate(freerdp* instance, char* subject, char* issuer, char* fingerprint)
+tbool df_verify_certificate(freerdp* instance, char* subject, char* issuer, char* fingerprint)
 {
 	printf("Certificate details:\n");
 	printf("\tSubject: %s\n", subject);

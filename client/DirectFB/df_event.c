@@ -119,7 +119,7 @@ void df_keyboard_init()
 	keymap[DIKI_KP_PLUS - DIKI_UNKNOWN] = VK_ADD;
 	keymap[DIKI_KP_ENTER - DIKI_UNKNOWN] = VK_RETURN;
 	keymap[DIKI_KP_DECIMAL - DIKI_UNKNOWN] = VK_DECIMAL;
-	
+
 	keymap[DIKI_QUOTE_LEFT - DIKI_UNKNOWN] = VK_OEM_3;
 	keymap[DIKI_BRACKET_LEFT - DIKI_UNKNOWN] = VK_OEM_4;
 	keymap[DIKI_BRACKET_RIGHT - DIKI_UNKNOWN] = VK_OEM_6;
@@ -146,16 +146,16 @@ void df_keyboard_init()
 	keymap[DIKI_META_L - DIKI_UNKNOWN] = VK_LWIN;
 	keymap[DIKI_META_R - DIKI_UNKNOWN] = VK_RWIN;
 	keymap[DIKI_SUPER_L - DIKI_UNKNOWN] = VK_APPS;
-	
-	
+
+
 	memset(functionmap, 0, sizeof(functionmap));
-	
+
 	functionmap[DFB_FUNCTION_KEY(23) - DFB_FUNCTION_KEY(0)] = VK_HANGUL;
 	functionmap[DFB_FUNCTION_KEY(24) - DFB_FUNCTION_KEY(0)] = VK_HANJA;
 
 }
 
-void df_send_mouse_button_event(rdpInput* input, boolean down, uint32 button, uint16 x, uint16 y)
+void df_send_mouse_button_event(rdpInput* input, tbool down, uint32 button, uint16 x, uint16 y)
 {
 	uint16 flags;
 
@@ -189,20 +189,20 @@ void df_send_mouse_wheel_event(rdpInput* input, sint16 axisrel, uint16 x, uint16
 	input->MouseEvent(input, flags, x, y);
 }
 
-void df_send_keyboard_event(rdpInput* input, boolean down, uint8 keycode, uint8 function)
+void df_send_keyboard_event(rdpInput* input, tbool down, uint8 keycode, uint8 function)
 {
 	uint16 flags;
 	uint8 vkcode;
 	uint8 scancode;
-	boolean extended;
-	
+	tbool extended;
+
 	if (keycode)
 		vkcode = keymap[keycode];
 	else if (function)
 		vkcode = functionmap[function];
 	else
 		return;
-	
+
 	scancode = freerdp_kbd_get_scancode_by_virtualkey(vkcode, &extended);
 
 	flags = (extended) ? KBD_FLAGS_EXTENDED : 0;
@@ -211,7 +211,7 @@ void df_send_keyboard_event(rdpInput* input, boolean down, uint8 keycode, uint8 
 	input->KeyboardEvent(input, flags, scancode);
 }
 
-boolean df_event_process(freerdp* instance, DFBEvent* event)
+tbool df_event_process(freerdp* instance, DFBEvent* event)
 {
 	int flags;
 	rdpGdi* gdi;

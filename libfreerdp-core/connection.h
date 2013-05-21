@@ -46,23 +46,23 @@ enum CONNECTION_STATE
 	CONNECTION_STATE_ACTIVE
 };
 
-boolean rdp_client_connect(rdpRdp* rdp);
-boolean rdp_client_redirect(rdpRdp* rdp);
-boolean rdp_client_connect_mcs_connect_response(rdpRdp* rdp, STREAM* s);
-boolean rdp_client_connect_mcs_attach_user_confirm(rdpRdp* rdp, STREAM* s);
-boolean rdp_client_connect_mcs_channel_join_confirm(rdpRdp* rdp, STREAM* s);
-boolean rdp_client_connect_license(rdpRdp* rdp, STREAM* s);
-boolean rdp_client_connect_demand_active(rdpRdp* rdp, STREAM* s);
-boolean rdp_client_connect_finalize(rdpRdp* rdp);
+tbool rdp_client_connect(rdpRdp* rdp);
+tbool rdp_client_redirect(rdpRdp* rdp);
+tbool rdp_client_connect_mcs_connect_response(rdpRdp* rdp, STREAM* s);
+tbool rdp_client_connect_mcs_attach_user_confirm(rdpRdp* rdp, STREAM* s);
+tbool rdp_client_connect_mcs_channel_join_confirm(rdpRdp* rdp, STREAM* s);
+tbool rdp_client_connect_license(rdpRdp* rdp, STREAM* s);
+tbool rdp_client_connect_demand_active(rdpRdp* rdp, STREAM* s);
+tbool rdp_client_connect_finalize(rdpRdp* rdp);
 
-boolean rdp_server_accept_nego(rdpRdp* rdp, STREAM* s);
-boolean rdp_server_accept_mcs_connect_initial(rdpRdp* rdp, STREAM* s);
-boolean rdp_server_accept_mcs_erect_domain_request(rdpRdp* rdp, STREAM* s);
-boolean rdp_server_accept_mcs_attach_user_request(rdpRdp* rdp, STREAM* s);
-boolean rdp_server_accept_mcs_channel_join_request(rdpRdp* rdp, STREAM* s);
-boolean rdp_server_accept_client_keys(rdpRdp* rdp, STREAM* s);
-boolean rdp_server_accept_client_info(rdpRdp* rdp, STREAM* s);
-boolean rdp_server_accept_confirm_active(rdpRdp* rdp, STREAM* s);
-boolean rdp_server_reactivate(rdpRdp* rdp);
+tbool rdp_server_accept_nego(rdpRdp* rdp, STREAM* s);
+tbool rdp_server_accept_mcs_connect_initial(rdpRdp* rdp, STREAM* s);
+tbool rdp_server_accept_mcs_erect_domain_request(rdpRdp* rdp, STREAM* s);
+tbool rdp_server_accept_mcs_attach_user_request(rdpRdp* rdp, STREAM* s);
+tbool rdp_server_accept_mcs_channel_join_request(rdpRdp* rdp, STREAM* s);
+tbool rdp_server_accept_client_keys(rdpRdp* rdp, STREAM* s);
+tbool rdp_server_accept_client_info(rdpRdp* rdp, STREAM* s);
+tbool rdp_server_accept_confirm_active(rdpRdp* rdp, STREAM* s);
+tbool rdp_server_reactivate(rdpRdp* rdp);
 
 #endif /* __CONNECTION_H */

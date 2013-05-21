@@ -37,7 +37,7 @@
 
 #include "listener.h"
 
-static boolean freerdp_listener_open(freerdp_listener* instance, const char* bind_address, uint16 port)
+static tbool freerdp_listener_open(freerdp_listener* instance, const char* bind_address, uint16 port)
 {
 	rdpListener* listener = (rdpListener*)instance->listener;
 	int status;
@@ -134,7 +134,7 @@ static void freerdp_listener_close(freerdp_listener* instance)
 	listener->num_sockfds = 0;
 }
 
-static boolean freerdp_listener_get_fds(freerdp_listener* instance, void** rfds, int* rcount)
+static tbool freerdp_listener_get_fds(freerdp_listener* instance, void** rfds, int* rcount)
 {
 	rdpListener* listener = (rdpListener*)instance->listener;
 	int i;
@@ -151,7 +151,7 @@ static boolean freerdp_listener_get_fds(freerdp_listener* instance, void** rfds,
 	return true;
 }
 
-static boolean freerdp_listener_check_fds(freerdp_listener* instance)
+static tbool freerdp_listener_check_fds(freerdp_listener* instance)
 {
 	rdpListener* listener = (rdpListener*)instance->listener;
 	struct sockaddr_storage peer_addr;

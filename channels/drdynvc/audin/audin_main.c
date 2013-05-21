@@ -70,7 +70,7 @@ struct _AUDIN_PLUGIN
 
 	/* Parsed plugin data */
 	uint16 fixed_format;
-	uint16 fixed_channel;	
+	uint16 fixed_channel;
 	uint32 fixed_rate;
 
 	/* Device interface */
@@ -145,7 +145,7 @@ static int audin_process_formats(IWTSVirtualChannelCallback* pChannelCallback, S
 		stream_read_uint16(s, format.cbSize);
 		format.data = stream_get_tail(s);
 		stream_seek(s, format.cbSize);
-		
+
 		DEBUG_DVC("wFormatTag=%d nChannels=%d nSamplesPerSec=%d "
 			"nBlockAlign=%d wBitsPerSample=%d cbSize=%d",
 			format.wFormatTag, format.nChannels, format.nSamplesPerSec,
@@ -214,7 +214,7 @@ static int audin_send_open_reply_pdu(IWTSVirtualChannelCallback* pChannelCallbac
 	return error;
 }
 
-static boolean audin_receive_wave_data(uint8* data, int size, void* user_data)
+static tbool audin_receive_wave_data(uint8* data, int size, void* user_data)
 {
 	int error;
 	STREAM* out;
@@ -431,7 +431,7 @@ static void audin_register_device_plugin(IWTSPlugin* pPlugin, IAudinDevice* devi
 	audin->device = device;
 }
 
-static boolean audin_load_device_plugin(IWTSPlugin* pPlugin, const char* name, RDP_PLUGIN_DATA* data)
+static tbool audin_load_device_plugin(IWTSPlugin* pPlugin, const char* name, RDP_PLUGIN_DATA* data)
 {
 	char* fullname;
 	PFREERDP_AUDIN_DEVICE_ENTRY entry;
@@ -466,9 +466,9 @@ static boolean audin_load_device_plugin(IWTSPlugin* pPlugin, const char* name, R
 	return true;
 }
 
-static boolean audin_process_plugin_data(IWTSPlugin* pPlugin, RDP_PLUGIN_DATA* data)
+static tbool audin_process_plugin_data(IWTSPlugin* pPlugin, RDP_PLUGIN_DATA* data)
 {
-	boolean ret;
+	tbool ret;
 	AUDIN_PLUGIN* audin = (AUDIN_PLUGIN*) pPlugin;
 	RDP_PLUGIN_DATA default_data[2] = { { 0 }, { 0 } };
 
