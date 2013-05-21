@@ -2,7 +2,7 @@
  * FreeRDP: A Remote Desktop Protocol Client
  * Type Definitions
  *
- * Copyright 2009-2011 Jay Sorg
+ * Copyright 2009-2013 Jay Sorg
  * Copyright 2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,6 +34,9 @@
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
 #endif
+
+#define DEFINED_Ts
+typedef int tbool;
 
 #ifdef HAVE_INTTYPES_H
 
