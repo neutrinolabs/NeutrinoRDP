@@ -264,7 +264,7 @@ tbool tcp_set_blocking_mode(rdpTcp* tcp, tbool blocking)
 		return false;
 	}
 
-	if (blocking == true)
+	if (blocking)
 		fcntl(tcp->sockfd, F_SETFL, flags & ~(O_NONBLOCK));
 	else
 		fcntl(tcp->sockfd, F_SETFL, flags | O_NONBLOCK);

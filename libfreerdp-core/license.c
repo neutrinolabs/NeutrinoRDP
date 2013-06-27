@@ -184,7 +184,7 @@ tbool license_recv(rdpLicense* license, STREAM* s)
 	if (!(sec_flags & SEC_LICENSE_PKT))
 	{
 		stream_rewind(s, RDP_SECURITY_HEADER_LENGTH);
-		if (rdp_recv_out_of_sequence_pdu(license->rdp, s) != true)
+		if (rdp_recv_out_of_sequence_pdu(license->rdp, s) == false)
 		{
 			printf("Unexpected license packet.\n");
 			return false;
@@ -935,4 +935,3 @@ void license_free(rdpLicense* license)
 		xfree(license);
 	}
 }
-

@@ -39,7 +39,7 @@ tbool freerdp_connect(freerdp* instance)
 
 	IFCALLRET(instance->PreConnect, status, instance);
 
-	if (status != true)
+	if (status == false)
 	{
 		printf("freerdp_pre_connect failed\n");
 		return false;
@@ -60,7 +60,7 @@ tbool freerdp_connect(freerdp* instance)
 
 		IFCALLRET(instance->PostConnect, status, instance);
 
-		if (status != true)
+		if (status == false)
 		{
 			printf("freerdp_post_connect failed\n");
 			return false;

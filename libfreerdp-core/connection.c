@@ -72,7 +72,7 @@ tbool rdp_client_connect(rdpRdp* rdp)
 	nego_enable_nla(rdp->nego, settings->nla_security);
 	nego_enable_tls(rdp->nego, settings->tls_security);
 
-	if (nego_connect(rdp->nego) != true)
+	if (nego_connect(rdp->nego) == false)
 	{
 		printf("Error: protocol security negotiation failure\n");
 		return false;
@@ -94,14 +94,14 @@ tbool rdp_client_connect(rdpRdp* rdp)
 	else if (selectedProtocol == PROTOCOL_RDP) /* 0 */
 		status = transport_connect_rdp(rdp->transport);
 
-	if (status != true)
+	if (status == false)
 		return false;
 
 	rdp_set_blocking_mode(rdp, false);
 	rdp->state = CONNECTION_STATE_NEGO;
 	rdp->finalize_sc_pdus = 0;
 
-	if (mcs_send_connect_initial(rdp->mcs) != true)
+	if (mcs_send_connect_initial(rdp->mcs) == false)
 	{
 		printf("Error: unable to send MCS Connect Initial\n");
 		return false;

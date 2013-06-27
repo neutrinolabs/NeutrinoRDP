@@ -332,7 +332,7 @@ void ber_write_boolean(STREAM* s, tbool value)
 {
 	ber_write_universal_tag(s, BER_TAG_BOOLEAN, false);
 	ber_write_length(s, 1);
-	stream_write_uint8(s, (value == true) ? 0xFF : 0);
+	stream_write_uint8(s, value ? 0xFF : 0);
 }
 
 tbool ber_read_integer(STREAM* s, uint32* value)

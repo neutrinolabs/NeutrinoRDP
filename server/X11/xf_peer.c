@@ -57,7 +57,7 @@ void xf_xdamage_init(xfInfo* xfi)
 	{
 		XShmQueryVersion(xfi->display, &major, &minor, &pixmaps);
 
-		if (pixmaps != True)
+		if (pixmaps == False)
 		{
 			printf("XShmQueryVersion failed\n");
 			return;
@@ -640,12 +640,12 @@ void* xf_peer_main_loop(void* arg)
 	{
 		rcount = 0;
 
-		if (client->GetFileDescriptor(client, rfds, &rcount) != true)
+		if (client->GetFileDescriptor(client, rfds, &rcount) == false)
 		{
 			printf("Failed to get FreeRDP file descriptor\n");
 			break;
 		}
-		if (xf_peer_get_fds(client, rfds, &rcount) != true)
+		if (xf_peer_get_fds(client, rfds, &rcount) == false)
 		{
 			printf("Failed to get xfreerdp file descriptor\n");
 			break;
@@ -680,12 +680,12 @@ void* xf_peer_main_loop(void* arg)
 			}
 		}
 
-		if (client->CheckFileDescriptor(client) != true)
+		if (client->CheckFileDescriptor(client) == false)
 		{
 			printf("Failed to check freerdp file descriptor\n");
 			break;
 		}
-		if ((xf_peer_check_fds(client)) != true)
+		if ((xf_peer_check_fds(client)) == false)
 		{
 			printf("Failed to check xfreerdp file descriptor\n");
 			break;

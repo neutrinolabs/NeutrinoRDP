@@ -154,7 +154,8 @@ tbool xf_GetCurrentDesktop(xfInfo* xfi)
 	status = xf_GetWindowProperty(xfi, DefaultRootWindow(xfi->display),
 			xfi->_NET_CURRENT_DESKTOP, 1, &nitems, &bytes, &prop);
 
-	if (status != true) {
+	if (status == false)
+    {
 		return false;
 	}
 
@@ -174,13 +175,13 @@ tbool xf_GetWorkArea(xfInfo* xfi)
 
 	status = xf_GetCurrentDesktop(xfi);
 
-	if (status != true)
+	if (status == false)
 		return false;
 
 	status = xf_GetWindowProperty(xfi, DefaultRootWindow(xfi->display),
 			xfi->_NET_WORKAREA, 32 * 4, &nitems, &bytes, &prop);
 
-	if (status != true)
+	if (status == false)
 		return false;
 
 	if ((xfi->current_desktop * 4 + 3) >= nitems) {
@@ -614,7 +615,7 @@ void xf_SetWindowIcon(xfInfo* xfi, xfWindow* window, rdpIcon* icon)
 	long* dstp;
 	uint32* srcp;
 
-	if (icon->big != true)
+	if (icon->big == false)
 		return;
 
 	pixels = icon->entry->width * icon->entry->height;

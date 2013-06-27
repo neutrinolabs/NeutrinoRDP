@@ -317,7 +317,7 @@ INLINE uint8* gdi_get_bitmap_pointer(HGDI_DC hdcBmp, int x, int y)
 {
 	uint8* p;
 	HGDI_BITMAP hBmp = (HGDI_BITMAP) hdcBmp->selectedObject;
-	
+
 	if (x >= 0 && x < hBmp->width && y >= 0 && y < hBmp->height)
 	{
 		p = hBmp->data + (y * hBmp->width * hdcBmp->bytesPerPixel) + (x * hdcBmp->bytesPerPixel);
@@ -339,7 +339,7 @@ INLINE uint8* gdi_get_brush_pointer(HGDI_DC hdcBrush, int x, int y)
 		if (hdcBrush->brush->style == GDI_BS_PATTERN)
 		{
 			HGDI_BITMAP hBmpBrush = hdcBrush->brush->pattern;
-	
+
 			if (x >= 0 && y >= 0)
 			{
 				x = x % hBmpBrush->width;
@@ -700,7 +700,7 @@ void gdi_surface_bits(rdpContext* context, SURFACE_BITS_COMMAND* surface_bits_co
 		freerdp_image_flip(nsc_context->bmpdata, gdi->image->bitmap->data, gdi->image->bitmap->width, gdi->image->bitmap->height, 32);
 		gdi_BitBlt(gdi->primary->hdc, surface_bits_command->destLeft, surface_bits_command->destTop, surface_bits_command->width, surface_bits_command->height, gdi->image->hdc, 0, 0, GDI_SRCCOPY);
 		nsc_context_destroy(nsc_context);
-	} 
+	}
 	else if (surface_bits_command->codecID == CODEC_ID_NONE)
 	{
 		gdi->image->bitmap->width = surface_bits_command->width;
@@ -711,7 +711,7 @@ void gdi_surface_bits(rdpContext* context, SURFACE_BITS_COMMAND* surface_bits_co
 		gdi->image->bitmap->data = (uint8*) xrealloc(gdi->image->bitmap->data,
 				gdi->image->bitmap->width * gdi->image->bitmap->height * 4);
 
-		if ((surface_bits_command->bpp != 32) || (gdi->clrconv->alpha == true))
+		if ((surface_bits_command->bpp != 32) || gdi->clrconv->alpha)
 		{
 			uint8* temp_image;
 
@@ -875,7 +875,7 @@ int gdi_init(freerdp* instance, uint32 flags, uint8* buffer)
 			gdi->bytesPerPixel = 4;
 		}
 	}
-	
+
 	gdi->hdc = gdi_GetDC();
 	gdi->hdc->bitsPerPixel = gdi->dstBpp;
 	gdi->hdc->bytesPerPixel = gdi->bytesPerPixel;
@@ -931,7 +931,6 @@ void gdi_free(freerdp* instance)
 		free(gdi->clrconv);
 		free(gdi);
 	}
-	
+
 	instance->context->gdi = (rdpGdi*) NULL;
 }
-

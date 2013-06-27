@@ -43,7 +43,7 @@ tbool xf_detect_monitors(xfInfo* xfi, rdpSettings* settings)
 
 	vscreen = &xfi->vscreen;
 
-	if (xf_GetWorkArea(xfi) != true)
+	if (xf_GetWorkArea(xfi) == false)
 	{
 		xfi->workArea.x = 0;
 		xfi->workArea.y = 0;
@@ -67,7 +67,7 @@ tbool xf_detect_monitors(xfInfo* xfi, rdpSettings* settings)
 		settings->height = (xfi->workArea.height * settings->percent_screen) / 100;
 	}
 
-	if (settings->fullscreen != true && settings->workarea != true)
+	if (settings->fullscreen == false && settings->workarea == false)
 		return true;
 
 #ifdef WITH_XINERAMA

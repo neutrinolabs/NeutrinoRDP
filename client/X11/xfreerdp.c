@@ -107,9 +107,9 @@ void xf_sw_end_paint(rdpContext* context)
 	xfi = ((xfContext*) context)->xfi;
 	gdi = context->gdi;
 
-	if (xfi->remote_app != true)
+	if (xfi->remote_app == false)
 	{
-		if (xfi->complex_regions != true)
+		if (xfi->complex_regions == false)
 		{
 			if (gdi->primary->hdc->hwnd->invalid->null)
 				return;
@@ -170,7 +170,7 @@ void xf_sw_desktop_resize(rdpContext* context)
 	xfi = ((xfContext*) context)->xfi;
 	settings = xfi->instance->settings;
 
-	if (xfi->fullscreen != true)
+	if (xfi->fullscreen == false)
 	{
 		rdpGdi* gdi = context->gdi;
 		gdi_resize(gdi, xfi->width, xfi->height);
@@ -224,7 +224,7 @@ void xf_hw_desktop_resize(rdpContext* context)
 	xfi = ((xfContext*) context)->xfi;
 	settings = xfi->instance->settings;
 
-	if (xfi->fullscreen != true)
+	if (xfi->fullscreen == false)
 	{
 		xfi->width = settings->width;
 		xfi->height = settings->height;
@@ -267,7 +267,7 @@ tbool xf_check_fds(freerdp* instance, fd_set* set)
 		memset(&xevent, 0, sizeof(xevent));
 		XNextEvent(xfi->display, &xevent);
 
-		if (xf_event_process(instance, &xevent) != true)
+		if (xf_event_process(instance, &xevent) == false)
 			return false;
 	}
 
@@ -617,7 +617,7 @@ tbool xf_post_connect(freerdp* instance)
 	cache = instance->context->cache;
 	channels = xfi->_context->channels;
 
-	if (xf_get_pixmap_info(xfi) != true)
+	if (xf_get_pixmap_info(xfi) == false)
 		return false;
 
 	xf_register_graphics(instance->context->graphics);
@@ -703,7 +703,7 @@ tbool xf_post_connect(freerdp* instance)
 
 	pointer_cache_register_callbacks(instance->update);
 
-	if (xfi->sw_gdi != true)
+	if (xfi->sw_gdi == false)
 	{
 		glyph_cache_register_callbacks(instance->update);
 		brush_cache_register_callbacks(instance->update);
@@ -957,19 +957,19 @@ int xfreerdp_run(freerdp* instance)
 		rcount = 0;
 		wcount = 0;
 
-		if (freerdp_get_fds(instance, rfds, &rcount, wfds, &wcount) != true)
+		if (freerdp_get_fds(instance, rfds, &rcount, wfds, &wcount) == false)
 		{
 			printf("Failed to get FreeRDP file descriptor\n");
 			ret = XF_EXIT_CONN_FAILED;
 			break;
 		}
-		if (freerdp_channels_get_fds(channels, instance, rfds, &rcount, wfds, &wcount) != true)
+		if (freerdp_channels_get_fds(channels, instance, rfds, &rcount, wfds, &wcount) == false)
 		{
 			printf("Failed to get channel manager file descriptor\n");
 			ret = XF_EXIT_CONN_FAILED;
 			break;
 		}
-		if (xf_get_fds(instance, rfds, &rcount, wfds, &wcount) != true)
+		if (xf_get_fds(instance, rfds, &rcount, wfds, &wcount) == false)
 		{
 			printf("Failed to get xfreerdp file descriptor\n");
 			ret = XF_EXIT_CONN_FAILED;
@@ -1014,17 +1014,17 @@ int xfreerdp_run(freerdp* instance)
 			}
 		}
 
-		if (freerdp_check_fds(instance) != true)
+		if (freerdp_check_fds(instance) == false)
 		{
 			printf("Failed to check FreeRDP file descriptor\n");
 			break;
 		}
-		if (xf_check_fds(instance, &rfds_set) != true)
+		if (xf_check_fds(instance, &rfds_set) == false)
 		{
 			printf("Failed to check xfreerdp file descriptor\n");
 			break;
 		}
-		if (freerdp_channels_check_fds(channels, instance) != true)
+		if (freerdp_channels_check_fds(channels, instance) == false)
 		{
 			printf("Failed to check channel manager file descriptor\n");
 			break;

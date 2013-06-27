@@ -693,7 +693,7 @@ void rdp_read_input_capability_set(STREAM* s, uint16 length, rdpSettings* settin
 
 	stream_seek(s, 64); /* imeFileName (64 bytes) */
 
-	if (settings->server_mode != true)
+	if (settings->server_mode == false)
 	{
 		if (inputFlags & INPUT_FLAG_FASTPATH_INPUT)
 		{
@@ -1050,7 +1050,7 @@ void rdp_read_virtual_channel_capability_set(STREAM* s, uint16 length, rdpSettin
 	else
 		VCChunkSize = 1600;
 
-	if (settings->server_mode != true)
+	if (settings->server_mode == false)
 		settings->vc_chunk_size = VCChunkSize;
 }
 
@@ -1212,7 +1212,7 @@ void rdp_read_remote_programs_capability_set(STREAM* s, uint16 length, rdpSettin
 
 	if ((railSupportLevel & RAIL_LEVEL_SUPPORTED) == 0)
 	{
-		if (settings->remote_app == true)
+		if (settings->remote_app)
 		{
 			/* RemoteApp Failure! */
 			settings->remote_app = false;

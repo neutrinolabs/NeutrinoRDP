@@ -88,7 +88,7 @@ tbool xf_event_Expose(xfInfo* xfi, XEvent* event, tbool app)
 		xfi->instance->SendInvalidate(xfi->instance, -1, x, y, w, h);
 		return true;
 	}
-	if (app != true)
+	if (app == false)
 	{
 		XCopyArea(xfi->display, xfi->primary, xfi->window->handle, xfi->gc, x, y, w, h, x, y);
 	}
@@ -122,9 +122,9 @@ tbool xf_event_MotionNotify(xfInfo* xfi, XEvent* event, tbool app)
 
 	input = xfi->instance->input;
 
-	if (app != true)
+	if (app == false)
 	{
-		if (xfi->mouse_motion != true)
+		if (xfi->mouse_motion == false)
 		{
 			if ((event->xmotion.state & (Button1Mask | Button2Mask | Button3Mask)) == 0)
 				return true;
@@ -135,7 +135,7 @@ tbool xf_event_MotionNotify(xfInfo* xfi, XEvent* event, tbool app)
 		if (xfi->fullscreen)
 			XSetInputFocus(xfi->display, xfi->window->handle, RevertToPointerRoot, CurrentTime);
 	}
-	else if (xfi->mouse_motion == true)
+	else if (xfi->mouse_motion != false)
 	{
 		rdpWindow* window;
 		int x = event->xmotion.x;
@@ -340,7 +340,7 @@ tbool xf_event_FocusIn(xfInfo* xfi, XEvent* event, tbool app)
 
 	xfi->focused = true;
 
-	if (xfi->mouse_active && (app != true))
+	if (xfi->mouse_active && (app == false))
 		XGrabKeyboard(xfi->display, xfi->window->handle, true, GrabModeAsync, GrabModeAsync, CurrentTime);
 
 	if (app)
@@ -348,7 +348,7 @@ tbool xf_event_FocusIn(xfInfo* xfi, XEvent* event, tbool app)
 
 	xf_kbd_focus_in(xfi);
 
-	if (app != true)
+	if (app == false)
 		xf_cliprdr_check_owner(xfi);
 
 	return true;
@@ -411,7 +411,7 @@ tbool xf_event_ClientMessage(xfInfo* xfi, XEvent* event, tbool app)
 
 tbool xf_event_EnterNotify(xfInfo* xfi, XEvent* event, tbool app)
 {
-	if (app != true)
+	if (app == false)
 	{
 		xfi->mouse_active = true;
 
@@ -442,7 +442,7 @@ tbool xf_event_EnterNotify(xfInfo* xfi, XEvent* event, tbool app)
 
 tbool xf_event_LeaveNotify(xfInfo* xfi, XEvent* event, tbool app)
 {
-	if (app != true)
+	if (app == false)
 	{
 		xfi->mouse_active = false;
 		XUngrabKeyboard(xfi->display, CurrentTime);
@@ -494,7 +494,7 @@ tbool xf_event_MapNotify(xfInfo* xfi, XEvent* event, tbool app)
 	rdpWindow* window;
 	rdpRail* rail = ((rdpContext*) xfi->context)->rail;
 
-	if (app != true)
+	if (app == false)
 		return true;
 
 	window = window_list_get_by_extra_id(rail->list, (void*) event->xany.window);
@@ -515,7 +515,7 @@ tbool xf_event_UnmapNotify(xfInfo* xfi, XEvent* event, tbool app)
 	rdpWindow* window;
 	rdpRail* rail = ((rdpContext*) xfi->context)->rail;
 
-	if (app != true)
+	if (app == false)
 		return true;
 
 	window = window_list_get_by_extra_id(rail->list, (void*) event->xany.window);
@@ -531,7 +531,7 @@ tbool xf_event_UnmapNotify(xfInfo* xfi, XEvent* event, tbool app)
 
 tbool xf_event_SelectionNotify(xfInfo* xfi, XEvent* event, tbool app)
 {
-	if (app != true)
+	if (app == false)
 	{
 		if (xf_cliprdr_process_selection_notify(xfi, event))
 			return true;
@@ -542,7 +542,7 @@ tbool xf_event_SelectionNotify(xfInfo* xfi, XEvent* event, tbool app)
 
 tbool xf_event_SelectionRequest(xfInfo* xfi, XEvent* event, tbool app)
 {
-	if (app != true)
+	if (app == false)
 	{
 		if (xf_cliprdr_process_selection_request(xfi, event))
 			return true;
@@ -553,7 +553,7 @@ tbool xf_event_SelectionRequest(xfInfo* xfi, XEvent* event, tbool app)
 
 tbool xf_event_SelectionClear(xfInfo* xfi, XEvent* event, tbool app)
 {
-	if (app != true)
+	if (app == false)
 	{
 		if (xf_cliprdr_process_selection_clear(xfi, event))
 			return true;
@@ -564,7 +564,7 @@ tbool xf_event_SelectionClear(xfInfo* xfi, XEvent* event, tbool app)
 
 tbool xf_event_PropertyNotify(xfInfo* xfi, XEvent* event, tbool app)
 {
-	if (app != true)
+	if (app == false)
 	{
 		if (xf_cliprdr_process_property_notify(xfi, event))
 			return true;

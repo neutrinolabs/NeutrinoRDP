@@ -90,7 +90,7 @@ tbool transport_connect_tls(rdpTransport* transport)
 	transport->layer = TRANSPORT_LAYER_TLS;
 	transport->tls->sockfd = transport->tcp->sockfd;
 
-	if (tls_connect(transport->tls) != true)
+	if (tls_connect(transport->tls) == false)
 		return false;
 
 	return true;
@@ -104,12 +104,12 @@ tbool transport_connect_nla(rdpTransport* transport)
 	transport->layer = TRANSPORT_LAYER_TLS;
 	transport->tls->sockfd = transport->tcp->sockfd;
 
-	if (tls_connect(transport->tls) != true)
+	if (tls_connect(transport->tls) == false)
 		return false;
 
 	/* Network Level Authentication */
 
-	if (transport->settings->authentication != true)
+	if (transport->settings->authentication == false)
 		return true;
 
 	if (transport->credssp == NULL)
@@ -144,7 +144,7 @@ tbool transport_accept_tls(rdpTransport* transport)
 	transport->layer = TRANSPORT_LAYER_TLS;
 	transport->tls->sockfd = transport->tcp->sockfd;
 
-	if (tls_accept(transport->tls, transport->settings->cert_file, transport->settings->privatekey_file) != true)
+	if (tls_accept(transport->tls, transport->settings->cert_file, transport->settings->privatekey_file) == false)
 		return false;
 
 	return true;
@@ -158,12 +158,12 @@ tbool transport_accept_nla(rdpTransport* transport)
 	transport->layer = TRANSPORT_LAYER_TLS;
 	transport->tls->sockfd = transport->tcp->sockfd;
 
-	if (tls_accept(transport->tls, transport->settings->cert_file, transport->settings->privatekey_file) != true)
+	if (tls_accept(transport->tls, transport->settings->cert_file, transport->settings->privatekey_file) == false)
 		return false;
 
 	/* Network Level Authentication */
 
-	if (transport->settings->authentication != true)
+	if (transport->settings->authentication == false)
 		return true;
 
 	/* Blocking here until NLA is complete */

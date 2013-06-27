@@ -127,7 +127,7 @@ tbool pcap_has_next_record(rdpPcap* pcap)
 
 tbool pcap_get_next_record_header(rdpPcap* pcap, pcap_record* record)
 {
-	if (pcap_has_next_record(pcap) != true)
+	if (pcap_has_next_record(pcap) == false)
 		return false;
 
 	pcap_read_record_header(pcap, &record->header);
@@ -145,7 +145,7 @@ tbool pcap_get_next_record_content(rdpPcap* pcap, pcap_record* record)
 
 tbool pcap_get_next_record(rdpPcap* pcap, pcap_record* record)
 {
-	if (pcap_has_next_record(pcap) != true)
+	if (pcap_has_next_record(pcap) == false)
 		return false;
 
 	pcap_read_record(pcap, record);

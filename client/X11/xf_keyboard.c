@@ -104,7 +104,7 @@ int xf_kbd_read_keyboard_state(xfInfo* xfi)
 	Window wdummy;
 	uint32 state = 0;
 
-	if (xfi->remote_app != true)
+	if (xfi->remote_app == false)
 	{
 		XQueryPointer(xfi->display, xfi->window->handle,
 			&wdummy, &wdummy, &dummy, &dummy, &dummy, &dummy, &state);

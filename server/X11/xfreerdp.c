@@ -49,7 +49,7 @@ void xf_server_main_loop(freerdp_listener* instance)
 	{
 		rcount = 0;
 
-		if (instance->GetFileDescriptor(instance, rfds, &rcount) != true)
+		if (instance->GetFileDescriptor(instance, rfds, &rcount) == false)
 		{
 			printf("Failed to get FreeRDP file descriptor\n");
 			break;
@@ -84,7 +84,7 @@ void xf_server_main_loop(freerdp_listener* instance)
 			}
 		}
 
-		if (instance->CheckFileDescriptor(instance) != true)
+		if (instance->CheckFileDescriptor(instance) == false)
 		{
 			printf("Failed to check FreeRDP file descriptor\n");
 			break;
@@ -121,4 +121,3 @@ int main(int argc, char* argv[])
 
 	return 0;
 }
-
