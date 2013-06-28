@@ -28,6 +28,12 @@
 #include <freerdp/utils/memory.h>
 #include <freerdp/utils/args.h>
 
+#ifdef __DATE__
+#define LDATE __DATE__
+#else
+#define LDATE ""
+#endif
+
 /**
  * Parse command-line arguments and update rdpSettings members accordingly.
  * @param settings pointer to rdpSettings struct to be updated.
@@ -56,6 +62,7 @@ int freerdp_parse_args(rdpSettings* settings, int argc, char** argv,
 		{
 			printf("\n"
 				"FreeRDP - A Free Remote Desktop Protocol Client\n"
+				"NeutrinoRDP variant built " LDATE "\n"
 				"See http://www.freerdp.com for more information\n"
 				"\n"
 				"Usage: %s [options] server:port\n"
