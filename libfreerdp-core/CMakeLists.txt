@@ -91,7 +91,7 @@ set(LIBFREERDP_CORE_SRCS
 	listener.h
 	peer.c
 	peer.h
-    mppc.c
+	mppc.c
 )
 
 add_library(freerdp-core ${LIBFREERDP_CORE_SRCS})
@@ -101,7 +101,7 @@ set_target_properties(freerdp-core PROPERTIES VERSION ${FREERDP_VERSION_FULL} SO
 if(WIN32)
 	target_link_libraries(freerdp-core ws2_32)
 else()
-	target_link_libraries(freerdp-core ${ZLIB_LIBRARIES})	
+	target_link_libraries(freerdp-core ${ZLIB_LIBRARIES})
 endif()
 
 target_link_libraries(freerdp-core ${OPENSSL_LIBRARIES})

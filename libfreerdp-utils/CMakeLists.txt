@@ -47,7 +47,14 @@ set(FREERDP_UTILS_SRCS
 	svc_plugin.c
 	thread.c
 	unicode.c
-	wait_obj.c)
+	wait_obj.c
+	git_ref.h)
+
+if(WIN32)
+else()
+add_definitions(-DGOT_GIT_REF_H)
+add_custom_command(OUTPUT git_ref.h COMMAND ./git_ref.sh)
+endif()
 
 add_definitions(-DPLUGIN_PATH="${FREERDP_PLUGIN_PATH}")
 

@@ -28,6 +28,12 @@
 #include <freerdp/utils/memory.h>
 #include <freerdp/utils/args.h>
 
+#ifdef GOT_GIT_REF_H
+#include "git_ref.h"
+#else
+#define GIT_REF "??????????"
+#endif
+
 #ifdef __DATE__
 #define LDATE __DATE__
 #else
@@ -62,7 +68,7 @@ int freerdp_parse_args(rdpSettings* settings, int argc, char** argv,
 		{
 			printf("\n"
 				"FreeRDP - A Free Remote Desktop Protocol Client\n"
-				"NeutrinoRDP variant built " LDATE "\n"
+				"NeutrinoRDP variant built " LDATE " git ref " GIT_REF "\n"
 				"See http://www.freerdp.com for more information\n"
 				"\n"
 				"Usage: %s [options] server:port\n"
