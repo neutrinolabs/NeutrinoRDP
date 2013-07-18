@@ -229,6 +229,7 @@ void xrdpvr_process_command(rdpSvcPlugin *plugin, STREAM *s)
 		xrdpvr->got_partial_data = 0;
 		xrdpvr->bytes_needed = 0;
 		xrdpvr->s->p = xrdpvr->s->data;
+		g_psi = 0;
 		break;
 
 	default:
