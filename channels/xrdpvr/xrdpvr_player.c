@@ -410,6 +410,48 @@ set_geometry(void *vp, int xpos, int ypos, int width, int height)
 	psi->height = height;
 }
 
+#define SAVE_VIDEO 0
+
+#if SAVE_VIDEO
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+static int n_save_data(const uint8* data, uint32 data_size, int width, int height)
+{
+    int fd;
+    struct _header
+    {
+        char tag[4];
+        int width;
+        int height;
+        int bytes_follow;
+    } header;
+
+    fd = open("video.bin", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    lseek(fd, 0, SEEK_END);
+    header.tag[0] = 'B';
+    header.tag[1] = 'E';
+    header.tag[2] = 'E';
+    header.tag[3] = 'F';
+    header.width = width;
+    header.height = height;
+    header.bytes_follow = data_size;
+    //if (write(fd, &header, 16) != 16)
+    {
+        //printf("save_data: write failed\n");
+    }
+
+    if (write(fd, data, data_size) != data_size)
+    {
+        printf("save_data: write failed\n");
+    }
+    close(fd);
+    return 0;
+}
+#endif
+
 /*******************************************************************************
                            functions local to this file
 *******************************************************************************/
@@ -429,6 +471,12 @@ play_video(PLAYER_STATE_INFO *psi, struct AVPacket *av_pkt)
 		DEBUG_WARN("xrdpvr player is NULL or not inited");
 		return -1;
 	}
+
+#if SAVE_VIDEO
+    n_save_data(av_pkt->data, av_pkt->size,
+                psi->video_codec_ctx->width,
+                psi->video_codec_ctx->height);
+#endif
 
 #ifdef DISTRO_DEBIAN6
 	len = avcodec_decode_video(psi->video_codec_ctx, psi->video_frame, &got_frame, av_pkt->data, av_pkt->size);
