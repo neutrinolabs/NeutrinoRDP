@@ -232,6 +232,10 @@ void xrdpvr_process_command(rdpSvcPlugin *plugin, STREAM *s)
 		g_psi = 0;
 		break;
 
+	case CMD_SET_VOLUME:
+		printf("CMD_SET_VOLUME\n");
+		break;
+
 	default:
 		// LK_TODO change to DEBUG_XRDPVR
 		printf("### got unknown command 0x%x %d(.)\n", cmd, cmd);
