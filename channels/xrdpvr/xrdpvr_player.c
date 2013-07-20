@@ -121,6 +121,7 @@ typedef struct player_state_info
 	int              ypos;
 	int              width;
 	int              height;
+	int              volume;
 } PLAYER_STATE_INFO;
 
 /* forward declarations local to this file */
@@ -765,3 +766,19 @@ does_file_exist(char *filename)
 		return 0;
 	}
 }
+
+/*****************************************************************************/
+void
+set_volume(void *vp, int volume)
+{
+	PLAYER_STATE_INFO *psi = (PLAYER_STATE_INFO *) vp;
+
+	printf("set_volume: vol=%d\n", volume);
+	if ((psi == NULL) || (!psi->player_inited))
+	{
+		DEBUG_WARN("xrdpvr player is NULL or not inited");
+		return;
+	}
+	psi->volume = volume;
+}
+

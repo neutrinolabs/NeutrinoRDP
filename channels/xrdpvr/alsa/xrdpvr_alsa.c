@@ -28,6 +28,8 @@
 #include <freerdp/utils/memory.h>
 #include <freerdp/utils/dsp.h>
 
+#define LUSE_ALSA_MIXER 1
+
 #include "xrdpvr_audio.h"
 
 typedef struct _XrdpvrALSAAudioDevice
@@ -261,6 +263,41 @@ static void xrdpvr_alsa_flush(XrdpvrAudioDevice *audio)
 {
 }
 
+static void xrdpvr_alsa_set_volume(XrdpvrAudioDevice *audio, int volume)
+{
+#if LUSE_ALSA_MIXER
+	long min, max, lvol;
+	snd_mixer_t *handle;
+	snd_mixer_selem_id_t *sid;
+	const char *card = "default";
+	const char *selem_name = "Master";
+	float f1;
+
+	snd_mixer_open(&handle, 0);
+	snd_mixer_attach(handle, card);
+	snd_mixer_selem_register(handle, NULL, NULL);
+	snd_mixer_load(handle);
+	snd_mixer_selem_id_alloca(&sid);
+	snd_mixer_selem_id_set_index(sid, 0);
+	snd_mixer_selem_id_set_name(sid, selem_name);
+	snd_mixer_elem_t* elem = snd_mixer_find_selem(handle, sid);
+	snd_mixer_selem_get_playback_volume_range(elem, &min, &max);
+	if ((min == 0) && (max == 0x10000))
+	{
+		lvol = volume;
+	}
+	else
+	{
+		f1 = volume;
+		f1 = f1 * (max - min);
+		f1 = f1 / 0xffff;
+		lvol = f1 + min;
+	}
+	snd_mixer_selem_set_playback_volume_all(elem, lvol);
+	snd_mixer_close(handle);
+#endif
+}
+
 static void xrdpvr_alsa_free(XrdpvrAudioDevice *audio)
 {
 	XrdpvrALSAAudioDevice *alsa = (XrdpvrALSAAudioDevice *) audio;
@@ -287,6 +324,7 @@ XrdpvrAudioDevice *XrdpvrAudioDeviceEntry(void)
 	alsa->iface.Play = xrdpvr_alsa_play;
 	alsa->iface.GetLatency = xrdpvr_alsa_get_latency;
 	alsa->iface.Flush = xrdpvr_alsa_flush;
+	alsa->iface.SetVolume = xrdpvr_alsa_set_volume;
 	alsa->iface.Free = xrdpvr_alsa_free;
 
 	return (XrdpvrAudioDevice *) alsa;

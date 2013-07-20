@@ -233,7 +233,9 @@ void xrdpvr_process_command(rdpSvcPlugin *plugin, STREAM *s)
 		break;
 
 	case CMD_SET_VOLUME:
-		printf("CMD_SET_VOLUME\n");
+		stream_read_uint32(s, tmp);
+		set_volume(g_psi, tmp);
+		xrdpvr->audio_device->SetVolume(xrdpvr->audio_device, tmp);
 		break;
 
 	default:

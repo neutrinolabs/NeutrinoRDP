@@ -42,6 +42,9 @@ struct _XrdpvrAudioDevice
 	/* Flush queued audio data */
 	void (*Flush) (XrdpvrAudioDevice *audio);
 
+	/* Set the audio volume */
+	void (*SetVolume) (XrdpvrAudioDevice *audio, int volume);
+
 	/* Free the audio device */
 	void (*Free) (XrdpvrAudioDevice *audio);
 };

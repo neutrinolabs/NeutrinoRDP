@@ -31,5 +31,6 @@ int    process_audio(void *vp, uint8 *data, int data_len);
 uint8 *get_decoded_audio_data(void *vp, uint32 *size);
 void   get_audio_config(void *vp, int *samp_per_sec, int *num_channels, int *bits_per_samp);
 void   set_geometry(void *g_psi, int xpos, int ypos, int width, int height);
+void   set_volume(void *g_psi, int volume);
 
 #endif
