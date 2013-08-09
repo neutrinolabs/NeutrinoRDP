@@ -431,6 +431,151 @@ static tbool bitmap_decompress4(uint8* srcData, uint8* dstData, int width, int h
 	return (size == total_processed) ? true : false;
 }
 
+#define DUMP_BITMAPS 0
+
+#if DUMP_BITMAPS
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+int g_counter = 0;
+int save_file(uint8* data, int bytes, int width, int height)
+{
+	int fd;
+	char file_name[256];
+
+	snprintf(file_name, 255, "dib-%8.8x-%dx%d.bin", g_counter, width, height);
+	fd = open(file_name, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+	if (fd == -1)
+	{
+		return 1;
+	}
+	if (write(fd, &width, 4) != 4)
+	{
+		printf("save_file: error\n");
+	}
+	if (write(fd, &height, 4) != 4)
+	{
+		printf("save_file: error\n");
+	}
+	if (write(fd, data, bytes) != bytes)
+	{
+		printf("save_file: error\n");
+	}
+	close(fd);
+	return 0;
+}
+
+struct bmp_magic
+{
+	char magic[2];
+};
+
+struct bmp_hdr
+{
+	unsigned int   size;
+	unsigned short reserved1;
+	unsigned short reserved2;
+	unsigned int offset;
+};
+
+struct dib_hdr
+{
+	unsigned int   hdr_size;
+	int            width;
+	int            height;
+	unsigned short nplanes;
+	unsigned short bpp;
+	unsigned int   compress_type;
+	unsigned int   image_size;
+	int            hres;
+	int            vres;
+	unsigned int   ncolors;
+	unsigned int   nimpcolors;
+};
+
+int save_bitmap(uint8* data, int width, int height, int bpp)
+{
+	struct bmp_magic bm;
+	struct bmp_hdr bh;
+	struct dib_hdr dh;
+	int file_stride_bytes;
+	int i;
+	int j;
+	int fd;
+	char file_name[256];
+	short* src16;
+	int* dst32;
+	int r;
+	int g;
+	int b;
+	int pixel;
+
+	snprintf(file_name, 255, "dib-%8.8x-%dx%d.bmp", g_counter, width, height);
+	fd = open(file_name, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+	if (fd == -1)
+	{
+		return 1;
+	}
+
+	file_stride_bytes = width * ((32 + 7) / 8);
+	printf("width %d height %d file_stride_bytes %d\n", width, height, file_stride_bytes);
+
+	bm.magic[0] = 'B';
+	bm.magic[1] = 'M';
+
+	bh.size = sizeof(bm) + sizeof(bh) + sizeof(dh) + height * file_stride_bytes;
+	bh.reserved1 = 0;
+	bh.reserved2 = 0;
+	bh.offset = sizeof(bm) + sizeof(bh) + sizeof(dh);
+
+	dh.hdr_size = sizeof(dh);
+	dh.width = width;
+	dh.height = height;
+	dh.nplanes = 1;
+	dh.bpp = 32;
+	dh.compress_type = 0;
+	dh.image_size = height * file_stride_bytes;
+	dh.hres = 0xb13;
+	dh.vres = 0xb13;
+	dh.ncolors = 0;
+	dh.nimpcolors = 0;
+
+	write(fd, &bm, sizeof(bm));
+	write(fd, &bh, sizeof(bh));
+	write(fd, &dh, sizeof(dh));
+
+	dst32 = (int*)malloc(file_stride_bytes * 2);
+	for (j = 0; j < height; j++)
+	{
+		src16 = (short*)(data + j * width * 2);
+		for (i = 0; i < width; i++)
+		{
+			pixel = src16[i];
+			GetRGB16(r, g, b, pixel);
+			pixel = RGB24(r, g, b);
+			dst32[i] = pixel;
+		}
+		write(fd, dst32, file_stride_bytes);
+	}
+	free(dst32);
+	close(fd);
+
+	g_counter++;
+	return 0;
+}
+
+#define SAVE_FILE(_data, _bytes, _width, _height) save_file(_data, _bytes, _width, _height)
+#define SAVE_BITMAP(_data, _width, _height, _bpp) save_bitmap(_data, _width, _height, _bpp)
+
+#else
+
+#define SAVE_FILE(_data, _bytes, _width, _height) do { } while (0)
+#define SAVE_BITMAP(_data, _width, _height, _bpp) do { } while (0)
+
+#endif
 
 /**
  * bitmap decompression routine
@@ -439,7 +584,9 @@ tbool bitmap_decompress(uint8* srcData, uint8* dstData, int width, int height, i
 {
 	if (srcBpp == 16 && dstBpp == 16)
 	{
+		SAVE_FILE(srcData, size, width, height);
 		RleDecompress16to16(srcData, size, dstData, width * 2, width, height);
+		SAVE_BITMAP(dstData, width, height, 16);
 		freerdp_bitmap_flip(dstData, dstData, width * 2, height);
 	}
 	else if (srcBpp == 32 && dstBpp == 32)
