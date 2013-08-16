@@ -337,17 +337,18 @@ void xf_FixWindowCoordinates(xfInfo* xfi, int* x, int* y, int* width, int* heigh
 	int vscreen_width;
 	int vscreen_height;
 
+	if (*width < 1)
+		*width = 1;
+
+	if (*height < 1)
+		*height = 1;
+
+	if (!xfi->vscreen.is_inited)
+		return;
+
 	vscreen_width = xfi->vscreen.area.right - xfi->vscreen.area.left + 1;
 	vscreen_height = xfi->vscreen.area.bottom - xfi->vscreen.area.top + 1;
 
-	if (*width < 1)
-	{
-		*width = 1;
-	}
-	if (*height < 1)
-	{
-		*height = 1;
-	}
 	if (*x < xfi->vscreen.area.left)
 	{
 		*width += *x;

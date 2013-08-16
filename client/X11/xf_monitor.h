@@ -33,6 +33,7 @@ typedef struct _MONITOR_INFO MONITOR_INFO;
 
 struct _VIRTUAL_SCREEN
 {
+	int is_inited; /* TRUE when this struct is correctly setup */
 	int nmonitors;
 	RECTANGLE_16 area;
 	RECTANGLE_16 workarea;
