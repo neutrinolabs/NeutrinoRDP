@@ -107,13 +107,11 @@ tbool rdp_client_connect(rdpRdp* rdp)
 		return false;
 	}
 
-	rdp->transport->process_single_pdu = true;
 	while (rdp->state != CONNECTION_STATE_ACTIVE)
 	{
 		if (rdp_check_fds(rdp) < 0)
 			return false;
 	}
-	rdp->transport->process_single_pdu = false;
 
 	return true;
 }

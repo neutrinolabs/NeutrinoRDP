@@ -179,6 +179,27 @@ tbool tcp_connect(rdpTcp* tcp, const char* hostname, uint16 port)
 	return true;
 }
 
+tbool tcp_can_recv(int sck, int millis)
+{
+	fd_set rfds;
+	struct timeval time;
+	int rv;
+
+	time.tv_sec = millis / 1000;
+	time.tv_usec = (millis * 1000) % 1000000;
+	FD_ZERO(&rfds);
+	if (sck > 0)
+	{
+		FD_SET(((unsigned int)sck), &rfds);
+		rv = select(sck + 1, &rfds, 0, 0, &time);
+		if (rv > 0)
+		{
+			return true;
+		}
+	}
+    return false;
+}
+
 int tcp_read(rdpTcp* tcp, uint8* data, int length)
 {
 	int status;

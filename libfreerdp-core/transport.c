@@ -185,9 +185,10 @@ int transport_read_layer(rdpTransport* transport, uint8* data, int bytes)
 		//else if (transport->layer == TRANSPORT_LAYER_TSG)
 		//	status = tsg_read(transport->tsg, data + read, bytes - read);
 
-		/* blocking means that we can't continue until this is read */
+		/* blocking means that we can't continue until this is read
+		   it's not tcp blocking */
 
-		if (!transport->blocking)
+		if (transport->blocking == false)
 			return status;
 
 		if (status < 0)
@@ -197,11 +198,12 @@ int transport_read_layer(rdpTransport* transport, uint8* data, int bytes)
 
 		if (status == 0)
 		{
-			/*
-			 * instead of sleeping, we should wait timeout on the
-			 * socket but this only happens on initial connection
-			 */
-			freerdp_usleep(transport->usleep_interval);
+			if (transport->layer == TRANSPORT_LAYER_TLS)
+				tcp_can_recv(transport->tls->sockfd, 100);
+			else if (transport->layer == TRANSPORT_LAYER_TCP)
+				tcp_can_recv(transport->tcp->sockfd, 100);
+			else
+				freerdp_usleep(transport->usleep_interval);
 		}
 	}
 
@@ -370,14 +372,13 @@ int transport_check_fds(rdpTransport* transport)
 	int pos;
 	int status;
 	uint16 length;
-	STREAM* received;
 
 	status = transport_read_nonblocking(transport);
 
 	if (status < 0)
 		return status;
 
-	while ((pos = stream_get_pos(transport->recv_buffer)) > 0)
+	if ((pos = stream_get_pos(transport->recv_buffer)) > 0)
 	{
 		stream_set_pos(transport->recv_buffer, 0);
 		if (tpkt_verify_header(transport->recv_buffer)) /* TPKT */
@@ -421,37 +422,17 @@ int transport_check_fds(rdpTransport* transport)
 			return 0; /* Packet is not yet completely received. */
 		}
 
-		/*
-		 * A complete packet has been received. In case there are trailing data
-		 * for the next packet, we copy it to the new receive buffer.
-		 */
-		received = transport->recv_buffer;
-		transport->recv_buffer = stream_new(BUFFER_SIZE);
+		stream_set_pos(transport->recv_buffer, length);
+		stream_seal(transport->recv_buffer);
+		stream_set_pos(transport->recv_buffer, 0);
 
-		if (pos > length)
-		{
-			stream_set_pos(received, length);
-			stream_check_size(transport->recv_buffer, pos - length);
-			stream_copy(transport->recv_buffer, received, pos - length);
-		}
-
-		stream_set_pos(received, length);
-		stream_seal(received);
-		stream_set_pos(received, 0);
-
-		if (transport->recv_callback(transport, received, transport->recv_extra) == false)
+		if (transport->recv_callback(transport, transport->recv_buffer, transport->recv_extra) == false)
 			status = -1;
 
-		stream_free(received);
+		stream_set_pos(transport->recv_buffer, 0);
 
 		if (status < 0)
 			return status;
-
-		if (transport->process_single_pdu)
-		{
-			break;
-		}
-
 	}
 
 	return 0;
