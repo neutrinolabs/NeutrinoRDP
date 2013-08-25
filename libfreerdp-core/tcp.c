@@ -4,6 +4,7 @@
  *
  * Copyright 2011 Vic Lee
  * Copyright 2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
+ * Copyright 2013 Jay Sorg <jay.sorg@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -197,7 +198,7 @@ tbool tcp_can_recv(int sck, int millis)
 			return true;
 		}
 	}
-    return false;
+	return false;
 }
 
 int tcp_read(rdpTcp* tcp, uint8* data, int length)
@@ -248,8 +249,8 @@ int tcp_write(rdpTcp* tcp, uint8* data, int length)
 		/* No data available */
 		if (wsa_error == WSAEWOULDBLOCK)
 			status = 0;
-                else
-                        perror("send");
+		else
+			perror("send");
 #else
 		if (errno == EAGAIN || errno == EWOULDBLOCK)
 			status = 0;
