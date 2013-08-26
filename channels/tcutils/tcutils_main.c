@@ -51,9 +51,9 @@ tcutils_process_receive(rdpSvcPlugin* plugin_in, STREAM* data_in)
 	tcutilsPlugin* plugin = (tcutilsPlugin *) plugin_in;
 
 	uint32 cmd;
-	int    rv;
 	uint32 cmd_len; /* num bytes required by current cmd */
 	int    pkt_len; /* num of bytes in this pkt          */
+	int    rv;
 
 	log_debug("entered\n");
 
@@ -111,6 +111,7 @@ tcutils_init()
 	log_debug("entered\n");
 
 	g_tcu_commands[TCU_CMD_GET_MOUNT_LIST] = tcutils_get_mount_list;
+	g_tcu_commands[TCU_CMD_UNMOUNT_DEVICE] = tcutils_unmount_device;
 	g_inited = 1;
 
 	return 0;
@@ -206,7 +207,7 @@ tcutils_get_mount_list(tcutilsPlugin* plugin, STREAM* data_in,
 
 	/*
 	 * command format
-	 * 	4 bytes  pkt_len     number of bytes in this pkt
+	 * 	4 bytes  cmd_len     length of this command
 	 * 	4 bytes  cmd         TCU_CMD_GET_MOUNT_LIST
 	 * 	1 byte   nentries    number of entries in this pkt
 	 * 	n bytes  entry_list  nentries null terminated strings
@@ -221,7 +222,7 @@ tcutils_get_mount_list(tcutilsPlugin* plugin, STREAM* data_in,
 	{
 		/* command failed, zero entries inserted */
 		log_debug("zero entries inserted in buf\n");
-		stream_write_uint32(data_out, 9);
+		stream_write_uint32(data_out, 5);
 		stream_write_uint32(data_out, TCU_CMD_GET_MOUNT_LIST);
 		stream_write_uint8(data_out, 0);
 		goto done;
@@ -229,12 +230,122 @@ tcutils_get_mount_list(tcutilsPlugin* plugin, STREAM* data_in,
 
 	log_debug("entries_inserted=%d bytes_inserted=%d\n", num_entries, bytes_inserted);
 
-	stream_write_uint32(data_out, 9 + bytes_inserted);
+	stream_write_uint32(data_out, 5 + bytes_inserted);
 	stream_write_uint32(data_out, TCU_CMD_GET_MOUNT_LIST);
 	stream_write_uint8(data_out, num_entries);
 	data_out->p += bytes_inserted;
 done:
 	svc_plugin_send((rdpSvcPlugin*) plugin, data_out);
+	log_debug("wrote %ld bytes to server\n", stream_get_length(data_out));
+
+	return 0;
+}
+
+static int tcutils_unmount_device(tcutilsPlugin* plugin, STREAM* data_in,
+				  int cmd_len, int pkt_len)
+{
+	STREAM*	data_out;
+	char*   buf;
+	char*	dev_to_unmount;
+	char    cmd_buf[1024];
+	char	umount_code;
+	int     rv;
+
+	log_debug("entered\n");
+
+	/*
+	 * command format
+	 * 	4 bytes  cmd_len     length of this command
+	 * 	4 bytes  cmd         TCU_CMD_UNMOUNT_DEVICE
+	 * 	n bytes  device      null terminated device name
+	 */
+
+	buf = (char *) &data_in->data[8];
+	if (strlen(buf) == 0)
+	{
+		log_debug("device to unmount is NULL\n");
+		return -1;
+	}
+
+	/* device name is of the form: /dev/sdc1 /media/SHUTTLE */
+	dev_to_unmount = strstr(buf, " ");
+	if (!dev_to_unmount)
+	{
+		log_debug("device to unmount is NULL\n");
+		return -1;
+	}
+	dev_to_unmount++;
+	log_debug("attempting to unmount %s\n", dev_to_unmount);
+
+	/* unmount device */
+#if 0
+	/* umount invoked from C is not working...... */
+	rv = umount(dev_to_unmount);
+#else
+	/* ....but works when invoked via system() */
+	sprintf(cmd_buf, "umount %s", dev_to_unmount);
+	rv = system(cmd_buf);
+#endif
+	if (rv != 0)
+	{
+		if (WIFEXITED(rv))
+		{
+			/* operation failed */
+			switch (WEXITSTATUS(rv))
+			{
+			case EBUSY:
+				umount_code = UMOUNT_BUSY;
+				log_debug("cannot unmount, device is busy\n");
+				break;
+
+			case EINVAL:
+				umount_code = UMOUNT_NOT_MOUNTED;
+				log_debug("cannot unmount, device not mounted\n");
+				break;
+
+			case EPERM:
+				umount_code = UMOUNT_OP_NOT_PERMITTED;
+				log_debug("cannot unmount, operation not permitted\n");
+				break;
+
+			case EACCES:
+				umount_code = UMOUNT_PERMISSION_DENIED;
+				log_debug("cannot unmount, permission denied\n");
+				break;
+			default:
+				umount_code = UMOUNT_UNKNOWN;
+				log_debug("cannot unmount, unknown error\n");
+				break;
+			}
+		}
+		else
+		{
+			umount_code = UMOUNT_UNKNOWN;
+		}
+
+	}
+	else
+	{
+		umount_code = UMOUNT_SUCCESS;
+	}
+
+	/* return status */
+
+	/*
+	 * response format
+	 * 	4 bytes  cmd_len     length of this command
+	 * 	4 bytes  cmd         TCU_CMD_UNMOUNT_DEVICE
+	 * 	1 byte   status      operation status code
+	 */
+
+	data_out = stream_new(1024);
+
+	stream_write_uint32(data_out, 5);
+	stream_write_uint32(data_out, TCU_CMD_UNMOUNT_DEVICE);
+	stream_write_uint8(data_out, umount_code);
+
+	svc_plugin_send((rdpSvcPlugin*) plugin, data_out);
+
 	return 0;
 }
 
@@ -281,7 +392,7 @@ tcutils_insert_mount_points(char* data_buf, int* num_entries, int* bytes_inserte
         total_len += len;
         entries++;
 
-        log_debyg("%s\n", buf);
+        log_debug("%s\n", buf);
     }
 
     *num_entries = entries;
