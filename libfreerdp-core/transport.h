@@ -55,7 +55,6 @@ struct rdp_transport
 	STREAM* recv_buffer;
 	TransportRecv recv_callback;
 	boolean blocking;
-	boolean process_single_pdu; /* process single pdu in transport_check_fds */
 };
 
 STREAM* transport_recv_stream_init(rdpTransport* transport, int size);

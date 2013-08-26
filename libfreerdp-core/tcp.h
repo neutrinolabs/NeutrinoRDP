@@ -50,6 +50,7 @@ struct rdp_tcp
 
 boolean tcp_connect(rdpTcp* tcp, const char* hostname, uint16 port);
 boolean tcp_disconnect(rdpTcp* tcp);
+tbool tcp_can_recv(int sck, int millis);
 int tcp_read(rdpTcp* tcp, uint8* data, int length);
 int tcp_write(rdpTcp* tcp, uint8* data, int length);
 boolean tcp_set_blocking_mode(rdpTcp* tcp, boolean blocking);
