@@ -77,7 +77,7 @@ tcutils_process_receive(rdpSvcPlugin* plugin_in, STREAM* data_in)
 	if(cmd_len + 4 != pkt_len)
 	{
 		log_debug("got only %d/%d bytes; not processing this pkt\n",
-                          pkt_len - 4, cmd_len);
+						pkt_len - 4, cmd_len);
 		goto done;
 	}
 
@@ -369,39 +369,39 @@ static int tcutils_unmount_device(tcutilsPlugin* plugin, STREAM* data_in,
 static int
 tcutils_insert_mount_points(char* data_buf, int* num_entries, int* bytes_inserted)
 {
-    FILE* fp;
-    char* cptr;
-    char  buf[2048];
-    int   len;
-    int   total_len = 0;
-    int   entries = 0;
+	FILE* fp;
+	char* cptr;
+	char  buf[2048];
+	int   len;
+	int   total_len = 0;
+	int   entries = 0;
 
-    *bytes_inserted = 0;
-    *num_entries = 0;
-    if ((fp = popen("grep '^/dev/[a-zA-Z]*[0-9] /' /proc/mounts | awk '{print $1 \" \" $2}'", "r")) == NULL)
-        return -1;
+	*bytes_inserted = 0;
+	*num_entries = 0;
+	if ((fp = popen("grep '^/dev/[a-zA-Z]*[0-9] /' /proc/mounts | awk '{print $1 \" \" $2}'", "r")) == NULL)
+		return -1;
 
-    while (fgets(buf, 2048, fp) != NULL)
-    {
-        /* remove terminating newline */
-        if ((cptr = strstr(buf, "\n")) != NULL)
-            *cptr = 0;
+	while (fgets(buf, 2048, fp) != NULL)
+	{
+		/* remove terminating newline */
+		if ((cptr = strstr(buf, "\n")) != NULL)
+			*cptr = 0;
 
-        len = strlen(buf) + 1;
-        strcat(data_buf, buf);
-        data_buf += len;
-        total_len += len;
-        entries++;
+		len = strlen(buf) + 1;
+		strcat(data_buf, buf);
+		data_buf += len;
+		total_len += len;
+		entries++;
 
-        log_debug("%s\n", buf);
-    }
+		log_debug("%s\n", buf);
+	}
 
-    *num_entries = entries;
-    *bytes_inserted = total_len;
+	*num_entries = entries;
+	*bytes_inserted = total_len;
 
-    pclose(fp);
-    return 0;
+	pclose(fp);
+	return 0;
 }
 
 DEFINE_SVC_PLUGIN(tcutils, "tcutils",
-                  CHANNEL_OPTION_INITIALIZED | CHANNEL_OPTION_ENCRYPT_RDP)
+		CHANNEL_OPTION_INITIALIZED | CHANNEL_OPTION_ENCRYPT_RDP)
