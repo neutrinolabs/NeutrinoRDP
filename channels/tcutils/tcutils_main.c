@@ -23,7 +23,8 @@
 #include <freerdp/utils/memory.h>
 #include "tcutils_main.h"
 
-typedef struct tcutils_plugin tcutilsPlugin;
+#include <sys/types.h>
+#include <sys/wait.h>
 
 struct tcutils_plugin
 {
@@ -236,7 +237,7 @@ tcutils_get_mount_list(tcutilsPlugin* plugin, STREAM* data_in,
 	data_out->p += bytes_inserted;
 done:
 	svc_plugin_send((rdpSvcPlugin*) plugin, data_out);
-	log_debug("wrote %ld bytes to server\n", stream_get_length(data_out));
+	log_debug("wrote %ld bytes to server\n", (long)stream_get_length(data_out));
 
 	return 0;
 }
