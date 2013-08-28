@@ -373,6 +373,12 @@ int transport_check_fds(rdpTransport* transport)
 	int status;
 	uint16 length;
 
+	if (transport->level != 0)
+	{
+		printf("transport_check_fds: error, nested calls\n");
+		return -1;
+	}
+
 	status = transport_read_nonblocking(transport);
 
 	if (status < 0)
@@ -426,8 +432,10 @@ int transport_check_fds(rdpTransport* transport)
 		stream_seal(transport->recv_buffer);
 		stream_set_pos(transport->recv_buffer, 0);
 
+		transport->level++;
 		if (transport->recv_callback(transport, transport->recv_buffer, transport->recv_extra) == false)
 			status = -1;
+		transport->level--;
 
 		stream_set_pos(transport->recv_buffer, 0);
 

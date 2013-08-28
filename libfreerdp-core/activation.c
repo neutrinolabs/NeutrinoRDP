@@ -290,6 +290,7 @@ tbool rdp_recv_deactivate_all(rdpRdp* rdp, STREAM* s)
 
 	rdp->state = CONNECTION_STATE_CAPABILITY;
 
+#if 0
 	while (rdp->state != CONNECTION_STATE_ACTIVE)
 	{
 		if (rdp_check_fds(rdp) < 0)
@@ -297,6 +298,7 @@ tbool rdp_recv_deactivate_all(rdpRdp* rdp, STREAM* s)
 		if (rdp->disconnect)
 			break;
 	}
+#endif
 
 	return true;
 }
@@ -337,4 +339,3 @@ tbool rdp_server_accept_client_font_list_pdu(rdpRdp* rdp, STREAM* s)
 
 	return true;
 }
-

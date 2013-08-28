@@ -55,6 +55,7 @@ struct rdp_transport
 	STREAM* recv_buffer;
 	TransportRecv recv_callback;
 	boolean blocking;
+	int level;
 };
 
 STREAM* transport_recv_stream_init(rdpTransport* transport, int size);
