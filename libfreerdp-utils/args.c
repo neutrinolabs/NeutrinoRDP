@@ -123,6 +123,8 @@ int freerdp_parse_args(rdpSettings* settings, int argc, char** argv,
 				"  --secure-checksum: use salted checksums with Standard RDP encryption\n"
 				"  --version: print version information\n"
 				"  --skip-bs: do not keep backing store\n"
+				"  --multimon-set: hard set monitor list num x y width height isprimary x y..."
+				"                       two screen example --multimon-set 2 0 0 512 768 512 0 512 768"
 				"\n", argv[0]);
 			return FREERDP_ARGS_PARSE_HELP; //TODO: What is the correct return
 		}
@@ -704,6 +706,25 @@ int freerdp_parse_args(rdpSettings* settings, int argc, char** argv,
 		else if (strcmp("--skip-bs", argv[index]) == 0)
 		{
 			settings->skip_bs = true;
+		}
+		else if (strcmp("--multimon-set", argv[index]) == 0)
+		{
+			int n;
+			settings->num_monitors = atoi(argv[index + 1]);
+			index++;
+			for (n = 0; n < settings->num_monitors; n++)
+			{
+				settings->monitors[n].x = atoi(argv[index + 1]);
+				index++;
+				settings->monitors[n].y = atoi(argv[index + 1]);
+				index++;
+				settings->monitors[n].width = atoi(argv[index + 1]);
+				index++;
+				settings->monitors[n].height = atoi(argv[index + 1]);
+				index++;
+				settings->monitors[n].is_primary = atoi(argv[index + 1]);
+				index++;
+			}
 		}
 		else if (argv[index][0] != '-')
 		{

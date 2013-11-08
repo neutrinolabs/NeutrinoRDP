@@ -41,6 +41,12 @@ tbool xf_detect_monitors(xfInfo* xfi, rdpSettings* settings)
 	XineramaScreenInfo* screen_info = NULL;
 #endif
 
+	if (settings->num_monitors > 0)
+	{
+		/* already setup */
+		return true;
+	}
+
 	vscreen = &xfi->vscreen;
 
 	if (xf_GetWorkArea(xfi) == false)
