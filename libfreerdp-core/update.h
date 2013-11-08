@@ -27,13 +27,13 @@
 #include <freerdp/freerdp.h>
 #include <freerdp/utils/stream.h>
 
-#define UPDATE_TYPE_ORDERS		0x0000
-#define UPDATE_TYPE_BITMAP		0x0001
-#define UPDATE_TYPE_PALETTE		0x0002
-#define UPDATE_TYPE_SYNCHRONIZE		0x0003
+#define UPDATE_TYPE_ORDERS        0x0000
+#define UPDATE_TYPE_BITMAP        0x0001
+#define UPDATE_TYPE_PALETTE       0x0002
+#define UPDATE_TYPE_SYNCHRONIZE   0x0003
 
-#define BITMAP_COMPRESSION		0x0001
-#define NO_BITMAP_COMPRESSION_HDR	0x0400
+#define BITMAP_COMPRESSION        0x0001
+#define NO_BITMAP_COMPRESSION_HDR 0x0400
 
 rdpUpdate* update_new(rdpRdp* rdp);
 void update_free(rdpUpdate* update);

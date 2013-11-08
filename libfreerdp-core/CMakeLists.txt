@@ -92,6 +92,8 @@ set(LIBFREERDP_CORE_SRCS
 	peer.c
 	peer.h
 	mppc.c
+	pointer.c
+	pointer.h
 )
 
 add_library(freerdp-core ${LIBFREERDP_CORE_SRCS})

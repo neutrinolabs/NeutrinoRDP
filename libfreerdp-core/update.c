@@ -21,6 +21,7 @@
 #include "surface.h"
 #include <freerdp/utils/rect.h>
 #include <freerdp/codec/bitmap.h>
+#include "pointer.h"
 
 /*
 static const char* const UPDATE_TYPE_STRINGS[] =
@@ -151,7 +152,7 @@ void update_read_play_sound(STREAM* s, PLAY_SOUND_UPDATE* play_sound)
 void update_recv_play_sound(rdpUpdate* update, STREAM* s)
 {
 	update_read_play_sound(s, &update->play_sound);
-	IFCALL(update->PlaySound, update->context, &update->play_sound);
+	update->PlaySound(update->context, &update->play_sound);
 }
 
 void update_read_pointer_position(STREAM* s, POINTER_POSITION_UPDATE* pointer_position)
@@ -226,27 +227,27 @@ void update_recv_pointer(rdpUpdate* update, STREAM* s)
 	{
 		case PTR_MSG_TYPE_POSITION:
 			update_read_pointer_position(s, &pointer->pointer_position);
-			IFCALL(pointer->PointerPosition, context, &pointer->pointer_position);
+			pointer->PointerPosition(context, &pointer->pointer_position);
 			break;
 
 		case PTR_MSG_TYPE_SYSTEM:
 			update_read_pointer_system(s, &pointer->pointer_system);
-			IFCALL(pointer->PointerSystem, context, &pointer->pointer_system);
+			pointer->PointerSystem(context, &pointer->pointer_system);
 			break;
 
 		case PTR_MSG_TYPE_COLOR:
 			update_read_pointer_color(s, &pointer->pointer_color);
-			IFCALL(pointer->PointerColor, context, &pointer->pointer_color);
+			pointer->PointerColor(context, &pointer->pointer_color);
 			break;
 
 		case PTR_MSG_TYPE_POINTER:
 			update_read_pointer_new(s, &pointer->pointer_new);
-			IFCALL(pointer->PointerNew, context, &pointer->pointer_new);
+			pointer->PointerNew(context, &pointer->pointer_new);
 			break;
 
 		case PTR_MSG_TYPE_CACHED:
 			update_read_pointer_cached(s, &pointer->pointer_cached);
-			IFCALL(pointer->PointerCached, context, &pointer->pointer_cached);
+			pointer->PointerCached(context, &pointer->pointer_cached);
 			break;
 
 		default:
@@ -263,7 +264,7 @@ void update_recv(rdpUpdate* update, STREAM* s)
 
 	//printf("%s Update Data PDU\n", UPDATE_TYPE_STRINGS[updateType]);
 
-	IFCALL(update->BeginPaint, context);
+	update->BeginPaint(context);
 
 	switch (updateType)
 	{
@@ -273,21 +274,21 @@ void update_recv(rdpUpdate* update, STREAM* s)
 
 		case UPDATE_TYPE_BITMAP:
 			update_read_bitmap(update, s, &update->bitmap_update);
-			IFCALL(update->BitmapUpdate, context, &update->bitmap_update);
+			update->BitmapUpdate(context, &update->bitmap_update);
 			break;
 
 		case UPDATE_TYPE_PALETTE:
 			update_read_palette(update, s, &update->palette_update);
-			IFCALL(update->Palette, context, &update->palette_update);
+			update->Palette(context, &update->palette_update);
 			break;
 
 		case UPDATE_TYPE_SYNCHRONIZE:
 			update_read_synchronize(update, s);
-			IFCALL(update->Synchronize, context);
+			update->Synchronize(context);
 			break;
 	}
 
-	IFCALL(update->EndPaint, context);
+	update->EndPaint(context);
 
 	if (stream_get_left(s) > RDP_SHARE_DATA_HEADER_LENGTH)
 	{
@@ -298,7 +299,9 @@ void update_recv(rdpUpdate* update, STREAM* s)
 		rdp_read_share_control_header(s, &length, &pduType, &source);
 
 		if (pduType != PDU_TYPE_DATA)
+		{
 			return;
+		}
 
 		rdp_recv_data_pdu(update->context->rdp, s);
 	}
@@ -541,6 +544,59 @@ void update_register_server_callbacks(rdpUpdate* update)
 	update->pointer->PointerCached = update_send_pointer_cached;
 }
 
+/* dummy functions */
+void defBeginPaint(rdpContext* context)
+{
+}
+
+void defEndPaint(rdpContext* context)
+{
+}
+
+void defSetBounds(rdpContext* context, rdpBounds* bounds)
+{
+}
+
+void defSynchronize(rdpContext* context)
+{
+}
+
+void defDesktopResize(rdpContext* context)
+{
+}
+
+void defBitmapUpdate(rdpContext* context, BITMAP_UPDATE* bitmap)
+{
+}
+
+void defPalette(rdpContext* context, PALETTE_UPDATE* palette)
+{
+}
+
+void defPlaySound(rdpContext* context, PLAY_SOUND_UPDATE* play_sound)
+{
+}
+
+void defRefreshRect(rdpContext* context, uint8 count, RECTANGLE_16* areas)
+{
+}
+
+void defSuppressOutput(rdpContext* context, uint8 allow, RECTANGLE_16* area)
+{
+}
+
+void defSurfaceCommand(rdpContext* context, STREAM* s)
+{
+}
+
+void defSurfaceBits(rdpContext* context, SURFACE_BITS_COMMAND* surface_bits_command)
+{
+}
+
+void defSurfaceFrameMarker(rdpContext* context, SURFACE_FRAME_MARKER* surface_frame_marker)
+{
+}
+
 rdpUpdate* update_new(rdpRdp* rdp)
 {
 	rdpUpdate* update;
@@ -554,7 +610,7 @@ rdpUpdate* update_new(rdpRdp* rdp)
 		update->bitmap_update.count = 64;
 		update->bitmap_update.rectangles = (BITMAP_DATA*) xzalloc(sizeof(BITMAP_DATA) * update->bitmap_update.count);
 
-		update->pointer = xnew(rdpPointerUpdate);
+		update->pointer = pointer_new();
 		update->primary = xnew(rdpPrimaryUpdate);
 		update->secondary = xnew(rdpSecondaryUpdate);
 		update->altsec = xnew(rdpAltSecUpdate);
@@ -566,6 +622,21 @@ rdpUpdate* update_new(rdpRdp* rdp)
 		deleteList->cIndices = 0;
 
 		update->SuppressOutput = update_send_suppress_output;
+
+		update->BeginPaint = defBeginPaint;
+		update->EndPaint = defEndPaint;
+		update->SetBounds = defSetBounds;
+		update->Synchronize = defSynchronize;
+		update->DesktopResize = defDesktopResize;
+		update->BitmapUpdate = defBitmapUpdate;
+		update->Palette = defPalette;
+		update->PlaySound = defPlaySound;
+		update->RefreshRect = defRefreshRect;
+		update->SuppressOutput = defSuppressOutput;
+		update->SurfaceCommand = defSurfaceCommand;
+		update->SurfaceBits = defSurfaceBits;
+		update->SurfaceFrameMarker = defSurfaceFrameMarker;
+
 	}
 
 	return update;
@@ -580,7 +651,7 @@ void update_free(rdpUpdate* update)
 		xfree(deleteList->indices);
 
 		xfree(update->bitmap_update.rectangles);
-		xfree(update->pointer);
+		pointer_free(update->pointer);
 		xfree(update->primary);
 		xfree(update->secondary);
 		xfree(update->altsec);

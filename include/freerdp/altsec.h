@@ -22,19 +22,19 @@
 
 #include <freerdp/types.h>
 
-#define DSDNG_STRETCH 			0x00000001
-#define DSDNG_TILE 			0x00000002
-#define DSDNG_PERPIXELALPHA 		0x00000004
-#define DSDNG_TRANSPARENT 		0x00000008
-#define DSDNG_MUSTFLIP 			0x00000010
-#define DSDNG_TRUESIZE 			0x00000020
+#define DSDNG_STRETCH             0x00000001
+#define DSDNG_TILE                0x00000002
+#define DSDNG_PERPIXELALPHA       0x00000004
+#define DSDNG_TRANSPARENT         0x00000008
+#define DSDNG_MUSTFLIP            0x00000010
+#define DSDNG_TRUESIZE            0x00000020
 
-#define FRAME_START			0x00000000
-#define FRAME_END			0x00000001
+#define FRAME_START               0x00000000
+#define FRAME_END                 0x00000001
 
-#define STREAM_BITMAP_END		0x01
-#define STREAM_BITMAP_COMPRESSED	0x02
-#define STREAM_BITMAP_V2		0x04
+#define STREAM_BITMAP_END         0x01
+#define STREAM_BITMAP_COMPRESSED  0x02
+#define STREAM_BITMAP_V2          0x04
 
 struct _OFFSCREEN_DELETE_LIST
 {

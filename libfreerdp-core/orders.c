@@ -1702,7 +1702,7 @@ void update_recv_primary_order(rdpUpdate* update, STREAM* s, uint8 flags)
 		if (!(flags & ORDER_ZERO_BOUNDS_DELTAS))
 			update_read_bounds(s, &orderInfo->bounds);
 
-		IFCALL(update->SetBounds, context, &orderInfo->bounds);
+		update->SetBounds(context, &orderInfo->bounds);
 	}
 
 	orderInfo->deltaCoordinates = (flags & ORDER_DELTA_COORDINATES) ? true : false;
@@ -1832,7 +1832,7 @@ void update_recv_primary_order(rdpUpdate* update, STREAM* s, uint8 flags)
 
 	if (flags & ORDER_BOUNDS)
 	{
-		IFCALL(update->SetBounds, context, NULL);
+		update->SetBounds(context, NULL);
 	}
 }
 

@@ -119,22 +119,24 @@ static void security_salted_hash(uint8* salt, uint8* input, int length, uint8* s
 	CryptoMd5 md5;
 	CryptoSha1 sha1;
 	uint8 sha1_digest[CRYPTO_SHA1_DIGEST_LENGTH];
+	struct crypto_sha1_struct sha1_obj;
+	struct crypto_md5_struct md5_obj;
 
 	/* SaltedHash(Salt, Input, Salt1, Salt2) = MD5(S + SHA1(Input + Salt + Salt1 + Salt2)) */
 
 	/* SHA1_Digest = SHA1(Input + Salt + Salt1 + Salt2) */
-	sha1 = crypto_sha1_init();
+	sha1 = crypto_sha1_init1(&sha1_obj);
 	crypto_sha1_update(sha1, input, length); /* Input */
 	crypto_sha1_update(sha1, salt, 48); /* Salt (48 bytes) */
 	crypto_sha1_update(sha1, salt1, 32); /* Salt1 (32 bytes) */
 	crypto_sha1_update(sha1, salt2, 32); /* Salt2 (32 bytes) */
-	crypto_sha1_final(sha1, sha1_digest);
+	crypto_sha1_final1(sha1, sha1_digest);
 
 	/* SaltedHash(Salt, Input, Salt1, Salt2) = MD5(S + SHA1_Digest) */
-	md5 = crypto_md5_init();
+	md5 = crypto_md5_init1(&md5_obj);
 	crypto_md5_update(md5, salt, 48); /* Salt (48 bytes) */
 	crypto_md5_update(md5, sha1_digest, sizeof(sha1_digest)); /* SHA1_Digest */
-	crypto_md5_final(md5, output);
+	crypto_md5_final1(md5, output);
 }
 
 static void security_premaster_hash(char* input, int length, uint8* premaster_secret, uint8* client_random, uint8* server_random, uint8* output)
@@ -174,12 +176,13 @@ void security_mac_salt_key(uint8* session_key_blob, uint8* client_random, uint8*
 void security_md5_16_32_32(uint8* in0, uint8* in1, uint8* in2, uint8* output)
 {
 	CryptoMd5 md5;
+	struct crypto_md5_struct md5_obj;
 
-	md5 = crypto_md5_init();
+	md5 = crypto_md5_init1(&md5_obj);
 	crypto_md5_update(md5, in0, 16);
 	crypto_md5_update(md5, in1, 32);
 	crypto_md5_update(md5, in2, 32);
-	crypto_md5_final(md5, output);
+	crypto_md5_final1(md5, output);
 }
 
 void security_licensing_encryption_key(uint8* session_key_blob, uint8* client_random, uint8* server_random, uint8* output)
@@ -202,25 +205,27 @@ void security_mac_data(uint8* mac_salt_key, uint8* data, uint32 length, uint8* o
 	CryptoSha1 sha1;
 	uint8 length_le[4];
 	uint8 sha1_digest[CRYPTO_SHA1_DIGEST_LENGTH];
+	struct crypto_sha1_struct sha1_obj;
+	struct crypto_md5_struct md5_obj;
 
 	/* MacData = MD5(MacSaltKey + pad2 + SHA1(MacSaltKey + pad1 + length + data)) */
 
 	security_uint32_le(length_le, length); /* length must be little-endian */
 
 	/* SHA1_Digest = SHA1(MacSaltKey + pad1 + length + data) */
-	sha1 = crypto_sha1_init();
+	sha1 = crypto_sha1_init1(&sha1_obj);
 	crypto_sha1_update(sha1, mac_salt_key, 16); /* MacSaltKey */
 	crypto_sha1_update(sha1, pad1, sizeof(pad1)); /* pad1 */
 	crypto_sha1_update(sha1, length_le, sizeof(length_le)); /* length */
 	crypto_sha1_update(sha1, data, length); /* data */
-	crypto_sha1_final(sha1, sha1_digest);
+	crypto_sha1_final1(sha1, sha1_digest);
 
 	/* MacData = MD5(MacSaltKey + pad2 + SHA1_Digest) */
-	md5 = crypto_md5_init();
+	md5 = crypto_md5_init1(&md5_obj);
 	crypto_md5_update(md5, mac_salt_key, 16); /* MacSaltKey */
 	crypto_md5_update(md5, pad2, sizeof(pad2)); /* pad2 */
 	crypto_md5_update(md5, sha1_digest, sizeof(sha1_digest)); /* SHA1_Digest */
-	crypto_md5_final(md5, output);
+	crypto_md5_final1(md5, output);
 }
 
 void security_mac_signature(rdpRdp *rdp, uint8* data, uint32 length, uint8* output)
@@ -230,23 +235,25 @@ void security_mac_signature(rdpRdp *rdp, uint8* data, uint32 length, uint8* outp
 	uint8 length_le[4];
 	uint8 md5_digest[CRYPTO_MD5_DIGEST_LENGTH];
 	uint8 sha1_digest[CRYPTO_SHA1_DIGEST_LENGTH];
+	struct crypto_sha1_struct sha1_obj;
+	struct crypto_md5_struct md5_obj;
 
 	security_uint32_le(length_le, length); /* length must be little-endian */
 
 	/* SHA1_Digest = SHA1(MACKeyN + pad1 + length + data) */
-	sha1 = crypto_sha1_init();
+	sha1 = crypto_sha1_init1(&sha1_obj);
 	crypto_sha1_update(sha1, rdp->sign_key, rdp->rc4_key_len); /* MacKeyN */
 	crypto_sha1_update(sha1, pad1, sizeof(pad1)); /* pad1 */
 	crypto_sha1_update(sha1, length_le, sizeof(length_le)); /* length */
 	crypto_sha1_update(sha1, data, length); /* data */
-	crypto_sha1_final(sha1, sha1_digest);
+	crypto_sha1_final1(sha1, sha1_digest);
 
 	/* MACSignature = First64Bits(MD5(MACKeyN + pad2 + SHA1_Digest)) */
-	md5 = crypto_md5_init();
+	md5 = crypto_md5_init1(&md5_obj);
 	crypto_md5_update(md5, rdp->sign_key, rdp->rc4_key_len); /* MacKeyN */
 	crypto_md5_update(md5, pad2, sizeof(pad2)); /* pad2 */
 	crypto_md5_update(md5, sha1_digest, sizeof(sha1_digest)); /* SHA1_Digest */
-	crypto_md5_final(md5, md5_digest);
+	crypto_md5_final1(md5, md5_digest);
 
 	memcpy(output, md5_digest, 8);
 }
@@ -259,6 +266,8 @@ void security_salted_mac_signature(rdpRdp *rdp, uint8* data, uint32 length, tboo
 	uint8 use_count_le[4];
 	uint8 md5_digest[CRYPTO_MD5_DIGEST_LENGTH];
 	uint8 sha1_digest[CRYPTO_SHA1_DIGEST_LENGTH];
+	struct crypto_sha1_struct sha1_obj;
+	struct crypto_md5_struct md5_obj;
 
 	security_uint32_le(length_le, length); /* length must be little-endian */
 	if (encryption)
@@ -273,20 +282,20 @@ void security_salted_mac_signature(rdpRdp *rdp, uint8* data, uint32 length, tboo
 	}
 
 	/* SHA1_Digest = SHA1(MACKeyN + pad1 + length + data) */
-	sha1 = crypto_sha1_init();
+	sha1 = crypto_sha1_init1(&sha1_obj);
 	crypto_sha1_update(sha1, rdp->sign_key, rdp->rc4_key_len); /* MacKeyN */
 	crypto_sha1_update(sha1, pad1, sizeof(pad1)); /* pad1 */
 	crypto_sha1_update(sha1, length_le, sizeof(length_le)); /* length */
 	crypto_sha1_update(sha1, data, length); /* data */
 	crypto_sha1_update(sha1, use_count_le, sizeof(use_count_le)); /* encryptionCount */
-	crypto_sha1_final(sha1, sha1_digest);
+	crypto_sha1_final1(sha1, sha1_digest);
 
 	/* MACSignature = First64Bits(MD5(MACKeyN + pad2 + SHA1_Digest)) */
-	md5 = crypto_md5_init();
+	md5 = crypto_md5_init1(&md5_obj);
 	crypto_md5_update(md5, rdp->sign_key, rdp->rc4_key_len); /* MacKeyN */
 	crypto_md5_update(md5, pad2, sizeof(pad2)); /* pad2 */
 	crypto_md5_update(md5, sha1_digest, sizeof(sha1_digest)); /* SHA1_Digest */
-	crypto_md5_final(md5, md5_digest);
+	crypto_md5_final1(md5, md5_digest);
 
 	memcpy(output, md5_digest, 8);
 }
@@ -346,6 +355,7 @@ tbool security_establish_keys(uint8* client_random, rdpRdp* rdp)
 	uint8* server_random;
 	uint8 salt40[] = { 0xD1, 0x26, 0x9E };
 	rdpSettings* settings;
+    struct crypto_sha1_struct sha1_obj;
 
 	settings = rdp->settings;
 	server_random = settings->server_random->data;
@@ -358,26 +368,26 @@ tbool security_establish_keys(uint8* client_random, rdpRdp* rdp)
 
 		printf("FIPS Compliant encryption level.\n");
 
-		sha1 = crypto_sha1_init();
+		sha1 = crypto_sha1_init1(&sha1_obj);
 		crypto_sha1_update(sha1, client_random + 16, 16);
 		crypto_sha1_update(sha1, server_random + 16, 16);
-		crypto_sha1_final(sha1, client_encrypt_key_t);
+		crypto_sha1_final1(sha1, client_encrypt_key_t);
 
 		client_encrypt_key_t[20] = client_encrypt_key_t[0];
 		fips_expand_key_bits(client_encrypt_key_t, rdp->fips_encrypt_key);
 
-		sha1 = crypto_sha1_init();
+		sha1 = crypto_sha1_init1(&sha1_obj);
 		crypto_sha1_update(sha1, client_random, 16);
 		crypto_sha1_update(sha1, server_random, 16);
-		crypto_sha1_final(sha1, client_decrypt_key_t);
+		crypto_sha1_final1(sha1, client_decrypt_key_t);
 
 		client_decrypt_key_t[20] = client_decrypt_key_t[0];
 		fips_expand_key_bits(client_decrypt_key_t, rdp->fips_decrypt_key);
 
-		sha1 = crypto_sha1_init();
+		sha1 = crypto_sha1_init1(&sha1_obj);
 		crypto_sha1_update(sha1, client_decrypt_key_t, 20);
 		crypto_sha1_update(sha1, client_encrypt_key_t, 20);
-		crypto_sha1_final(sha1, rdp->fips_sign_key);
+		crypto_sha1_final1(sha1, rdp->fips_sign_key);
 	}
 
 	memcpy(pre_master_secret, client_random, 24);
@@ -388,12 +398,15 @@ tbool security_establish_keys(uint8* client_random, rdpRdp* rdp)
 
 	memcpy(rdp->sign_key, session_key_blob, 16);
 
-	if (rdp->settings->server_mode) {
+	if (rdp->settings->server_mode)
+	{
 		security_md5_16_32_32(&session_key_blob[16], client_random,
 		    server_random, rdp->encrypt_key);
 		security_md5_16_32_32(&session_key_blob[32], client_random,
 		    server_random, rdp->decrypt_key);
-	} else {
+	}
+	else
+	{
 		security_md5_16_32_32(&session_key_blob[16], client_random,
 		    server_random, rdp->decrypt_key);
 		security_md5_16_32_32(&session_key_blob[32], client_random,
@@ -425,18 +438,20 @@ tbool security_key_update(uint8* key, uint8* update_key, int key_len)
 	CryptoSha1 sha1;
 	CryptoRc4 rc4;
 	uint8 salt40[] = { 0xD1, 0x26, 0x9E };
+    struct crypto_sha1_struct sha1_obj;
+	struct crypto_md5_struct md5_obj;
 
-	sha1 = crypto_sha1_init();
+	sha1 = crypto_sha1_init1(&sha1_obj);
 	crypto_sha1_update(sha1, update_key, key_len);
 	crypto_sha1_update(sha1, pad1, sizeof(pad1));
 	crypto_sha1_update(sha1, key, key_len);
-	crypto_sha1_final(sha1, sha1h);
+	crypto_sha1_final1(sha1, sha1h);
 
-	md5 = crypto_md5_init();
+	md5 = crypto_md5_init1(&md5_obj);
 	crypto_md5_update(md5, update_key, key_len);
 	crypto_md5_update(md5, pad2, sizeof(pad2));
 	crypto_md5_update(md5, sha1h, sizeof(sha1h));
-	crypto_md5_final(md5, key);
+	crypto_md5_final1(md5, key);
 
 	rc4 = crypto_rc4_init(key, key_len);
 	crypto_rc4(rc4, key_len, key, key);

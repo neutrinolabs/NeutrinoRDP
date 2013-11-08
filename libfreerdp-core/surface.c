@@ -39,7 +39,7 @@ static int update_recv_surfcmd_surface_bits(rdpUpdate* update, STREAM* s)
 	pos = stream_get_pos(s) + cmd->bitmapDataLength;
 	cmd->bitmapData = stream_get_tail(s);
 
-	IFCALL(update->SurfaceBits, update->context, cmd);
+	update->SurfaceBits(update->context, cmd);
 
 	stream_set_pos(s, pos);
 
@@ -53,7 +53,7 @@ static int update_recv_surfcmd_frame_marker(rdpUpdate* update, STREAM* s)
 	stream_read_uint16(s, marker->frameAction);
 	stream_read_uint32(s, marker->frameId);
 
-	IFCALL(update->SurfaceFrameMarker, update->context, marker);
+	update->SurfaceFrameMarker(update->context, marker);
 
 	return 6;
 }
@@ -125,4 +125,3 @@ void update_write_surfcmd_frame_marker(STREAM* s, uint16 frameAction, uint32 fra
 	stream_write_uint16(s, frameAction);
 	stream_write_uint32(s, frameId);
 }
-

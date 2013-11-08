@@ -26,6 +26,12 @@ CryptoSha1 crypto_sha1_init(void)
 	return sha1;
 }
 
+CryptoSha1 crypto_sha1_init1(CryptoSha1 sha1)
+{
+	SHA1_Init(&sha1->sha_ctx);
+	return sha1;
+}
+
 void crypto_sha1_update(CryptoSha1 sha1, const uint8* data, uint32 length)
 {
 	SHA1_Update(&sha1->sha_ctx, data, length);
@@ -37,9 +43,20 @@ void crypto_sha1_final(CryptoSha1 sha1, uint8* out_data)
 	xfree(sha1);
 }
 
+void crypto_sha1_final1(CryptoSha1 sha1, uint8* out_data)
+{
+	SHA1_Final(out_data, &sha1->sha_ctx);
+}
+
 CryptoMd5 crypto_md5_init(void)
 {
 	CryptoMd5 md5 = xmalloc(sizeof(*md5));
+	MD5_Init(&md5->md5_ctx);
+	return md5;
+}
+
+CryptoMd5 crypto_md5_init1(CryptoMd5 md5)
+{
 	MD5_Init(&md5->md5_ctx);
 	return md5;
 }
@@ -53,6 +70,11 @@ void crypto_md5_final(CryptoMd5 md5, uint8* out_data)
 {
 	MD5_Final(out_data, &md5->md5_ctx);
 	xfree(md5);
+}
+
+void crypto_md5_final1(CryptoMd5 md5, uint8* out_data)
+{
+	MD5_Final(out_data, &md5->md5_ctx);
 }
 
 CryptoRc4 crypto_rc4_init(const uint8* key, uint32 length)
@@ -538,4 +560,3 @@ void crypto_cert_print_info(X509* xcert)
 	xfree(issuer);
 	xfree(fp);
 }
-
