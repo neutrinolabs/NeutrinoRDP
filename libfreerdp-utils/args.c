@@ -123,8 +123,8 @@ int freerdp_parse_args(rdpSettings* settings, int argc, char** argv,
 				"  --secure-checksum: use salted checksums with Standard RDP encryption\n"
 				"  --version: print version information\n"
 				"  --skip-bs: do not keep backing store\n"
-				"  --multimon-set: hard set monitor list num x y width height isprimary x y..."
-				"                       two screen example --multimon-set 2 0 0 512 768 512 0 512 768"
+				"  --multimon-set: hard set monitor list num x y width height isprimary x y...\n"
+				"                  two screen example --multimon-set 2 0 0 512 768 512 0 512 768\n"
 				"\n", argv[0]);
 			return FREERDP_ARGS_PARSE_HELP; //TODO: What is the correct return
 		}
