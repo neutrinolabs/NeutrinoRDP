@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <unistd.h>
+
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 
@@ -96,6 +97,7 @@ mint 13
 #include <freerdp/plugins/tsmf.h>
 
 #include "xrdpvr_player.h"
+//#include "multiformatdecoder.h"
 
 typedef struct player_state_info
 {
@@ -117,11 +119,18 @@ typedef struct player_state_info
 	void            *plugin;
 	int              player_inited;
 
+	int              audio_prepared;
+	int              video_prepared;
+
 	int              xpos;
 	int              ypos;
 	int              width;
 	int              height;
 	int              volume;
+
+	//void*		 hw_ctx;
+	void*            dec;
+
 } PLAYER_STATE_INFO;
 
 /* forward declarations local to this file */
@@ -131,145 +140,49 @@ static uint8_t *get_decoded_video_data(PLAYER_STATE_INFO *psi, uint32_t *size);
 static int get_decoded_video_dimension(PLAYER_STATE_INFO *psi, uint32_t *width, uint32_t *height);
 static uint32_t get_decoded_video_format(PLAYER_STATE_INFO *psi);
 static int display_picture(PLAYER_STATE_INFO *psi);
-static int does_file_exist(char *filename);
 
 #if defined(DISTRO_UBUNTU1204) || defined(DISTRO_UBUNTU1111)
 #define CODEC_TYPE_VIDEO AVMEDIA_TYPE_VIDEO
 #define CODEC_TYPE_AUDIO AVMEDIA_TYPE_AUDIO
 #endif
 
+void* init_context(int codec_id);
+void destroy_cts(void*ctx);
+int decode_video(void*ctx, int* got_frame, unsigned char* data, int size);
+int get_output_frame(void*ctx, unsigned char* data, int size);
+int get_decoded_size(void*ctx);
+void get_decodec_dimentions(void*ctx,int* width,int* height);
+
 /**
  ******************************************************************************/
-void *
-init_player(void *plugin, char *filename)
+void* init_player(void* plugin, char* filename)
 {
 	PLAYER_STATE_INFO *psi;
 
-	int video_index = -1;
-	int audio_index = -1;
-	int i;
-
-	/* to hold player state information */
+	printf("init_player:\n");
 	psi = (PLAYER_STATE_INFO *) calloc(1, sizeof(PLAYER_STATE_INFO));
-
 	if (psi == NULL)
+	{
 		return NULL;
+	}
 
 	psi->plugin = plugin;
-
-	if ((g_meta_data_fd < 0) || (does_file_exist(filename) == 0))
-		return NULL;
 
 	/* register all available fileformats and codecs */
 	av_register_all();
 
-	/* open media file - this will read just the header */
-	//if (avformat_open_input(&psi->format_ctx, filename, NULL, NULL))
-	if (av_open_input_file(&psi->format_ctx, filename, NULL, 0, NULL))
-	{
-		DEBUG_WARN("xrdp_player.c:init_player: ERROR opening %s\n", filename);
-		goto bailout1;
-	}
+	psi->audio_codec_ctx = avcodec_alloc_context();
+	psi->audio_codec = avcodec_find_decoder(CODEC_ID_AAC);
 
-	/* now get the real stream info */
-	//if (avformat_find_stream_info(psi->format_ctx, NULL) < 0)
-	if (av_find_stream_info(psi->format_ctx) < 0)
-	{
-		DEBUG_WARN("xrdp_player.c:init_player: ERROR reading stream info\n");
-		goto bailout1;
-	}
+	psi->video_codec_ctx = avcodec_alloc_context();
+	psi->video_codec = avcodec_find_decoder(CODEC_ID_H264);
 
-#if 0
-	/* display basic media info */
-	av_dump_format(psi->format_ctx, 0, filename, 0);
-#endif
-
-	/* TODO: provide support for selecting audio/video stream when multiple */
-	/* streams are present, such as multilingual audio or widescreen video  */
-
-	/* find first audio / video stream */
-	for (i = 0; i < psi->format_ctx->nb_streams; i++)
-	{
-		//if (psi->format_ctx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
-		//        video_index < 0)
-		if (psi->format_ctx->streams[i]->codec->codec_type == CODEC_TYPE_VIDEO && video_index < 0)
-		{
-			video_index = i;
-		}
-
-		//if (psi->format_ctx->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
-		//        audio_index < 0)
-		if (psi->format_ctx->streams[i]->codec->codec_type == CODEC_TYPE_AUDIO && audio_index < 0)
-		{
-			audio_index = i;
-		}
-	}
-
-	if ((audio_index < 0) && (video_index < 0))
-	{
-		/* file does not contain audio or video */
-		DEBUG_WARN("xrdp_player.c:init_player: "
-		           "no audio/video stream found in %s\n", filename);
-		goto bailout2;
-	}
-
-	psi->audio_stream_index = audio_index;
-	psi->video_stream_index = video_index;
-
-	/* save codex contexts for both streams */
-	psi->audio_codec_ctx = psi->format_ctx->streams[audio_index]->codec;
-	psi->video_codec_ctx = psi->format_ctx->streams[video_index]->codec;
-
-	/* find decoder for audio stream */
-	psi->audio_codec = avcodec_find_decoder(psi->audio_codec_ctx->codec_id);
-	if (psi->audio_codec == NULL)
-	{
-		DEBUG_WARN("xrdp_player.c:init_player: "
-				"ERROR: audio codec not supported\n");
-		goto bailout2;
-	}
-
-	/* find decoder for video stream */
-	psi->video_codec = avcodec_find_decoder(psi->video_codec_ctx->codec_id);
-	if (psi->video_codec == NULL)
-	{
-		DEBUG_WARN("xrdp_player.c:init_player: "
-				"ERROR: video codec not supported\n");
-		goto bailout2;
-	}
-
-	/* open decoder for audio stream */
-	//if (avcodec_open2(psi->audio_codec_ctx, psi->audio_codec, NULL) < 0)
-	if (avcodec_open(psi->audio_codec_ctx, psi->audio_codec) < 0)
-	{
-		DEBUG_WARN("xrdp_player.c:init_player: "
-				"ERROR: could not open audio decoder\n");
-		goto bailout2;
-	}
-
-	/* open decoder for video stream */
-	//if (avcodec_open2(psi->video_codec_ctx, psi->video_codec, NULL) < 0)
-	if (avcodec_open(psi->video_codec_ctx, psi->video_codec) < 0)
-	{
-		DEBUG_WARN("xrdp_player.c:init_player: "
-				"ERROR: could not open video decoder\n");
-		goto bailout2;
-	}
-
-	/* allocate frames */
 	psi->audio_frame = avcodec_alloc_frame();
 	psi->video_frame = avcodec_alloc_frame();
 
 	psi->player_inited = 1;
+
 	return psi;
-
-bailout2:
-	//avformat_close_input(&psi->format_ctx);
-	av_close_input_file(psi->format_ctx);
-
-bailout1:
-	free(psi);
-	return NULL;
 }
 
 /**
@@ -279,6 +192,7 @@ deinit_player(void *vp)
 {
 	PLAYER_STATE_INFO *psi = (PLAYER_STATE_INFO *) vp;
 
+	printf("deinit_player:\n");
 	if ((psi == NULL) || (!psi->player_inited))
 	{
 		DEBUG_WARN("xrdpvr player is NULL or not inited");
@@ -287,38 +201,55 @@ deinit_player(void *vp)
 
 	av_free(psi->audio_frame);
 	av_free(psi->video_frame);
-	avcodec_close(psi->audio_codec_ctx);
-	avcodec_close(psi->video_codec_ctx);
-	//avformat_close_input(&psi->format_ctx);
-	av_close_input_file(psi->format_ctx);
+
+	if (psi->audio_prepared)
+	{
+		avcodec_close(psi->audio_codec_ctx);
+	}
+	av_free(psi->audio_codec_ctx);
+	if (psi->video_prepared)
+	{
+		avcodec_close(psi->video_codec_ctx);
+	}
+	av_free(psi->video_codec_ctx);
+
 	free(psi);
 }
 
+/**
+ ******************************************************************************/
 int
 process_video(void *vp, uint8 *data, int data_len)
 {
 	PLAYER_STATE_INFO *psi = (PLAYER_STATE_INFO *) vp;
 	AVPacket av_pkt;
 
+	//printf("process_video:\n");
 	if ((psi == NULL) || (!psi->player_inited))
 	{
 		DEBUG_WARN("xrdpvr player is NULL or not inited");
 		return -1;
 	}
 
+#if 1
 	av_init_packet(&av_pkt);
 	av_pkt.data = data;
 	av_pkt.size = data_len;
 	play_video(psi, &av_pkt);
+#endif
+
 	return 0;
 }
 
+/**
+ ******************************************************************************/
 int
 process_audio(void *vp, uint8 *data, int data_len)
 {
 	PLAYER_STATE_INFO *psi = (PLAYER_STATE_INFO *) vp;
 	AVPacket av_pkt;
 
+	//printf("process_audio:\n");
 	if ((psi == NULL) || (!psi->player_inited))
 	{
 		DEBUG_WARN("xrdpvr player is NULL or not inited");
@@ -341,6 +272,8 @@ process_audio(void *vp, uint8 *data, int data_len)
 	return 0;
 }
 
+/**
+ ******************************************************************************/
 uint8_t *
 get_decoded_audio_data(void *vp, uint32_t *size)
 {
@@ -393,6 +326,66 @@ get_audio_config(void *vp, int *samp_per_sec, int *num_channels, int *bits_per_s
 	}
 }
 
+/**
+ ******************************************************************************/
+void
+set_audio_config(void* vp, char* extradata, int extradata_size,
+		int sample_rate, int bit_rate, int channels, int block_align)
+{
+	PLAYER_STATE_INFO *psi = (PLAYER_STATE_INFO *) vp;
+
+	printf("set_audio_config:\n");
+	psi->audio_codec_ctx->extradata_size = extradata_size + 8;
+	psi->audio_codec_ctx->extradata =
+			xzalloc(psi->audio_codec_ctx->extradata_size);
+	memcpy(psi->audio_codec_ctx->extradata, extradata, extradata_size);
+	psi->audio_codec_ctx->sample_rate = sample_rate;
+	psi->audio_codec_ctx->bit_rate = bit_rate;
+	psi->audio_codec_ctx->channels = channels;
+	psi->audio_codec_ctx->block_align = block_align;
+#ifdef AV_CPU_FLAG_SSE2
+	psi->audio_codec_ctx->dsp_mask = AV_CPU_FLAG_SSE2 | AV_CPU_FLAG_MMX2;
+#else
+#if LIBAVCODEC_VERSION_MAJOR < 53
+	psi->audio_codec_ctx->dsp_mask = FF_MM_SSE2 | FF_MM_MMXEXT;
+#else
+	psi->audio_codec_ctx->dsp_mask = FF_MM_SSE2 | FF_MM_MMX2;
+#endif
+#endif
+	if (psi->audio_codec->capabilities & CODEC_CAP_TRUNCATED)
+	{
+		psi->audio_codec_ctx->flags |= CODEC_FLAG_TRUNCATED;
+	}
+	if (avcodec_open(psi->audio_codec_ctx, psi->audio_codec) < 0)
+	{
+		printf("init_player: audio avcodec_open failed\n");
+	}
+	else
+	{
+		psi->audio_prepared = 1;
+	}
+}
+
+/**
+ ******************************************************************************/
+void
+set_video_config(void *vp)
+{
+	PLAYER_STATE_INFO *psi = (PLAYER_STATE_INFO *) vp;
+
+	printf("set_video_config:\n");
+	if (avcodec_open(psi->video_codec_ctx, psi->video_codec) < 0)
+	{
+		printf("init_player: video avcodec_open failed\n");
+	}
+	else
+	{
+		psi->video_prepared = 1;
+	}
+}
+
+/**
+ ******************************************************************************/
 void
 set_geometry(void *vp, int xpos, int ypos, int width, int height)
 {
@@ -419,6 +412,8 @@ set_geometry(void *vp, int xpos, int ypos, int width, int height)
 #include <fcntl.h>
 #include <unistd.h>
 
+/**
+ ******************************************************************************/
 static int n_save_data(const uint8* data, uint32 data_size, int width, int height)
 {
     int fd;
@@ -439,9 +434,9 @@ static int n_save_data(const uint8* data, uint32 data_size, int width, int heigh
     header.width = width;
     header.height = height;
     header.bytes_follow = data_size;
-    //if (write(fd, &header, 16) != 16)
+    if (write(fd, &header, 16) != 16)
     {
-        //printf("save_data: write failed\n");
+        printf("save_data: write failed\n");
     }
 
     if (write(fd, data, data_size) != data_size)
@@ -474,10 +469,14 @@ play_video(PLAYER_STATE_INFO *psi, struct AVPacket *av_pkt)
 	}
 
 #if SAVE_VIDEO
-    n_save_data(av_pkt->data, av_pkt->size,
-                psi->video_codec_ctx->width,
-                psi->video_codec_ctx->height);
+	n_save_data(av_pkt->data, av_pkt->size,
+			psi->video_codec_ctx->width,
+			psi->video_codec_ctx->height);
 #endif
+
+	psi->video_codec_ctx->width = 720;
+	psi->video_codec_ctx->height = 404;
+	psi->video_codec_ctx->pix_fmt = PIX_FMT_YUV420P;
 
 #ifdef DISTRO_DEBIAN6
 	len = avcodec_decode_video(psi->video_codec_ctx, psi->video_frame, &got_frame, av_pkt->data, av_pkt->size);
@@ -503,30 +502,24 @@ play_video(PLAYER_STATE_INFO *psi, struct AVPacket *av_pkt)
 	}
 
 	psi->video_decoded_size = avpicture_get_size(psi->video_codec_ctx->pix_fmt,
-	                          psi->video_codec_ctx->width,
-	                          psi->video_codec_ctx->height);
+			psi->video_codec_ctx->width, psi->video_codec_ctx->height);
 
 	/* TODO where is this memory released? */
 	psi->video_decoded_data = xzalloc(psi->video_decoded_size);
-
 	frame = avcodec_alloc_frame();
-
 	avpicture_fill((AVPicture *) frame, psi->video_decoded_data,
-	               psi->video_codec_ctx->pix_fmt,
-	               psi->video_codec_ctx->width,
-	               psi->video_codec_ctx->height);
-
+			psi->video_codec_ctx->pix_fmt, psi->video_codec_ctx->width,
+			psi->video_codec_ctx->height);
 	av_picture_copy((AVPicture *) frame, (AVPicture *) psi->video_frame,
-	                psi->video_codec_ctx->pix_fmt,
-	                psi->video_codec_ctx->width,
-	                psi->video_codec_ctx->height);
-
+			psi->video_codec_ctx->pix_fmt, psi->video_codec_ctx->width,
+			psi->video_codec_ctx->height);
 	av_free(frame);
 	display_picture(psi);
-
 	return 0;
 }
 
+/**
+ ******************************************************************************/
 static int
 display_picture(PLAYER_STATE_INFO *psi)
 {
@@ -540,22 +533,24 @@ display_picture(PLAYER_STATE_INFO *psi)
 
 	if ((decoded_data = get_decoded_video_data(psi, &decoded_len)) == 0)
 	{
+		printf("display_picture: get_decoded_video_data failed\n");
 		return -1;
 	}
 
 	if (get_decoded_video_dimension(psi, &width, &height) != 0)
 	{
+		printf("display_picture: get_decoded_video_dimension failed\n");
 		return -1;
 	}
 
 	if ((video_format = get_decoded_video_format(psi)) < 0)
 	{
+		printf("display_picture: get_decoded_video_format failed\n");
 		return -1;
 	}
 
 	vevent = (RDP_VIDEO_FRAME_EVENT *) freerdp_event_new(RDP_EVENT_CLASS_TSMF,
-	         RDP_EVENT_TYPE_TSMF_VIDEO_FRAME,
-	         NULL, NULL);
+			RDP_EVENT_TYPE_TSMF_VIDEO_FRAME, NULL, NULL);
 
 	vevent->frame_data = decoded_data;
 	vevent->frame_size = decoded_len;
@@ -563,7 +558,7 @@ display_picture(PLAYER_STATE_INFO *psi)
 	vevent->frame_width = width;
 	vevent->frame_height = height;
 
-        //printf("display: x=%d y=%d with=%d height=%d\n", psi->xpos, psi->ypos, psi->width, psi->height);
+	//printf("display: x=%d y=%d with=%d height=%d\n", psi->xpos, psi->ypos, psi->width, psi->height);
 
 	vevent->x = psi->xpos;
 	vevent->y = psi->ypos;
@@ -589,6 +584,8 @@ display_picture(PLAYER_STATE_INFO *psi)
 	return 0;
 }
 
+/**
+ ******************************************************************************/
 static uint8_t *
 get_decoded_video_data(PLAYER_STATE_INFO *psi, uint32_t *size)
 {
@@ -596,13 +593,13 @@ get_decoded_video_data(PLAYER_STATE_INFO *psi, uint32_t *size)
 
 	buf = psi->video_decoded_data;
 	*size = psi->video_decoded_size;
-
 	psi->video_decoded_data = NULL;
 	psi->video_decoded_size = 0;
-
 	return buf;
 }
 
+/**
+ ******************************************************************************/
 static int
 get_decoded_video_dimension(PLAYER_STATE_INFO *psi, uint32_t *width, uint32_t *height)
 {
@@ -612,7 +609,6 @@ get_decoded_video_dimension(PLAYER_STATE_INFO *psi, uint32_t *width, uint32_t *h
 		*height = psi->video_codec_ctx->height;
 		return 0;
 	}
-
 	return -1;
 }
 
@@ -627,9 +623,8 @@ get_decoded_video_format(PLAYER_STATE_INFO *psi)
 			return RDP_PIXFMT_I420;
 
 		default:
-			DEBUG_WARN("unsupported pixel format %u\n",
-			           psi->video_codec_ctx->pix_fmt);
-			return (uint32) - 1;
+			DEBUG_WARN("unsupported pixel format %u\n", psi->video_codec_ctx->pix_fmt);
+			return (uint32) -1;
 	}
 }
 
@@ -646,6 +641,7 @@ play_audio(PLAYER_STATE_INFO *psi, AVPacket *av_pkt)
 	const uint8_t *src;
 	uint8_t       *dst;
 
+	//printf("play_audio: %d\n", av_pkt->size);
 	if ((psi == NULL) || (!psi->player_inited))
 	{
 		DEBUG_WARN("xrdpvr player is NULL or not inited");
@@ -690,6 +686,7 @@ play_audio(PLAYER_STATE_INFO *psi, AVPacket *av_pkt)
 		len = avcodec_decode_audio2(psi->audio_codec_ctx, (int16_t *) dst, &frame_size, src, src_size);
 #endif
 #ifdef DISTRO_UBUNTU1104
+		if (1)
 		{
 			AVPacket pkt;
 			av_init_packet(&pkt);
@@ -699,6 +696,7 @@ play_audio(PLAYER_STATE_INFO *psi, AVPacket *av_pkt)
 		}
 #endif
 #if defined(DISTRO_UBUNTU1204) || defined(DISTRO_UBUNTU1111)
+		if (1)
 		{
 			AVFrame *decoded_frame = avcodec_alloc_frame();
 			int got_frame = 0;
@@ -747,26 +745,6 @@ play_audio(PLAYER_STATE_INFO *psi, AVPacket *av_pkt)
 	return 0;
 }
 
-/**
- * determine if specified file exists
- *
- * @param  filename the filename to check for existance
- *
- * @return 1 if file exists, 0 otherwise
- ******************************************************************************/
-static int
-does_file_exist(char *filename)
-{
-	if (access(filename, F_OK) == 0)
-	{
-		return 1;
-	}
-	else
-	{
-		return 0;
-	}
-}
-
 /*****************************************************************************/
 void
 set_volume(void *vp, int volume)
@@ -781,4 +759,3 @@ set_volume(void *vp, int volume)
 	}
 	psi->volume = volume;
 }
-

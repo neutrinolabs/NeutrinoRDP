@@ -3,6 +3,7 @@
  * Xrdp video redirection channel
  *
  * Copyright 2012 Laxmikant Rashinkar <LK.Rashinkar@gmail.com>
+ * Copyright 2013 Jay Sorg <jay.sorg@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,6 +102,21 @@ static void xrdpvr_process_receive(rdpSvcPlugin *plugin, STREAM *data_in)
 	stream_free(data_in);
 }
 
+static int g_audio_count = 0;
+
+int send_audo_ack(rdpSvcPlugin *plugin)
+{
+	STREAM* data_out;
+
+	//printf("send_audo_ack:\n");
+	data_out = stream_new(4);
+	stream_write_uint32(data_out, g_audio_count);
+	g_audio_count++;
+	svc_plugin_send(plugin, data_out);
+	//printf("send_audo_ack: out\n");
+	return 0;
+}
+
 void xrdpvr_process_command(rdpSvcPlugin *plugin, STREAM *s)
 {
 	xrdpvrPlugin*   xrdpvr = (xrdpvrPlugin *) plugin;
@@ -114,15 +130,36 @@ void xrdpvr_process_command(rdpSvcPlugin *plugin, STREAM *s)
 	int             width = 0;
 	int             height = 0;
 	int             rv;
+	char*           extradata;
+	int             extradata_size;
+	int             sample_rate;
+	int             bit_rate;
+	int             channels;
+	int             block_align;
 
 	stream_read_uint32(s, cmd);
-
+	//printf("cmd %d\n", cmd);
 	switch (cmd)
 	{
+	case CMD_INIT_XRDPVR:
+		if (g_psi == NULL)
+		{
+			g_psi = init_player((void *) plugin, META_DATA_FILEAME);
+		}
+		if (g_psi == NULL)
+		{
+			printf("init_player() failed\n");
+			break;
+		}
+		break;
 	case CMD_SEND_AUDIO_DATA:
+		//printf("CMD_SEND_AUDIO_DATA\n");
 		DEBUG_XRDPVR("###### got CMD_SEND_AUDIO_DATA\n");
 		stream_read_uint32(s, tmp); /* stream id */
 		stream_read_uint32(s, data_len);
+
+		//printf("audio played sending ack\n");
+		send_audo_ack(plugin);
 
 		/* send decoded data to ALSA */
 		if (xrdpvr->audio_inited)
@@ -133,6 +170,7 @@ void xrdpvr_process_command(rdpSvcPlugin *plugin, STREAM *s)
 
 			decoded_data = get_decoded_audio_data(g_psi,
 					&uncompressed_size);
+			//printf("%d\n", uncompressed_size);
 
 			if ((decoded_data == NULL) || (uncompressed_size == 0))
 				break;
@@ -165,37 +203,52 @@ void xrdpvr_process_command(rdpSvcPlugin *plugin, STREAM *s)
 		break;
 
 	case CMD_SET_VIDEO_FORMAT:
+		// for some reason, this comes twice
+		// found it in vrplayer
+		printf("CMD_SET_VIDEO_FORMAT:\n");
 		DEBUG_XRDPVR("###### got CMD_SET_VIDEO_FORMAT\n");
 		stream_read_uint32(s, tmp); /* stream id */
-		g_psi = init_player((void *) plugin, META_DATA_FILEAME);
-		if (g_psi == NULL)
-			printf("init_player() failed\n");
+		set_video_config(g_psi);
 		break;
 
 	case CMD_SET_AUDIO_FORMAT:
+		printf("CMD_SET_AUDIO_FORMAT:\n");
 		DEBUG_XRDPVR("###### got CMD_SET_AUDIO_FORMAT\n");
 		stream_read_uint32(s, tmp); /* stream id */
+
+		stream_read_uint32(s, extradata_size);
+		extradata = (char*)stream_get_tail(s);
+		stream_seek(s, extradata_size);
+		stream_read_uint32(s, sample_rate);
+		stream_read_uint32(s, bit_rate);
+		stream_read_uint32(s, channels);
+		stream_read_uint32(s, block_align);
+
+		printf("extradata_size %d sample_rate %d bit_rate %d channels %d "
+				"block_align %d\n", extradata_size, sample_rate, bit_rate,
+				channels, block_align);
 
 		if (xrdpvr->audio_inited)
 		{
 			int samp_per_sec;
 			int num_channels;
 			int bits_per_samp;
-
+			set_audio_config(g_psi, extradata, extradata_size, sample_rate, bit_rate,
+					channels, block_align);
 			get_audio_config(g_psi, &samp_per_sec,
-					 &num_channels, &bits_per_samp);
-
+					&num_channels, &bits_per_samp);
 			rv = (xrdpvr->audio_device->SetFormat)(xrdpvr->audio_device,
 					samp_per_sec, num_channels, bits_per_samp);
 			if (!rv)
+			{
 				DEBUG_WARN("ERROR setting audio format\n");
+			}
 		}
 		break;
 
 	case CMD_CREATE_META_DATA_FILE:
 		DEBUG_XRDPVR("###### got CMD_CREATE_META_DATA_FILE\n");
-		if ((g_meta_data_fd = open(META_DATA_FILEAME,
-					   O_RDWR | O_CREAT | O_TRUNC, 0755)) < 0)
+		if ((g_meta_data_fd = open(META_DATA_FILEAME, O_RDWR | O_CREAT | O_TRUNC, 0755)) < 0)
 		{
 			DEBUG_WARN("ERROR opening %s; video redirection disabled!\n",
 				   META_DATA_FILEAME);
@@ -276,8 +329,10 @@ static void xrdpvr_process_connect(rdpSvcPlugin *plugin_p)
 		return;
 	}
 
-	plugin->audio_inited = (plugin->audio_device->Open)(plugin->audio_device, NULL);
+	//printf("calling open\n");
+	plugin->audio_inited = 1; //(plugin->audio_device->Open)(plugin->audio_device, NULL);
 
+	//printf("----------------------\n");
 	if (!plugin->audio_inited)
 		DEBUG_WARN("xrdpvr: failed to init ALSA; audio will not be redirected");
 }

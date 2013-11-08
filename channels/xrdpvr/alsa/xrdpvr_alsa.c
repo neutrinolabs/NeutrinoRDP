@@ -49,6 +49,7 @@ static tbool xrdpvr_alsa_open_device(XrdpvrALSAAudioDevice *alsa)
 {
 	int error;
 
+	//printf("aa %s\n", alsa->device);
 	error = snd_pcm_open(&alsa->out_handle, alsa->device, SND_PCM_STREAM_PLAYBACK, 0);
 
 	if (error < 0)
@@ -80,9 +81,8 @@ static tbool xrdpvr_alsa_open(XrdpvrAudioDevice *audio, const char *device)
 	return xrdpvr_alsa_open_device(alsa);
 }
 
-static tbool xrdpvr_alsa_set_format(XrdpvrAudioDevice *audio,
-                                    uint32 sample_rate, uint32 channels,
-				      uint32 bits_per_sample)
+static tbool xrdpvr_alsa_set_format(XrdpvrAudioDevice *audio, uint32 sample_rate, uint32 channels,
+		uint32 bits_per_sample)
 {
 	int error;
 	snd_pcm_uframes_t frames;
@@ -133,8 +133,7 @@ static tbool xrdpvr_alsa_set_format(XrdpvrAudioDevice *audio,
 	}
 
 	snd_pcm_sw_params_current(alsa->out_handle, sw_params);
-	snd_pcm_sw_params_set_start_threshold(alsa->out_handle, sw_params,
-	                                      frames / 2);
+	snd_pcm_sw_params_set_start_threshold(alsa->out_handle, sw_params, frames / 2);
 	snd_pcm_sw_params(alsa->out_handle, sw_params);
 	snd_pcm_sw_params_free(sw_params);
 
@@ -148,15 +147,15 @@ static tbool xrdpvr_alsa_set_format(XrdpvrAudioDevice *audio,
 	        (alsa->actual_channels != alsa->source_channels))
 	{
 		DEBUG_DVC("actual rate %d / channel %d is different "
-		          "from source rate %d / channel %d, resampling required.",
-		          alsa->actual_rate, alsa->actual_channels,
-		          alsa->source_rate, alsa->source_channels);
+				"from source rate %d / channel %d, resampling required.",
+				alsa->actual_rate, alsa->actual_channels,
+				alsa->source_rate, alsa->source_channels);
 	}
 
 	return true;
 }
 
-static tbool xrdpvr_alsa_play(XrdpvrAudioDevice *audio, uint8 *data, uint32 data_size)
+static tbool xrdpvr_alsa_play(XrdpvrAudioDevice* audio, uint8* data, uint32 data_size)
 {
 	int len;
 	int error;
@@ -184,16 +183,13 @@ static tbool xrdpvr_alsa_play(XrdpvrAudioDevice *audio, uint8 *data, uint32 data
 		}
 		else
 		{
-			resampled_data = dsp_resample(data, alsa->bytes_per_sample,
-			                              alsa->source_channels,
-						      alsa->source_rate,
-						      data_size / sbytes_per_frame,
-			                              alsa->actual_channels,
-						      alsa->actual_rate, &frames);
+			resampled_data = dsp_resample(data, alsa->bytes_per_sample, alsa->source_channels,
+					alsa->source_rate, data_size / sbytes_per_frame, alsa->actual_channels,
+					alsa->actual_rate, &frames);
 
 			DEBUG_DVC("resampled %d frames at %d to %d frames at %d",
-			          data_size / sbytes_per_frame, alsa->source_rate,
-				  frames, alsa->actual_rate);
+					data_size / sbytes_per_frame, alsa->source_rate,
+					frames, alsa->actual_rate);
 
 			data_size = frames * rbytes_per_frame;
 			src = resampled_data;
@@ -250,8 +246,8 @@ static uint64 xrdpvr_alsa_get_latency(XrdpvrAudioDevice *audio)
 	XrdpvrALSAAudioDevice *alsa = (XrdpvrALSAAudioDevice *) audio;
 
 	if (alsa->out_handle && alsa->actual_rate > 0 &&
-	        snd_pcm_delay(alsa->out_handle, &frames) == 0 &&
-	        frames > 0)
+			snd_pcm_delay(alsa->out_handle, &frames) == 0 &&
+			frames > 0)
 	{
 		latency = ((uint64)frames) * 10000000LL / (uint64)alsa->actual_rate;
 	}

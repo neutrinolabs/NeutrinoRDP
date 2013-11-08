@@ -34,6 +34,7 @@ static XrdpvrAudioDevice *xrdpvr_load_audio_device_by_name(const char *name, con
 
 	if (strrchr(name, '.') != NULL)
 	{
+		//printf("name %s\n", name);
 		entry = (XRDPVR_AUDIO_DEVICE_ENTRY) freerdp_load_plugin(name, XRDPVR_AUDIO_DEVICE_EXPORT_FUNC_NAME);
 	}
 	else
@@ -41,12 +42,14 @@ static XrdpvrAudioDevice *xrdpvr_load_audio_device_by_name(const char *name, con
 		fullname = xzalloc(strlen(name) + 8);
 		strcpy(fullname, "xrdpvr_");
 		strcat(fullname, name);
+		//printf("fullname %s\n", fullname);
 		entry = (XRDPVR_AUDIO_DEVICE_ENTRY) freerdp_load_plugin(fullname, XRDPVR_AUDIO_DEVICE_EXPORT_FUNC_NAME);
 		xfree(fullname);
 	}
 
 	if (entry == NULL)
 	{
+		//printf("error-------------------------\n");
 		return NULL;
 	}
 
@@ -60,6 +63,7 @@ static XrdpvrAudioDevice *xrdpvr_load_audio_device_by_name(const char *name, con
 
 	if (!audio->Open(audio, device))
 	{
+		//printf("error-------------------------\n");
 		audio->Free(audio);
 		audio = NULL;
 	}
@@ -77,9 +81,8 @@ XrdpvrAudioDevice *xrdpvr_load_audio_device(const char *name, const char *device
 	}
 	else
 	{
-		audio = xrdpvr_load_audio_device_by_name("pulse", device);
-
-		if (!audio)
+		//audio = xrdpvr_load_audio_device_by_name("pulse", device);
+		//if (!audio)
 		{
 			audio = xrdpvr_load_audio_device_by_name("alsa", device);
 		}
