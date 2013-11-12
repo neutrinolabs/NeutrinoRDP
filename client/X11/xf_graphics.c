@@ -145,6 +145,13 @@ void xf_Bitmap_Decompress(rdpContext* context, rdpBitmap* bitmap,
 	xfInfo* xfi;
 	tbool status;
 
+	xfi = ((xfContext*)context)->xfi;
+	/* 15 bpp bitmaps come in at 16 for v2 bitmap cache */
+	if ((bpp == 16) && (xfi->srcBpp == 15))
+	{
+		bpp = 15;
+	}
+
 	size = width * height * (bpp + 7) / 8;
 
 	if (bitmap->data == NULL)
@@ -158,7 +165,6 @@ void xf_Bitmap_Decompress(rdpContext* context, rdpBitmap* bitmap,
 			printf("xf_Bitmap_Decompress: nsc not done\n");
 			break;
 		case CODEC_ID_REMOTEFX:
-			xfi = ((xfContext*)context)->xfi;
 			rfx_context_set_pixel_format(xfi->rfx_context, RDP_PIXEL_FORMAT_B8G8R8A8);
 			msg = rfx_process_message(xfi->rfx_context, data, length);
 			if (msg == NULL)
