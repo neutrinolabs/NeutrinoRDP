@@ -35,8 +35,42 @@
 #include <stdint.h>
 #endif
 
+#ifndef DEFINED_Ts
 #define DEFINED_Ts
+typedef char ti8;
+typedef unsigned char tui8;
+typedef signed char tsi8;
+typedef short ti16;
+typedef unsigned short tui16;
+typedef signed short tsi16;
+typedef int ti32;
+typedef unsigned int tui32;
+typedef signed int tsi32;
 typedef int tbool;
+#if defined(_WIN64)
+/* Microsoft's VC++ compiler uses the more backwards-compatible LLP64 model.
+   Most other 64 bit compilers(Solaris, AIX, HP, Linux, Mac OS X) use
+   the LP64 model.
+   long is 32 bits in LLP64 model, 64 bits in LP64 model. */
+typedef __int64 tbus;
+#else
+typedef long tbus;
+#endif
+typedef tbus thandle;
+typedef tbus tintptr;
+/* wide char, socket */
+#if defined(_WIN32)
+typedef unsigned short twchar;
+typedef unsigned int tsock;
+typedef unsigned __int64 tui64;
+typedef signed __int64 tsi64;
+#else
+typedef int twchar;
+typedef int tsock;
+typedef unsigned long long tui64;
+typedef signed long long tsi64;
+#endif
+#endif /* DEFINED_Ts */
 
 #ifdef HAVE_INTTYPES_H
 
