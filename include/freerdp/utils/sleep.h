@@ -25,5 +25,6 @@
 
 FREERDP_API void freerdp_sleep(uint32 seconds);
 FREERDP_API void freerdp_usleep(uint32 useconds);
+FREERDP_API unsigned int freerdp_get_mstime(void);
 
 #endif /* __SLEEP_UTILS_H */

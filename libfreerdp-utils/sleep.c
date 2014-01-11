@@ -17,6 +17,11 @@
  * limitations under the License.
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/time.h>
+
 #include <freerdp/utils/sleep.h>
 
 #include <time.h>
@@ -55,4 +60,12 @@ void freerdp_usleep(uint32 useconds)
 	}
 	while ((t2 - t1) < useconds);
 #endif
+}
+
+unsigned int freerdp_get_mstime(void)
+{
+	struct timeval tp;
+
+	gettimeofday(&tp, 0);
+	return (tp.tv_sec * 1000) + (tp.tv_usec / 1000);
 }
