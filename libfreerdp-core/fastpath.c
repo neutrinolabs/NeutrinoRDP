@@ -527,6 +527,9 @@ tbool fastpath_send_input_pdu(rdpFastPath* fastpath, STREAM* s)
 	uint16 length;
 	uint8 eventHeader;
 	int sec_bytes;
+	int pad;
+	uint8* pp;
+	uint8* ptr;
 
 	rdp = fastpath->rdp;
 
@@ -553,19 +556,38 @@ tbool fastpath_send_input_pdu(rdpFastPath* fastpath, STREAM* s)
 	 * because we can leave room for fixed-length header, store all
 	 * the data first and then store the header.
 	 */
-	stream_write_uint16_be(s, 0x8000 | (length + sec_bytes));
+	/* set later */
+	pp = s->p;
+	s->p += 2;
 
 	if (sec_bytes > 0)
 	{
-		uint8* ptr;
-
-		ptr = stream_get_tail(s) + sec_bytes;
-		if (rdp->sec_flags & SEC_SECURE_CHECKSUM)
-			security_salted_mac_signature(rdp, ptr, length - 3, true, stream_get_tail(s));
+		if (rdp->settings->encryption_method == ENCRYPTION_METHOD_FIPS)
+		{
+			ptr = stream_get_tail(s) + sec_bytes;
+			stream_write_uint16(s, 0x10); /* length */
+			stream_write_uint8(s, 0x1); /* TSFIPS_VERSION 1*/
+			/* handle padding */
+			pad = (8 - ((length - 3) % 8)) & 7;
+			memset(ptr + (length - 3), 0, pad);
+			stream_write_uint8(s, pad);
+			security_hmac_signature(ptr, length - 3, stream_get_tail(s), rdp);
+			security_fips_encrypt(ptr, (length - 3) + pad, rdp);
+			length += pad;
+		}
 		else
-			security_mac_signature(rdp, ptr, length - 3, stream_get_tail(s));
-		security_encrypt(ptr, length - 3, rdp);
+		{
+			ptr = stream_get_tail(s) + sec_bytes;
+			if (rdp->sec_flags & SEC_SECURE_CHECKSUM)
+				security_salted_mac_signature(rdp, ptr, length - 3, true, stream_get_tail(s));
+			else
+				security_mac_signature(rdp, ptr, length - 3, stream_get_tail(s));
+			security_encrypt(ptr, length - 3, rdp);
+		}
 	}
+
+	s->p = pp;
+	stream_write_uint16_be(s, 0x8000 | (length + sec_bytes));
 
 	rdp->sec_flags = 0;
 

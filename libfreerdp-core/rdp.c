@@ -312,12 +312,8 @@ static uint32 rdp_security_stream_out(rdpRdp* rdp, STREAM* s, int length)
 				stream_write_uint8(s, 0x1); /* TSFIPS_VERSION 1*/
 
 				/* handle padding */
-				pad = 8 - (length % 8);
-
-				if (pad == 8)
-					pad = 0;
-				if (pad)
-					memset(data+length, 0, pad);
+				pad = (8 - (length % 8)) & 7;
+				memset(data+length, 0, pad);
 
 				stream_write_uint8(s, pad);
 
