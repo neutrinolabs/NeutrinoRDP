@@ -22,7 +22,98 @@
 #include <freerdp/utils/memory.h>
 #include <freerdp/codec/color.h>
 
-#ifdef WITH_JPEG
+#if defined(WITH_TJPEG)
+
+#include <turbojpeg.h>
+
+/**
+ * Decompress specified image in buffer
+ *
+ * @return 0 on success, -1 on error
+ *****************************************************************************/
+
+static int
+do_decompress(unsigned char* comp_data, int comp_data_bytes,
+              int* width, int* height, int bpp,
+              unsigned char* decomp_data)
+{
+	tjhandle handle;
+	int       lwidth;
+	int       lheight;
+	int       jpeg_sub_samp;
+	int       rv;
+
+	/* init decompression engine */
+	handle = tjInitDecompress();
+
+	/* get info about jpeg image */
+	rv = tjDecompressHeader2(
+				handle,
+				comp_data,
+				comp_data_bytes,
+				&lwidth,
+				&lheight,
+				&jpeg_sub_samp
+				);
+
+	if (rv)
+	{
+		tjDestroy(handle);
+		return rv;
+	}
+
+	/* decompress image */
+	rv = tjDecompress2(
+			   handle,
+			   comp_data,          /* buffer containing JPEG image to decompress */
+			   comp_data_bytes,    /* size of JPEG image in bytes */
+			   decomp_data,        /* destination buffer for decompressed data */
+			   lwidth,             /* image width */
+			   lwidth * (bpp / 8), /* pitch */
+			   lheight,            /* height of image */
+			   TJPF_RGB,           /* pixel format */
+			   0                   /* bitwise OR of one or more flags */
+			  );
+
+	*width = lwidth;
+	*height = lheight;
+
+	/* deinit decompression engine */
+	tjDestroy(handle);
+
+	return rv;
+}
+
+/**
+ * Decompress image data in buffer
+ *
+ * @return 1 on success, 0 on failure
+ *****************************************************************************/
+
+tbool
+jpeg_decompress(uint8 * input, uint8 * output, int width, int height, int size, int bpp)
+{
+	int lwidth  = 0;
+	int lheight = 0;
+
+	if (bpp != 24)
+	{
+		return 0;
+	}
+	if (do_decompress((unsigned char *)input, size,
+			&lwidth, &lheight, bpp,
+			(unsigned char *) output) < 0)
+	{
+		return 0;
+	}
+	if (lwidth != width || lheight != height)
+	{
+		return 0;
+	}
+	return 1;
+}
+
+#elif defined(WITH_JPEG)
 
 //#define HAVE_BOOLEAN
 #include <jpeglib.h>
