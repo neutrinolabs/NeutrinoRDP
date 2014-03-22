@@ -21,6 +21,10 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <X11/extensions/XShm.h>
+
 #include <freerdp/gdi/gdi.h>
 #include <freerdp/codec/rfx.h>
 #include <freerdp/codec/nsc.h>
@@ -28,6 +32,7 @@
 #include <freerdp/utils/memory.h>
 #include <freerdp/codec/color.h>
 #include <freerdp/codec/bitmap.h>
+#include <freerdp/codec/jpeg.h>
 
 #include "xf_gdi.h"
 
@@ -645,7 +650,68 @@ void xf_gdi_surface_bits(rdpContext* context, SURFACE_BITS_COMMAND* surface_bits
 	RFX_CONTEXT* rfx_context = (RFX_CONTEXT*) xfi->rfx_context;
 	NSC_CONTEXT* nsc_context = (NSC_CONTEXT*) xfi->nsc_context;
 
-	if (surface_bits_command->codecID == CODEC_ID_REMOTEFX)
+	if (surface_bits_command->codecID == CODEC_ID_JPEG)
+	{
+		tui8* decomp;
+		tui8* comp;
+		tbool ok;
+		Drawable dst;
+		int x;
+		int y;
+		int cx;
+		int cy;
+		int header_bytes;
+		int bytes;
+		XShmSegmentInfo shminfo;
+
+		XSetFunction(xfi->display, xfi->gc, GXcopy);
+		XSetFillStyle(xfi->display, xfi->gc, FillSolid);
+		x = surface_bits_command->destLeft;
+		y = surface_bits_command->destTop;
+		cx = surface_bits_command->width;
+		cy = surface_bits_command->height;
+		decomp = (tui8*)xmalloc(cx * cy * 3);
+		header_bytes = surface_bits_command->bitmapData[0];
+		header_bytes = header_bytes | (surface_bits_command->bitmapData[1] << 8);
+		comp = surface_bits_command->bitmapData + (2 + header_bytes);
+		bytes = surface_bits_command->bitmapDataLength - (2 + header_bytes);
+		ok = jpeg_decompress(comp, decomp, cx, cy, bytes, 24);
+		if (ok)
+		{
+			bytes = cx * cy * 4;
+			if (xfi->shm_info == 0)
+			{
+				xfi->shm_info = create_shm_info(bytes);
+			}
+			else if (xfi->shm_info->bytes < bytes)
+			{
+				delete_shm_info(xfi->shm_info);
+				xfi->shm_info = create_shm_info(bytes);
+			}
+			freerdp_image_convert(decomp, xfi->shm_info->ptr, cx, cy, 24, xfi->bpp, xfi->clrconv);
+			dst = xfi->skip_bs ? xfi->drawable : xfi->primary;
+			memset(&shminfo, 0, sizeof(shminfo));
+			shminfo.shmid = xfi->shm_info->shmid;
+			shminfo.shmaddr = xfi->shm_info->ptr;
+			image = XShmCreateImage(xfi->display, xfi->visual, xfi->depth,
+					ZPixmap, xfi->shm_info->ptr, &shminfo, cx, cy);
+			XShmAttach(xfi->display, &shminfo);
+			XShmPutImage(xfi->display, dst, xfi->gc, image, 0, 0, x, y, cx, cy, false);
+			XSync(xfi->display, false);
+			XShmDetach(xfi->display, &shminfo);
+			XFree(image);
+			if (!xfi->remote_app && !xfi->skip_bs)
+			{
+				XCopyArea(xfi->display, xfi->primary, xfi->drawable, xfi->gc, x, y, cx, cy, x, y);
+			}
+		}
+		else
+		{
+			printf("jpeg_decompress error\n");
+		}
+		xfree(decomp);
+	}
+	else if (surface_bits_command->codecID == CODEC_ID_REMOTEFX)
 	{
 		message = rfx_process_message(rfx_context,
 				surface_bits_command->bitmapData,
