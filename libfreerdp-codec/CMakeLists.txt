@@ -74,15 +74,29 @@ if(WITH_TJPEG)
 	message(STATUS "TurboJPEG headers are at ${TJpegIncDir}")
 
 	# find libraries for Turbo JPEG
+	#
+	# note: if turbojpeg is built from source code and installed to default
+	#       location, it gets installed to /opt/libjpeg-turbo and the lib
+	#       path is lib64 or lib32 depending on platform
+	#
+	#       however, if it is installed using a prefix, the libpath is
+	#       always lib
+
 	if (NOT ${TJpegIncDir} MATCHES "/usr/include")
 		if (${TJpegIncDir} MATCHES "/opt/libjpeg-turbo/include")
-			# TurboJPEG lib is at /opt/libjpeg-turbo/lib
-			set(CMAKE_EXE_LINKER_FLAGS "-L /opt/libjpeg-turbo/lib32 -Wl,-rpath=/opt/libjpeg-turbo/lib32")
-			message(STATUS "TurboJPEG lib is at /opt/libjpeg-turbo/lib32")
+			if (EXISTS "/opt/libjpeg-turbo/lib64/libturbojpeg.so")
+				# TurboJPEG lib is at /opt/libjpeg-turbo/lib64
+				set(CMAKE_SHARED_LINKER_FLAGS "-L /opt/libjpeg-turbo/lib64 -Wl,-rpath=/opt/libjpeg-turbo/lib64")
+				message(STATUS "TurboJPEG lib is at /opt/libjpeg-turbo/lib64")
+			else()
+				# TurboJPEG lib is at /opt/libjpeg-turbo/lib32
+				set(CMAKE_SHARED_LINKER_FLAGS "-L /opt/libjpeg-turbo/lib32 -Wl,-rpath=/opt/libjpeg-turbo/lib32")
+				message(STATUS "TurboJPEG lib is at /opt/libjpeg-turbo/lib32")
+			endif()
 		else()
-			# get TurboJPEG lib loc from env var
-			set(CMAKE_EXE_LINKER_FLAGS "-L $ENV{TURBOJPEG_PATH}/lib32 -Wl,-rpath=$ENV{TURBOJPEG_PATH}/lib32")
-			message(STATUS "TurboJPEG lib is at $ENV{TURBOJPEG_PATH}/lib32")
+			# TurboJPEG was installed using prefix, get lib location from env var
+			set(CMAKE_SHARED_LINKER_FLAGS "-L $ENV{TURBOJPEG_PATH}/lib -Wl,-rpath=$ENV{TURBOJPEG_PATH}/lib")
+			message(STATUS "TurboJPEG lib is at $ENV{TURBOJPEG_PATH}/lib")
 		endif()
 	endif()
 
