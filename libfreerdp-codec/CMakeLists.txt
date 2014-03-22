@@ -63,6 +63,29 @@ if(WITH_JPEG)
 endif()
 
 if(WITH_TJPEG)
+	# find headers for Turbo JPEG
+	find_path(TJpegIncDir turbojpeg.h PATHS /usr/include /opt/libjpeg-turbo/include $ENV{TURBOJPEG_PATH}/include)
+
+	if (${TJpegIncDir} MATCHES "TJpegIncDir-NOTFOUND")
+		message(FATAL_ERROR "Cant find TurboJPEG header files")
+	endif()
+
+	include_directories(${TJpegIncDir})
+	message(STATUS "TurboJPEG headers are at ${TJpegIncDir}")
+
+	# find libraries for Turbo JPEG
+	if (NOT ${TJpegIncDir} MATCHES "/usr/include")
+		if (${TJpegIncDir} MATCHES "/opt/libjpeg-turbo/include")
+			# TurboJPEG lib is at /opt/libjpeg-turbo/lib
+			set(CMAKE_EXE_LINKER_FLAGS "-L /opt/libjpeg-turbo/lib32 -Wl,-rpath=/opt/libjpeg-turbo/lib32")
+			message(STATUS "TurboJPEG lib is at /opt/libjpeg-turbo/lib32")
+		else()
+			# get TurboJPEG lib loc from env var
+			set(CMAKE_EXE_LINKER_FLAGS "-L $ENV{TURBOJPEG_PATH}/lib32 -Wl,-rpath=$ENV{TURBOJPEG_PATH}/lib32")
+			message(STATUS "TurboJPEG lib is at $ENV{TURBOJPEG_PATH}/lib32")
+		endif()
+	endif()
+
 	set(FREERDP_TJPEG_LIBS turbojpeg)
 endif()
 
