@@ -106,6 +106,6 @@ endif()
 add_library(freerdp-codec ${FREERDP_CODEC_SRCS})
 
 set_target_properties(freerdp-codec PROPERTIES VERSION ${FREERDP_VERSION_FULL} SOVERSION ${FREERDP_VERSION} PREFIX "lib")
-target_link_libraries(freerdp-codec freerdp-utils ${FREERDP_JPEG_LIBS} ${FREERDP_TJPEG_LIBS})
+target_link_libraries(freerdp-codec LINK_PRIVATE freerdp-utils ${FREERDP_JPEG_LIBS} ${FREERDP_TJPEG_LIBS})
 
 install(TARGETS freerdp-codec DESTINATION ${CMAKE_INSTALL_LIBDIR})
