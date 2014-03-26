@@ -107,14 +107,14 @@ void input_send_unicode_keyboard_event(rdpInput* input, uint16 flags, uint16 cod
 	rdp_send_client_input_pdu(rdp, s);
 }
 
-void input_write_mouse_event(STREAM* s, uint16 flags, uint16 x, uint16 y)
+void input_write_mouse_event(STREAM* s, uint16 flags, sint16 x, sint16 y)
 {
 	stream_write_uint16(s, flags); /* pointerFlags (2 bytes) */
 	stream_write_uint16(s, x); /* xPos (2 bytes) */
 	stream_write_uint16(s, y); /* yPos (2 bytes) */
 }
 
-void input_send_mouse_event(rdpInput* input, uint16 flags, uint16 x, uint16 y)
+void input_send_mouse_event(rdpInput* input, uint16 flags, sint16 x, sint16 y)
 {
 	STREAM* s;
 	rdpRdp* rdp = input->context->rdp;
@@ -124,14 +124,14 @@ void input_send_mouse_event(rdpInput* input, uint16 flags, uint16 x, uint16 y)
 	rdp_send_client_input_pdu(rdp, s);
 }
 
-void input_write_extended_mouse_event(STREAM* s, uint16 flags, uint16 x, uint16 y)
+void input_write_extended_mouse_event(STREAM* s, uint16 flags, sint16 x, sint16 y)
 {
 	stream_write_uint16(s, flags); /* pointerFlags (2 bytes) */
 	stream_write_uint16(s, x); /* xPos (2 bytes) */
 	stream_write_uint16(s, y); /* yPos (2 bytes) */
 }
 
-void input_send_extended_mouse_event(rdpInput* input, uint16 flags, uint16 x, uint16 y)
+void input_send_extended_mouse_event(rdpInput* input, uint16 flags, sint16 x, sint16 y)
 {
 	STREAM* s;
 	rdpRdp* rdp = input->context->rdp;
@@ -176,7 +176,7 @@ void input_send_fastpath_unicode_keyboard_event(rdpInput* input, uint16 flags, u
 	fastpath_send_input_pdu(rdp->fastpath, s);
 }
 
-void input_send_fastpath_mouse_event(rdpInput* input, uint16 flags, uint16 x, uint16 y)
+void input_send_fastpath_mouse_event(rdpInput* input, uint16 flags, sint16 x, sint16 y)
 {
 	STREAM* s;
 	rdpRdp* rdp = input->context->rdp;
@@ -186,7 +186,7 @@ void input_send_fastpath_mouse_event(rdpInput* input, uint16 flags, uint16 x, ui
 	fastpath_send_input_pdu(rdp->fastpath, s);
 }
 
-void input_send_fastpath_extended_mouse_event(rdpInput* input, uint16 flags, uint16 x, uint16 y)
+void input_send_fastpath_extended_mouse_event(rdpInput* input, uint16 flags, sint16 x, sint16 y)
 {
 	STREAM* s;
 	rdpRdp* rdp = input->context->rdp;
