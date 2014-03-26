@@ -109,6 +109,8 @@ void input_send_unicode_keyboard_event(rdpInput* input, uint16 flags, uint16 cod
 
 void input_write_mouse_event(STREAM* s, uint16 flags, sint16 x, sint16 y)
 {
+	x = MAX(x, 0);
+	y = MAX(y, 0);
 	stream_write_uint16(s, flags); /* pointerFlags (2 bytes) */
 	stream_write_uint16(s, x); /* xPos (2 bytes) */
 	stream_write_uint16(s, y); /* yPos (2 bytes) */
@@ -126,6 +128,8 @@ void input_send_mouse_event(rdpInput* input, uint16 flags, sint16 x, sint16 y)
 
 void input_write_extended_mouse_event(STREAM* s, uint16 flags, sint16 x, sint16 y)
 {
+	x = MAX(x, 0);
+	y = MAX(y, 0);
 	stream_write_uint16(s, flags); /* pointerFlags (2 bytes) */
 	stream_write_uint16(s, x); /* xPos (2 bytes) */
 	stream_write_uint16(s, y); /* yPos (2 bytes) */
