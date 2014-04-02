@@ -652,7 +652,6 @@ void xf_gdi_surface_bits(rdpContext* context, SURFACE_BITS_COMMAND* surface_bits
 
 	if (surface_bits_command->codecID == CODEC_ID_JPEG)
 	{
-		tui8* decomp;
 		tui8* comp;
 		tbool ok;
 		Drawable dst;
@@ -670,25 +669,25 @@ void xf_gdi_surface_bits(rdpContext* context, SURFACE_BITS_COMMAND* surface_bits
 		y = surface_bits_command->destTop;
 		cx = surface_bits_command->width;
 		cy = surface_bits_command->height;
-		decomp = (tui8*)xmalloc(cx * cy * 3);
 		header_bytes = surface_bits_command->bitmapData[0];
 		header_bytes = header_bytes | (surface_bits_command->bitmapData[1] << 8);
 		comp = surface_bits_command->bitmapData + (2 + header_bytes);
+
+		bytes = cx * cy * 4;
+		if (xfi->shm_info == 0)
+		{
+			xfi->shm_info = create_shm_info(bytes);
+		}
+		else if (xfi->shm_info->bytes < bytes)
+		{
+			delete_shm_info(xfi->shm_info);
+			xfi->shm_info = create_shm_info(bytes);
+		}
+
 		bytes = surface_bits_command->bitmapDataLength - (2 + header_bytes);
-		ok = jpeg_decompress(comp, decomp, cx, cy, bytes, 24);
+		ok = jpeg_decompress(comp, xfi->shm_info->ptr, cx, cy, bytes, 32);
 		if (ok)
 		{
-			bytes = cx * cy * 4;
-			if (xfi->shm_info == 0)
-			{
-				xfi->shm_info = create_shm_info(bytes);
-			}
-			else if (xfi->shm_info->bytes < bytes)
-			{
-				delete_shm_info(xfi->shm_info);
-				xfi->shm_info = create_shm_info(bytes);
-			}
-			freerdp_image_convert(decomp, xfi->shm_info->ptr, cx, cy, 24, xfi->bpp, xfi->clrconv);
 			dst = xfi->skip_bs ? xfi->drawable : xfi->primary;
 			memset(&shminfo, 0, sizeof(shminfo));
 			shminfo.shmid = xfi->shm_info->shmid;
@@ -709,7 +708,6 @@ void xf_gdi_surface_bits(rdpContext* context, SURFACE_BITS_COMMAND* surface_bits
 		{
 			printf("jpeg_decompress error\n");
 		}
-		xfree(decomp);
 	}
 	else if (surface_bits_command->codecID == CODEC_ID_REMOTEFX)
 	{

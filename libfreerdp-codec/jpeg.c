@@ -35,7 +35,7 @@
 static int
 do_decompress(unsigned char* comp_data, int comp_data_bytes,
               int* width, int* height, int bpp,
-              unsigned char* decomp_data)
+              unsigned char* decomp_data, int format)
 {
 	tjhandle handle;
 	int       lwidth;
@@ -71,7 +71,7 @@ do_decompress(unsigned char* comp_data, int comp_data_bytes,
 			   lwidth,             /* image width */
 			   lwidth * (bpp / 8), /* pitch */
 			   lheight,            /* height of image */
-			   TJPF_RGB,           /* pixel format */
+			   format,             /* pixel format TJPF_RGB, TJPF_XBGR */
 			   0                   /* bitwise OR of one or more flags */
 			  );
 
@@ -95,14 +95,22 @@ jpeg_decompress(uint8 * input, uint8 * output, int width, int height, int size, 
 {
 	int lwidth  = 0;
 	int lheight = 0;
+	int format;
 
-	if (bpp != 24)
+	switch (bpp)
 	{
-		return 0;
+		case 24:
+			format = TJPF_RGB;
+			break;
+		case 32:
+			format = TJPF_XBGR;
+			break;
+		default:
+			return 0;
 	}
 	if (do_decompress((unsigned char *)input, size,
 			&lwidth, &lheight, bpp,
-			(unsigned char *) output) < 0)
+			(unsigned char *) output, format) < 0)
 	{
 		return 0;
 	}
