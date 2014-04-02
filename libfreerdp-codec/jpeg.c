@@ -103,7 +103,7 @@ jpeg_decompress(uint8 * input, uint8 * output, int width, int height, int size, 
 			format = TJPF_RGB;
 			break;
 		case 32:
-			format = TJPF_XBGR;
+			format = TJPF_BGRX;
 			break;
 		default:
 			return 0;
