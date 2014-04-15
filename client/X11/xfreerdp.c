@@ -3,6 +3,7 @@
  * X11 Client
  *
  * Copyright 2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
+ * Copyright 2013-2014 Jay Sorg <jay.sorg@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -297,13 +298,13 @@ void xf_create_window(xfInfo* xfi)
 	}
 	else if (xfi->instance->settings->port == 3389)
 	{
-		win_title = xmalloc(1 + sizeof("FreeRDP: ") + strlen(xfi->instance->settings->hostname));
-		sprintf(win_title, "FreeRDP: %s", xfi->instance->settings->hostname);
+		win_title = xmalloc(1 + sizeof(": NeutrinoRDP") + strlen(xfi->instance->settings->hostname));
+		sprintf(win_title, "%s: NeutrinoRDP", xfi->instance->settings->hostname);
 	}
 	else
 	{
-		win_title = xmalloc(1 + sizeof("FreeRDP: ") + strlen(xfi->instance->settings->hostname) + sizeof(":00000"));
-		sprintf(win_title, "FreeRDP: %s:%i", xfi->instance->settings->hostname, xfi->instance->settings->port);
+		win_title = xmalloc(1 + sizeof(": NeutrinoRDP") + strlen(xfi->instance->settings->hostname) + sizeof(":00000"));
+		sprintf(win_title, "%s:%i: NeutrinoRDP", xfi->instance->settings->hostname, xfi->instance->settings->port);
 	}
 
 	xfi->window = xf_CreateDesktopWindow(xfi, win_title, width, height, xfi->decorations);
