@@ -64,48 +64,42 @@ endif()
 
 if(WITH_TJPEG)
 	# find headers for Turbo JPEG
-	find_path(TJpegIncDir turbojpeg.h PATHS /usr/include /opt/libjpeg-turbo/include $ENV{TURBOJPEG_PATH}/include)
-
-	if (${TJpegIncDir} MATCHES "TJpegIncDir-NOTFOUND")
-		message(FATAL_ERROR "Cant find TurboJPEG header files")
-	endif()
-
-	include_directories(${TJpegIncDir})
-	message(STATUS "TurboJPEG headers are at ${TJpegIncDir}")
-
-	# find libraries for Turbo JPEG
-	#
-	# note: if turbojpeg is built from source code and installed to default
-	#       location, it gets installed to /opt/libjpeg-turbo and the lib
-	#       path is lib64 or lib32 depending on platform
-	#
-	#       however, if it is installed using a prefix, the libpath is
-	#       always lib
-
-	if (NOT ${TJpegIncDir} MATCHES "/usr/include")
-		if (${TJpegIncDir} MATCHES "/opt/libjpeg-turbo/include")
-			if (EXISTS "/opt/libjpeg-turbo/lib64/libturbojpeg.so")
-				# TurboJPEG lib is at /opt/libjpeg-turbo/lib64
-				set(CMAKE_SHARED_LINKER_FLAGS "-L /opt/libjpeg-turbo/lib64 -Wl,-rpath=/opt/libjpeg-turbo/lib64")
-				message(STATUS "TurboJPEG lib is at /opt/libjpeg-turbo/lib64")
-			else()
-				# TurboJPEG lib is at /opt/libjpeg-turbo/lib32
-				set(CMAKE_SHARED_LINKER_FLAGS "-L /opt/libjpeg-turbo/lib32 -Wl,-rpath=/opt/libjpeg-turbo/lib32")
-				message(STATUS "TurboJPEG lib is at /opt/libjpeg-turbo/lib32")
-			endif()
+	if(DEFINED ENV{TURBOJPEG_PATH})
+		set(TJPEGPATH $ENV{TURBOJPEG_PATH})
+		set(TJPEGINC ${TJPEGPATH}/include)
+		if(EXISTS "${TJPEGPATH}/lib64/libturbojpeg.so")
+			set(TJPEGLIB "${TJPEGPATH}/lib64")
 		else()
-			# TurboJPEG was installed using prefix, get lib location from env var
-			set(CMAKE_SHARED_LINKER_FLAGS "-L $ENV{TURBOJPEG_PATH}/lib -Wl,-rpath=$ENV{TURBOJPEG_PATH}/lib")
-			message(STATUS "TurboJPEG lib is at $ENV{TURBOJPEG_PATH}/lib")
+			set(TJPEGLIB "${TJPEGPATH}/lib32")
+		endif()
+		message(STATUS "TurboJPEG lib is at ${TJPEGLIB}")
+		include_directories(${TJPEGINC})
+		set(CMAKE_SHARED_LINKER_FLAGS "-L${TJPEGLIB}")
+		set(FREERDP_TJPEG_LIBS -L${TJPEGLIB} -Wl,-rpath=${TJPEGLIB} turbojpeg)
+	else()
+		find_path(TJPEGINC turbojpeg.h PATHS /usr/include /opt/libjpeg-turbo/include)
+		if(${TJPEGINC} MATCHES "TJPEGINC-NOTFOUND")
+			message(FATAL_ERROR "Cant find TurboJPEG header files")
+		endif()
+		if(NOT ${TJPEGINC} MATCHES "/usr/include")
+			if(EXISTS "/opt/libjpeg-turbo/lib64/libturbojpeg.so")
+				set(TJPEGLIB "/opt/libjpeg-turbo/lib64")
+			else()
+				set(TJPEGLIB "/opt/libjpeg-turbo/lib32")
+			endif()
+			message(STATUS "TurboJPEG lib is at ${TJPEGLIB}")
+			include_directories(${TJPEGINC})
+			set(CMAKE_SHARED_LINKER_FLAGS "-L${TJPEGLIB}")
+			set(FREERDP_TJPEG_LIBS -L${TJPEGLIB} -Wl,-rpath=${TJPEGLIB} turbojpeg)
+		else()
+			set(FREERDP_TJPEG_LIBS turbojpeg)
 		endif()
 	endif()
-
-	set(FREERDP_TJPEG_LIBS turbojpeg)
 endif()
 
 add_library(freerdp-codec ${FREERDP_CODEC_SRCS})
 
 set_target_properties(freerdp-codec PROPERTIES VERSION ${FREERDP_VERSION_FULL} SOVERSION ${FREERDP_VERSION} PREFIX "lib")
-target_link_libraries(freerdp-codec LINK_PRIVATE freerdp-utils ${FREERDP_JPEG_LIBS} ${FREERDP_TJPEG_LIBS})
+target_link_libraries(freerdp-codec freerdp-utils ${FREERDP_JPEG_LIBS} ${FREERDP_TJPEG_LIBS})
 
 install(TARGETS freerdp-codec DESTINATION ${CMAKE_INSTALL_LIBDIR})
