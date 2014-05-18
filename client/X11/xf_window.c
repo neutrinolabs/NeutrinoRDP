@@ -8,7 +8,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -59,7 +59,7 @@
 #define MWM_DECOR_MINIMIZE      (1L << 5)
 #define MWM_DECOR_MAXIMIZE      (1L << 6)
 
-#define PROP_MOTIF_WM_HINTS_ELEMENTS	5
+#define PROP_MOTIF_WM_HINTS_ELEMENTS    5
 
 struct _PropMotifWmHints
 {
@@ -76,31 +76,31 @@ typedef struct _PropMotifWmHints PropMotifWmHints;
  */
 void xf_SendClientEvent(xfInfo *xfi, xfWindow* window, Atom atom, unsigned int numArgs, ...)
 {
-       XEvent xevent;
-       unsigned int i;
-       va_list argp;
+	XEvent xevent;
+	unsigned int i;
+	va_list argp;
 
-       va_start(argp, numArgs);
+	va_start(argp, numArgs);
 
-       xevent.xclient.type = ClientMessage;
-       xevent.xclient.serial = 0;
-       xevent.xclient.send_event = False;
-       xevent.xclient.display = xfi->display;
-       xevent.xclient.window = window->handle;
-       xevent.xclient.message_type = atom;
-       xevent.xclient.format = 32;
+	xevent.xclient.type = ClientMessage;
+	xevent.xclient.serial = 0;
+	xevent.xclient.send_event = False;
+	xevent.xclient.display = xfi->display;
+	xevent.xclient.window = window->handle;
+	xevent.xclient.message_type = atom;
+	xevent.xclient.format = 32;
 
-       for (i=0; i<numArgs; i++)
-       {
-               xevent.xclient.data.l[i] = va_arg(argp, int);
-       }
+	for (i = 0; i < numArgs; i++)
+	{
+		xevent.xclient.data.l[i] = va_arg(argp, int);
+	}
 
-       DEBUG_X11("Send ClientMessage Event: wnd=0x%04X", (unsigned int) xevent.xclient.window);
-       XSendEvent(xfi->display, RootWindowOfScreen(xfi->screen), False,
-		SubstructureRedirectMask | SubstructureNotifyMask, &xevent);
-       XSync(xfi->display, False);
+	DEBUG_X11("Send ClientMessage Event: wnd=0x%04X", (unsigned int) xevent.xclient.window);
+	XSendEvent(xfi->display, RootWindowOfScreen(xfi->screen), False,
+			SubstructureRedirectMask | SubstructureNotifyMask, &xevent);
+			XSync(xfi->display, False);
 
-       va_end(argp);
+	va_end(argp);
 }
 
 void xf_SetWindowFullscreen(xfInfo* xfi, xfWindow* window, tbool fullscreen)
@@ -108,10 +108,8 @@ void xf_SetWindowFullscreen(xfInfo* xfi, xfWindow* window, tbool fullscreen)
 	if (fullscreen)
 	{
 		xf_SetWindowDecorations(xfi, window, false);
-
-                XMoveResizeWindow(xfi->display, window->handle, 0, 0, window->width, window->height);
-                XMapRaised(xfi->display, window->handle);
-
+		XMoveResizeWindow(xfi->display, window->handle, 0, 0, window->width, window->height);
+		XMapRaised(xfi->display, window->handle);
 		window->fullscreen = true;
 	}
 }
@@ -155,7 +153,7 @@ tbool xf_GetCurrentDesktop(xfInfo* xfi)
 			xfi->_NET_CURRENT_DESKTOP, 1, &nitems, &bytes, &prop);
 
 	if (status == false)
-    {
+	{
 		return false;
 	}
 
@@ -426,13 +424,13 @@ xfWindow* xf_CreateWindow(xfInfo* xfi, rdpWindow* wnd, int x, int y, int width, 
 	XSetWMProtocols(xfi->display, window->handle, &(xfi->WM_DELETE_WINDOW), 1);
 
 	input_mask = KeyPressMask | KeyReleaseMask | ButtonPressMask |
-        	ButtonReleaseMask | EnterWindowMask | LeaveWindowMask |
-		PointerMotionMask | Button1MotionMask | Button2MotionMask |
-		Button3MotionMask | Button4MotionMask | Button5MotionMask |
-                ButtonMotionMask | KeymapStateMask | ExposureMask |
-		VisibilityChangeMask | StructureNotifyMask | SubstructureNotifyMask |
-		SubstructureRedirectMask | FocusChangeMask | PropertyChangeMask |
-                ColormapChangeMask | OwnerGrabButtonMask;
+			ButtonReleaseMask | EnterWindowMask | LeaveWindowMask |
+			PointerMotionMask | Button1MotionMask | Button2MotionMask |
+			Button3MotionMask | Button4MotionMask | Button5MotionMask |
+			ButtonMotionMask | KeymapStateMask | ExposureMask |
+			VisibilityChangeMask | StructureNotifyMask | SubstructureNotifyMask |
+			SubstructureRedirectMask | FocusChangeMask | PropertyChangeMask |
+			ColormapChangeMask | OwnerGrabButtonMask;
 
 	XSelectInput(xfi->display, window->handle, input_mask);
 	XMapWindow(xfi->display, window->handle);
@@ -506,7 +504,7 @@ void xf_StartLocalMoveSize(xfInfo* xfi, xfWindow* window, int direction, int x, 
 			y, /* y relative to root window */
 			direction, /* extended ICCM direction flag */
 			1, /* simulated mouse button 1 */
-		       	1); /* 1 == application request per extended ICCM */
+			1); /* 1 == application request per extended ICCM */
 }
 
 void xf_EndLocalMoveSize(xfInfo *xfi, xfWindow *window)
@@ -538,7 +536,7 @@ void xf_EndLocalMoveSize(xfInfo *xfi, xfWindow *window)
 			window->local_move.root_y, /* y relative to root window */
 			_NET_WM_MOVERESIZE_CANCEL, /* extended ICCM direction flag */
 			1, /* simulated mouse button 1 */
-		       	1); /* 1 == application request per extended ICCM */
+			1); /* 1 == application request per extended ICCM */
 	}
 
 	window->local_move.state = LMS_NOT_ACTIVE;
@@ -637,7 +635,7 @@ void xf_SetWindowIcon(xfInfo* xfi, xfWindow* window, rdpIcon* icon)
 	}
 
 	XChangeProperty(xfi->display, window->handle, xfi->_NET_WM_ICON, XA_CARDINAL, 32,
-		PropModeReplace, (uint8*) propdata, propsize);
+			PropModeReplace, (uint8*) propdata, propsize);
 
 	XFlush(xfi->display);
 }
@@ -704,7 +702,7 @@ void xf_UpdateWindowArea(xfInfo* xfi, xfWindow* window, int x, int y, int width,
 	if (xfi->sw_gdi)
 	{
 		XPutImage(xfi->display, xfi->primary, window->gc, xfi->image,
-			ax, ay, ax, ay, width, height);
+				ax, ay, ax, ay, width, height);
 	}
 
 	XCopyArea(xfi->display, xfi->primary, window->handle, window->gc,
@@ -722,12 +720,12 @@ tbool xf_IsWindowBorder(xfInfo* xfi, xfWindow* xfw, int x, int y)
 	wnd = xfw->window;
 
 	if (((x > wnd->clientOffsetX) && (x < wnd->clientOffsetX + wnd->clientAreaWidth)) &&
-		((y > wnd->clientOffsetY) && (y < wnd->clientOffsetY + wnd->clientAreaHeight)))
-		clientArea = true;
+			((y > wnd->clientOffsetY) && (y < wnd->clientOffsetY + wnd->clientAreaHeight)))
+			clientArea = true;
 
 	if (((x > wnd->windowOffsetX) && (x < wnd->windowOffsetX + wnd->windowWidth)) &&
-		((y > wnd->windowOffsetY) && (y < wnd->windowOffsetY + wnd->windowHeight)))
-		windowArea = true;
+			((y > wnd->windowOffsetY) && (y < wnd->windowOffsetY + wnd->windowHeight)))
+			windowArea = true;
 
 	return (windowArea && !(clientArea));
 }
