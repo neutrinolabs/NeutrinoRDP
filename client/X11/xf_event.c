@@ -8,7 +8,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -333,6 +333,22 @@ tbool xf_event_KeyRelease(xfInfo* xfi, XEvent* event, tbool app)
 	return true;
 }
 
+static void ui_grab_keyboard(Display* dis, Window wnd)
+{
+#if XF_GRAB_MODE == 1
+	printf("ui_grab_keyboard:\n");
+	XGrabKeyboard(dis, wnd, true, GrabModeAsync, GrabModeAsync, CurrentTime);
+#endif
+}
+
+static void ui_ungrab_keyboard(Display* dis)
+{
+#if XF_GRAB_MODE == 1
+	printf("ui_ungrab_keyboard:\n");
+	XUngrabKeyboard(dis, CurrentTime);
+#endif
+}
+
 tbool xf_event_FocusIn(xfInfo* xfi, XEvent* event, tbool app)
 {
 	if (event->xfocus.mode == NotifyGrab)
@@ -341,7 +357,7 @@ tbool xf_event_FocusIn(xfInfo* xfi, XEvent* event, tbool app)
 	xfi->focused = true;
 
 	if (xfi->mouse_active && (app == false))
-		XGrabKeyboard(xfi->display, xfi->window->handle, true, GrabModeAsync, GrabModeAsync, CurrentTime);
+		ui_grab_keyboard(xfi->display, xfi->window->handle);
 
 	if (app)
 		xf_rail_send_activate(xfi, event->xany.window, true);
@@ -362,7 +378,7 @@ tbool xf_event_FocusOut(xfInfo* xfi, XEvent* event, tbool app)
 	xfi->focused = false;
 
 	if (event->xfocus.mode == NotifyWhileGrabbed)
-		XUngrabKeyboard(xfi->display, CurrentTime);
+		ui_ungrab_keyboard(xfi->display);
 
 	if (app)
 		xf_rail_send_activate(xfi, event->xany.window, false);
@@ -419,7 +435,7 @@ tbool xf_event_EnterNotify(xfInfo* xfi, XEvent* event, tbool app)
 			XSetInputFocus(xfi->display, xfi->window->handle, RevertToPointerRoot, CurrentTime);
 
 		if (xfi->focused)
-			XGrabKeyboard(xfi->display, xfi->window->handle, true, GrabModeAsync, GrabModeAsync, CurrentTime);
+			ui_grab_keyboard(xfi->display, xfi->window->handle);
 	}
 	else
 	{
@@ -445,7 +461,7 @@ tbool xf_event_LeaveNotify(xfInfo* xfi, XEvent* event, tbool app)
 	if (app == false)
 	{
 		xfi->mouse_active = false;
-		XUngrabKeyboard(xfi->display, CurrentTime);
+		ui_ungrab_keyboard(xfi->display);
 	}
 
 	return true;

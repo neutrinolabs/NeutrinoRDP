@@ -257,6 +257,18 @@ void xf_SetWindowStyle(xfInfo* xfi, xfWindow* window, uint32 style, uint32 ex_st
 
 }
 
+void ui_grab_keys(Display* dis, Window wnd)
+{
+	int index;
+	int grab_keys[4] = { 0x25, 0x40, 0x6d, 0x71 }; /* alt and ctl keys */
+
+	printf("ui_grab_keys:\n");
+	for (index = 0; index < 4; index++)
+	{
+		XGrabKey(dis, grab_keys[index], AnyModifier, wnd, True, GrabModeAsync, GrabModeAsync);
+	}
+}
+
 xfWindow* xf_CreateDesktopWindow(xfInfo* xfi, char* name, int width, int height, tbool decorations)
 {
 	xfWindow* window;
@@ -310,6 +322,11 @@ xfWindow* xf_CreateDesktopWindow(xfInfo* xfi, char* name, int width, int height,
 	}
 
 	XStoreName(xfi->display, window->handle, name);
+
+#if XF_GRAB_MODE == 2
+	if (xfi->grab_keyboard)
+		ui_grab_keys(xfi->display, window->handle);
+#endif
 
 	return window;
 }
