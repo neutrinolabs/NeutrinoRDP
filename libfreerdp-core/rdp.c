@@ -8,7 +8,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,6 +22,10 @@
 #include "info.h"
 #include "per.h"
 #include "redirection.h"
+
+#define LLOG_LEVEL 1
+#define LLOGLN(_level, _args) \
+  do { if (_level < LLOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
 
 static const char* const DATA_PDU_TYPE_STRINGS[] =
 {
@@ -219,34 +223,50 @@ STREAM* rdp_data_pdu_init(rdpRdp* rdp)
 
 tbool rdp_read_header(rdpRdp* rdp, STREAM* s, uint16* length, uint16* channel_id)
 {
+	uint8 reason;
 	uint16 initiator;
 	enum DomainMCSPDU MCSPDU;
 
 	MCSPDU = (rdp->settings->server_mode) ? DomainMCSPDU_SendDataRequest : DomainMCSPDU_SendDataIndication;
-	mcs_read_domain_mcspdu_header(s, &MCSPDU, length);
-
-	if (*length - 8 > stream_get_left(s))
+	if (!mcs_read_domain_mcspdu_header(s, &MCSPDU, length))
+	{
+		LLOGLN(0, ("rdp_read_header: mcs_read_domain_mcspdu_header failed"));
 		return false;
-
+	}
+	if (*length - 8 > stream_get_left(s))
+	{
+		LLOGLN(0, ("rdp_read_header: parse error"));
+		return false;
+	}
 	if (MCSPDU == DomainMCSPDU_DisconnectProviderUltimatum)
 	{
-		uint8 reason;
-
-		(void) per_read_enumerated(s, &reason, 0);
-
+		if (!per_read_enumerated(s, &reason, 0))
+		{
+			LLOGLN(0, ("rdp_read_header: per_read_enumerated failed"));
+			return false;
+		}
 		rdp->disconnect = true;
-
+		*channel_id = MCS_GLOBAL_CHANNEL_ID;
 		return true;
 	}
-
+	if (stream_get_left(s) < 5)
+	{
+		LLOGLN(0, ("rdp_read_header: parse error"));
+		return false;
+	}
 	per_read_integer16(s, &initiator, MCS_BASE_CHANNEL_ID); /* initiator (UserId) */
 	per_read_integer16(s, channel_id, 0); /* channelId */
 	stream_seek(s, 1); /* dataPriority + Segmentation (0x70) */
-	per_read_length(s, length); /* userData (OCTET_STRING) */
-
-	if (*length > stream_get_left(s))
+	if (!per_read_length(s, length)) /* userData (OCTET_STRING) */
+	{
+		LLOGLN(0, ("rdp_read_header: per_read_length failed"));
 		return false;
-
+	}
+	if (*length > stream_get_left(s))
+	{
+		return false;
+		LLOGLN(0, ("rdp_read_header: parse error"));
+	}
 	return true;
 }
 
@@ -695,23 +715,33 @@ static tbool rdp_recv_tpkt_pdu(rdpRdp* rdp, STREAM* s)
 
 	if (!rdp_read_header(rdp, s, &length, &channelId))
 	{
-		printf("Incorrect RDP header.\n");
+		LLOGLN(0, ("Incorrect RDP header."));
+		return false;
+	}
+
+	LLOGLN(10, ("rdp_recv_tpkt_pdu length %d", length));
+
+	if (rdp->disconnect)
+	{
+		LLOGLN(0, ("rdp_recv_tpkt_pdu: disconnect"));
 		return false;
 	}
 
 	if (rdp->settings->encryption)
 	{
 		rdp_read_security_header(s, &securityFlags);
-		if (securityFlags & (SEC_ENCRYPT|SEC_REDIRECTION_PKT))
+		LLOGLN(10, ("rdp_recv_tpkt_pdu: securityFlags 0x%8.8x", securityFlags));
+		if (securityFlags & (SEC_ENCRYPT | SEC_REDIRECTION_PKT))
 		{
 			if (!rdp_decrypt(rdp, s, length - 4, securityFlags))
 			{
-				printf("rdp_decrypt failed\n");
+				LLOGLN(0, ("rdp_decrypt failed"));
 				return false;
 			}
 		}
 		if (securityFlags & SEC_REDIRECTION_PKT)
 		{
+			LLOGLN(0, ("rdp_recv_tpkt_pdu: got SEC_REDIRECTION_PKT securityFlags 0x%8.8x", securityFlags));
 			/*
 			 * [MS-RDPBCGR] 2.2.13.2.1
 			 *  - no share control header, nor the 2 byte pad
@@ -741,7 +771,7 @@ static tbool rdp_recv_tpkt_pdu(rdpRdp* rdp, STREAM* s)
 				case PDU_TYPE_DATA:
 					if (!rdp_recv_data_pdu(rdp, s))
 					{
-						printf("rdp_recv_data_pdu failed\n");
+						LLOGLN(0, ("rdp_recv_data_pdu failed"));
 						return false;
 					}
 					break;
@@ -756,7 +786,7 @@ static tbool rdp_recv_tpkt_pdu(rdpRdp* rdp, STREAM* s)
 					break;
 
 				default:
-					printf("incorrect PDU type: 0x%04X\n", pduType);
+					LLOGLN(0, ("incorrect PDU type: 0x%04X", pduType));
 					break;
 			}
 			stream_set_mark(s, nextp);
