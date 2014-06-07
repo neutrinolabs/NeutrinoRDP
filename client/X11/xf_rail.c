@@ -77,7 +77,7 @@ void xf_rail_paint(xfInfo* xfi, rdpRail* rail, sint32 uleft, sint32 utop, uint32
 		iwidth = iright - ileft + 1;
 		iheight = ibottom - itop + 1;
 
-		intersect = ((iright > ileft) && (ibottom > itop)) ? true : false;
+		intersect = ((iright >= ileft) && (ibottom >= itop)) ? true : false;
 
 		if (intersect)
 		{
