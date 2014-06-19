@@ -144,6 +144,7 @@ void xf_Bitmap_Decompress(rdpContext* context, rdpBitmap* bitmap,
 	int xindex;
 	xfInfo* xfi;
 	tbool status;
+	bitmapExtra be;
 
 	xfi = ((xfContext*)context)->xfi;
 	/* 15 bpp bitmaps come in at 16 for v2 bitmap cache */
@@ -197,7 +198,9 @@ void xf_Bitmap_Decompress(rdpContext* context, rdpBitmap* bitmap,
 		default:
 			if (compressed)
 			{
-				status = bitmap_decompress(data, bitmap->data, width, height, length, bpp, bpp);
+				memset(&be, 0, sizeof(be));
+				be.temp = context->temp;
+				status = bitmap_decompress_ex(data, bitmap->data, width, height, length, bpp, bpp, &be);
 
 				if (status == false)
 				{

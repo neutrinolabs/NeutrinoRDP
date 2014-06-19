@@ -73,6 +73,7 @@ struct rdp_context
 	rdpChannels* channels; /* 36 */
 	rdpGraphics* graphics; /* 37 */
 	uint32 paddingC[64 - 38]; /* 38 */
+	uint8 temp[32 * 1024];
 };
 
 struct rdp_freerdp
