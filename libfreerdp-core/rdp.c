@@ -8,7 +8,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,6 +22,12 @@
 #include "info.h"
 #include "per.h"
 #include "redirection.h"
+
+#define LLOG_LEVEL 1
+#define LLOGLN(_level, _args) \
+  do { if (_level < LLOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
+#define LHEXDUMP(_level, _args) \
+  do { if (_level < LLOG_LEVEL) { freerdp_hexdump _args ; } } while (0)
 
 static const char* const DATA_PDU_TYPE_STRINGS[] =
 {
@@ -219,34 +225,50 @@ STREAM* rdp_data_pdu_init(rdpRdp* rdp)
 
 tbool rdp_read_header(rdpRdp* rdp, STREAM* s, uint16* length, uint16* channel_id)
 {
+	uint8 reason;
 	uint16 initiator;
 	enum DomainMCSPDU MCSPDU;
 
 	MCSPDU = (rdp->settings->server_mode) ? DomainMCSPDU_SendDataRequest : DomainMCSPDU_SendDataIndication;
-	mcs_read_domain_mcspdu_header(s, &MCSPDU, length);
-
-	if (*length - 8 > stream_get_left(s))
+	if (!mcs_read_domain_mcspdu_header(s, &MCSPDU, length))
+	{
+		LLOGLN(0, ("rdp_read_header: mcs_read_domain_mcspdu_header failed"));
 		return false;
-
+	}
+	if (*length - 8 > stream_get_left(s))
+	{
+		LLOGLN(0, ("rdp_read_header: parse error"));
+		return false;
+	}
 	if (MCSPDU == DomainMCSPDU_DisconnectProviderUltimatum)
 	{
-		uint8 reason;
-
-		(void) per_read_enumerated(s, &reason, 0);
-
+		if (!per_read_enumerated(s, &reason, 0))
+		{
+			LLOGLN(0, ("rdp_read_header: per_read_enumerated failed"));
+			return false;
+		}
 		rdp->disconnect = true;
-
+		*channel_id = MCS_GLOBAL_CHANNEL_ID;
 		return true;
 	}
-
+	if (stream_get_left(s) < 5)
+	{
+		LLOGLN(0, ("rdp_read_header: parse error"));
+		return false;
+	}
 	per_read_integer16(s, &initiator, MCS_BASE_CHANNEL_ID); /* initiator (UserId) */
 	per_read_integer16(s, channel_id, 0); /* channelId */
 	stream_seek(s, 1); /* dataPriority + Segmentation (0x70) */
-	per_read_length(s, length); /* userData (OCTET_STRING) */
-
-	if (*length > stream_get_left(s))
+	if (!per_read_length(s, length)) /* userData (OCTET_STRING) */
+	{
+		LLOGLN(0, ("rdp_read_header: per_read_length failed"));
 		return false;
-
+	}
+	if (*length > stream_get_left(s))
+	{
+		return false;
+		LLOGLN(0, ("rdp_read_header: parse error"));
+	}
 	return true;
 }
 
@@ -484,14 +506,16 @@ tbool rdp_recv_data_pdu(rdpRdp* rdp, STREAM* s)
 		}
 		else
 		{
-			printf("decompress_rdp() failed\n");
+			LLOGLN(0, ("decompress_rdp() failed"));
 			return false;
 		}
 	}
 
 #ifdef WITH_DEBUG_RDP
 	if (type != DATA_PDU_TYPE_UPDATE)
-		printf("recv %s Data PDU (0x%02X), length:%d\n", DATA_PDU_TYPE_STRINGS[type], type, length);
+	{
+		LLOGLN(0, ("recv %s Data PDU (0x%02X), length:%d", DATA_PDU_TYPE_STRINGS[type], type, length));
+	}
 #endif
 
 	switch (type)
@@ -595,6 +619,7 @@ tbool rdp_recv_out_of_sequence_pdu(rdpRdp* rdp, STREAM* s)
 	uint16 length;
 	uint16 channelId;
 
+	LLOGLN(0, ("rdp_recv_out_of_sequence_pdu:"));
 	rdp_read_share_control_header(s, &length, &type, &channelId);
 
 	if (type == PDU_TYPE_DATA)
@@ -623,6 +648,7 @@ tbool rdp_decrypt(rdpRdp* rdp, STREAM* s, int length, uint16 securityFlags)
 {
 	uint8 cmac[8], wmac[8];
 
+	LLOGLN(10, ("rdp_decrypt:"));
 	if (rdp->settings->encryption_method == ENCRYPTION_METHOD_FIPS)
 	{
 		uint16 len;
@@ -634,19 +660,19 @@ tbool rdp_decrypt(rdpRdp* rdp, STREAM* s, int length, uint16 securityFlags)
 		stream_read_uint8(s, pad);
 
 		sig = s->p;
-		stream_seek(s, 8);	/* signature */
+		stream_seek(s, 8); /* signature */
 
 		length -= 12;
 
 		if (!security_fips_decrypt(s->p, length, rdp))
 		{
-			printf("FATAL: cannot decrypt\n");
+			LLOGLN(0, ("FATAL: cannot decrypt"));
 			return false; /* TODO */
 		}
 
 		if (!security_fips_check_signature(s->p, length - pad, sig, rdp))
 		{
-			printf("FATAL: invalid packet signature\n");
+			LLOGLN(0, ("FATAL: invalid packet signature FIPS"));
 			return false; /* TODO */
 		}
 
@@ -659,12 +685,16 @@ tbool rdp_decrypt(rdpRdp* rdp, STREAM* s, int length, uint16 securityFlags)
 	length -= sizeof(wmac);
 	security_decrypt(s->p, length, rdp);
 	if (securityFlags & SEC_SECURE_CHECKSUM)
+	{
 		security_salted_mac_signature(rdp, s->p, length, false, cmac);
+	}
 	else
+	{
 		security_mac_signature(rdp, s->p, length, cmac);
+	}
 	if (memcmp(wmac, cmac, sizeof(wmac)) != 0)
 	{
-		printf("WARNING: invalid packet signature\n");
+		LLOGLN(0, ("WARNING: invalid packet signature non-FIPS"));
 		/*
 		 * Because Standard RDP Security is totally broken,
 		 * and cannot protect against MITM, don't treat signature
@@ -673,6 +703,10 @@ tbool rdp_decrypt(rdpRdp* rdp, STREAM* s, int length, uint16 securityFlags)
 		 * generate invalid signatures.
 		 */
 		//return false;
+	}
+	else
+	{
+		LLOGLN(10, ("rdp_decrypt: signature ok"));
 	}
 	return true;
 }
@@ -693,25 +727,34 @@ static tbool rdp_recv_tpkt_pdu(rdpRdp* rdp, STREAM* s)
 	uint16 securityFlags;
 	uint8* nextp;
 
+	LLOGLN(10, ("rdp_recv_tpkt_pdu:"));
 	if (!rdp_read_header(rdp, s, &length, &channelId))
 	{
-		printf("Incorrect RDP header.\n");
+		LLOGLN(0, ("Incorrect RDP header."));
+		return false;
+	}
+	LLOGLN(10, ("rdp_recv_tpkt_pdu: length %d", length));
+	if (rdp->disconnect)
+	{
+		LLOGLN(0, ("rdp_recv_tpkt_pdu: disconnect"));
 		return false;
 	}
 
 	if (rdp->settings->encryption)
 	{
 		rdp_read_security_header(s, &securityFlags);
-		if (securityFlags & (SEC_ENCRYPT|SEC_REDIRECTION_PKT))
+		LLOGLN(10, ("rdp_recv_tpkt_pdu: securityFlags 0x%8.8x", securityFlags));
+		if (securityFlags & (SEC_ENCRYPT | SEC_REDIRECTION_PKT))
 		{
 			if (!rdp_decrypt(rdp, s, length - 4, securityFlags))
 			{
-				printf("rdp_decrypt failed\n");
+				LLOGLN(0, ("rdp_decrypt failed"));
 				return false;
 			}
 		}
 		if (securityFlags & SEC_REDIRECTION_PKT)
 		{
+			LLOGLN(0, ("rdp_recv_tpkt_pdu: got SEC_REDIRECTION_PKT securityFlags 0x%8.8x", securityFlags));
 			/*
 			 * [MS-RDPBCGR] 2.2.13.2.1
 			 *  - no share control header, nor the 2 byte pad
@@ -741,7 +784,7 @@ static tbool rdp_recv_tpkt_pdu(rdpRdp* rdp, STREAM* s)
 				case PDU_TYPE_DATA:
 					if (!rdp_recv_data_pdu(rdp, s))
 					{
-						printf("rdp_recv_data_pdu failed\n");
+						LLOGLN(0, ("rdp_recv_data_pdu failed"));
 						return false;
 					}
 					break;
@@ -756,7 +799,7 @@ static tbool rdp_recv_tpkt_pdu(rdpRdp* rdp, STREAM* s)
 					break;
 
 				default:
-					printf("incorrect PDU type: 0x%04X\n", pduType);
+					LLOGLN(0, ("incorrect PDU type: 0x%04X", pduType));
 					break;
 			}
 			stream_set_mark(s, nextp);
@@ -769,20 +812,27 @@ static tbool rdp_recv_tpkt_pdu(rdpRdp* rdp, STREAM* s)
 static tbool rdp_recv_fastpath_pdu(rdpRdp* rdp, STREAM* s)
 {
 	uint16 length;
+	uint16 securityFlags;
 	rdpFastPath* fastpath;
 
+	LLOGLN(10, ("rdp_recv_fastpath_pdu:"));
+	LHEXDUMP(10, (s->p, 4));
 	fastpath = rdp->fastpath;
 	length = fastpath_read_header_rdp(fastpath, s);
+	LLOGLN(10, ("rdp_recv_fastpath_pdu: length %d", length));
 
 	if (length == 0 || length > stream_get_left(s))
 	{
-		printf("incorrect FastPath PDU header length %d\n", length);
+		LLOGLN(0, ("rdp_recv_fastpath_pdu: incorrect FastPath PDU header length %d", length));
 		return false;
 	}
 
 	if (fastpath->encryptionFlags & FASTPATH_OUTPUT_ENCRYPTED)
 	{
-		rdp_decrypt(rdp, s, length, (fastpath->encryptionFlags & FASTPATH_OUTPUT_SECURE_CHECKSUM) ? SEC_SECURE_CHECKSUM : 0);
+		securityFlags = fastpath->encryptionFlags & FASTPATH_OUTPUT_SECURE_CHECKSUM ? SEC_SECURE_CHECKSUM : 0;
+		rdp_decrypt(rdp, s, length, securityFlags);
+		LLOGLN(10, ("rdp_recv_fastpath_pdu: decrypted data length %d", length));
+		LHEXDUMP(10, (s->p, length));
 	}
 
 	return fastpath_recv_updates(rdp->fastpath, s);
@@ -790,10 +840,17 @@ static tbool rdp_recv_fastpath_pdu(rdpRdp* rdp, STREAM* s)
 
 static tbool rdp_recv_pdu(rdpRdp* rdp, STREAM* s)
 {
+	LLOGLN(10, ("rdp_recv_pdu:"));
 	if (tpkt_verify_header(s))
+	{
+		LLOGLN(10, ("rdp_recv_pdu: tpkt"));
 		return rdp_recv_tpkt_pdu(rdp, s);
+	}
 	else
+	{
+		LLOGLN(10, ("rdp_recv_pdu: fast path"));
 		return rdp_recv_fastpath_pdu(rdp, s);
+	}
 }
 
 /**
@@ -815,6 +872,7 @@ static tbool rdp_recv_callback(rdpTransport* transport, STREAM* s, void* extra)
 {
 	rdpRdp* rdp = (rdpRdp*) extra;
 
+	LLOGLN(10, ("rdp_recv_callback: state %d", rdp->state));
 	switch (rdp->state)
 	{
 		case CONNECTION_STATE_NEGO:
@@ -840,7 +898,7 @@ static tbool rdp_recv_callback(rdpTransport* transport, STREAM* s, void* extra)
 		case CONNECTION_STATE_CAPABILITY:
 			if (!rdp_client_connect_demand_active(rdp, s))
 			{
-				printf("rdp_client_connect_demand_active failed\n");
+				LLOGLN(0, ("rdp_client_connect_demand_active failed"));
 				return false;
 			}
 			break;
@@ -858,7 +916,7 @@ static tbool rdp_recv_callback(rdpTransport* transport, STREAM* s, void* extra)
 			break;
 
 		default:
-			printf("Invalid state %d\n", rdp->state);
+			LLOGLN(0, ("Invalid state %d", rdp->state));
 			return false;
 	}
 
@@ -911,7 +969,7 @@ int rdp_send_suppress_output(rdpRdp* rdp, int code, int x, int y, int w, int h)
 		case 0:	/* shut the server up */
 			break;
 		case 1:	/* receive data again */
-			printf("x %d y %d w %d h %d\n", x, y, w, h);
+			LLOGLN(0, ("x %d y %d w %d h %d", x, y, w, h));
 			stream_write_uint16(s, x);
 			stream_write_uint16(s, y);
 			stream_write_uint16(s, w);
@@ -923,7 +981,7 @@ int rdp_send_suppress_output(rdpRdp* rdp, int code, int x, int y, int w, int h)
 }
 
 /**
- * Set non-blocking mode information.
+ * Set non- mode information.
  * @param rdp RDP module
  * @param blocking blocking mode
  */
@@ -936,6 +994,7 @@ void rdp_set_blocking_mode(rdpRdp* rdp, tbool blocking)
 
 int rdp_check_fds(rdpRdp* rdp)
 {
+	LLOGLN(10, ("rdp_check_fds:"));
 	return transport_check_fds(rdp->transport);
 }
 

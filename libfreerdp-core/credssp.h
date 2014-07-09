@@ -36,6 +36,8 @@ typedef struct rdp_credssp rdpCredssp;
 
 struct rdp_credssp
 {
+	freerdp* instance;
+	struct rdp_tls* tls;
 	rdpBlob negoToken;
 	rdpBlob pubKeyAuth;
 	rdpBlob authInfo;
@@ -45,7 +47,6 @@ struct rdp_credssp
 	rdpSettings* settings;
 	CryptoRc4 rc4_seal_state;
 	struct _NTLMSSP *ntlmssp;
-	struct rdp_transport* transport;
 };
 
 int credssp_authenticate(rdpCredssp* credssp);
@@ -61,7 +62,7 @@ void credssp_encode_ts_credentials(rdpCredssp* credssp);
 void credssp_current_time(uint8* timestamp);
 void credssp_rc4k(uint8* key, int length, uint8* plaintext, uint8* ciphertext);
 
-rdpCredssp* credssp_new(rdpTransport* transport);
+rdpCredssp* credssp_new(freerdp* instance, struct rdp_tls* tls, rdpSettings* settings);
 void credssp_free(rdpCredssp* credssp);
 
 #endif /* __CREDSSP_H */

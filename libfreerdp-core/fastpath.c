@@ -30,6 +30,12 @@
 
 #include "fastpath.h"
 
+#define LLOG_LEVEL 1
+#define LLOGLN(_level, _args) \
+  do { if (_level < LLOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
+#define LHEXDUMP(_level, _args) \
+  do { if (_level < LLOG_LEVEL) { freerdp_hexdump _args ; } } while (0)
+
 /**
  * Fast-Path packet format is defined in [MS-RDPBCGR] 2.2.9.1.2, which revises
  * server output packets from the first byte with the goal of improving
@@ -77,7 +83,10 @@ uint16 fastpath_read_header(rdpFastPath* fastpath, STREAM* s)
 		fastpath->numberEvents = (header & 0x3C) >> 2;
 	}
 
-	per_read_length(s, &length);
+	if (!per_read_length(s, &length))
+	{
+		LLOGLN(10, ("fastpath_read_header: error"));
+	}
 
 	return length;
 }
@@ -104,20 +113,31 @@ INLINE void fastpath_write_update_header(STREAM* s, uint8 updateCode, uint8 frag
 
 uint16 fastpath_read_header_rdp(rdpFastPath* fastpath, STREAM* s)
 {
+	uint8 byte;
 	uint8 header;
 	uint16 length;
 
+	LLOGLN(10, ("fastpath_read_header_rdp:"));
 	stream_read_uint8(s, header);
-
 	if (fastpath != NULL)
 	{
 		fastpath->encryptionFlags = (header & 0xC0) >> 6;
 		fastpath->numberEvents = (header & 0x3C) >> 2;
 	}
-
-	per_read_length(s, &length);
-
-	return length - stream_get_length(s);
+	stream_read_uint8(s, byte);
+	if (byte & 0x80)
+	{
+		length = byte & 0x7F;
+		stream_read_uint8(s, byte);
+		length = (length << 8) | byte;
+		length -= 3;
+	}
+	else
+	{
+		length = byte;
+		length -= 2;
+	}
+	return length;
 }
 
 static void fastpath_recv_orders(rdpFastPath* fastpath, STREAM* s)
@@ -125,10 +145,12 @@ static void fastpath_recv_orders(rdpFastPath* fastpath, STREAM* s)
 	rdpUpdate* update = fastpath->rdp->update;
 	uint16 numberOrders;
 
+	LLOGLN(10, ("fastpath_recv_orders:"));
 	stream_read_uint16(s, numberOrders); /* numberOrders (2 bytes) */
 
 	while (numberOrders > 0)
 	{
+		LLOGLN(10, ("fastpath_recv_orders: loop"));
 		update_recv_order(update, s);
 		numberOrders--;
 	}
@@ -167,6 +189,7 @@ static void fastpath_recv_update(rdpFastPath* fastpath, uint8 updateCode, uint32
 	rdpContext* context = fastpath->rdp->update->context;
 	rdpPointerUpdate* pointer = update->pointer;
 
+	LLOGLN(10, ("fastpath_recv_update: %d", updateCode));
 	switch (updateCode)
 	{
 		case FASTPATH_UPDATETYPE_ORDERS:
@@ -238,6 +261,7 @@ static void fastpath_recv_update_data(rdpFastPath* fastpath, STREAM* s)
 	uint32 roff;
 	uint32 rlen;
 
+	LLOGLN(10, ("fastpath_recv_update_data:"));
 	rdp = fastpath->rdp;
 
 	fastpath_read_update_header(s, &updateCode, &fragmentation, &compression);
@@ -301,17 +325,17 @@ static void fastpath_recv_update_data(rdpFastPath* fastpath, STREAM* s)
 
 tbool fastpath_recv_updates(rdpFastPath* fastpath, STREAM* s)
 {
-	rdpUpdate* update = fastpath->rdp->update;
+	rdpUpdate* update;
 
+	LLOGLN(10, ("fastpath_recv_updates:"));
+	update = fastpath->rdp->update;
 	update->BeginPaint(update->context);
-
 	while (stream_get_left(s) >= 3)
 	{
+		LLOGLN(10, ("fastpath_recv_updates: loop"));
 		fastpath_recv_update_data(fastpath, s);
 	}
-
 	update->EndPaint(update->context);
-
 	return true;
 }
 

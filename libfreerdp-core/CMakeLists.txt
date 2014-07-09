@@ -94,6 +94,10 @@ set(LIBFREERDP_CORE_SRCS
 	mppc.c
 	pointer.c
 	pointer.h
+	tsg.c
+	tsg.h
+	rpch.c
+	rpch.h
 )
 
 add_library(freerdp-core ${LIBFREERDP_CORE_SRCS})

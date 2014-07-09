@@ -169,6 +169,7 @@ tbool rdp_recv_redirection_packet(rdpRdp* rdp, STREAM* s)
 
 tbool rdp_recv_enhanced_security_redirection_packet(rdpRdp* rdp, STREAM* s)
 {
+	printf("rdp_recv_enhanced_security_redirection_packet:\n");
 	stream_seek_uint16(s); /* pad2Octets (2 bytes) */
 	rdp_recv_server_redirection_pdu(rdp, s);
 	stream_seek_uint8(s); /* pad2Octets (1 byte) */

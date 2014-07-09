@@ -8,7 +8,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -38,6 +38,7 @@ struct rdp_tls
 	SSL_CTX* ctx;
 	rdpSettings* settings;
 	rdpCertificateStore* certificate_store;
+	STREAM* read_extra;
 };
 
 boolean tls_connect(rdpTls* tls);
@@ -46,6 +47,8 @@ boolean tls_disconnect(rdpTls* tls);
 
 int tls_read(rdpTls* tls, uint8* data, int length);
 int tls_write(rdpTls* tls, uint8* data, int length);
+
+int tls_return(rdpTls* tls, uint8* data, int length);
 
 CryptoCert tls_get_certificate(rdpTls* tls);
 boolean tls_verify_certificate(rdpTls* tls, CryptoCert cert, char* hostname);

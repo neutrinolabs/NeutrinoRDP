@@ -2,7 +2,7 @@
  * FreeRDP: A Remote Desktop Protocol Client
  * Memory Utils
  *
- * Copyright 2009-2013 Jay Sorg
+ * Copyright 2009-2014 Jay Sorg
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,16 +35,21 @@ void* xmalloc(size_t size)
 	void* mem;
 
 	if (size < 1)
+	{
+		printf("xmalloc: adjusting xmalloc bytes\n");
 		size = 1;
-
+	}
+	if (size > 16 * 1024 * 1024)
+	{
+		printf("xmalloc: bad size\n");
+		return NULL;
+	}
 	mem = malloc(size);
-
 	if (mem == NULL)
 	{
 		perror("xmalloc");
 		printf("xmalloc: failed to allocate memory of size: %d\n", (int) size);
 	}
-
 	return mem;
 }
 

@@ -141,4 +141,7 @@ void crypto_rsa_private_decrypt(const uint8* input, int length, uint32 key_lengt
 void crypto_reverse(uint8* data, int length);
 void crypto_nonce(uint8* nonce, int size);
 
+void crypto_base64_encode(uint8* data, int length, uint8** enc_data, int* res_length);
+void crypto_base64_decode(uint8* enc_data, int length, uint8** dec_data, int* res_length);
+
 #endif /* __CRYPTO_H */

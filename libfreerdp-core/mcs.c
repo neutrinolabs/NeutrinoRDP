@@ -8,7 +8,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -182,22 +182,30 @@ static const char* const mcs_result_enumerated[] =
  * @return
  */
 
+static tbool mcs_read_domain_mcspdu_header_check(STREAM* s, enum DomainMCSPDU* domainMCSPDU, uint16* length)
+{
+	enum DomainMCSPDU MCSPDU;
+
+	MCSPDU = *domainMCSPDU;
+	if (!mcs_read_domain_mcspdu_header(s, domainMCSPDU, length))
+		return false;
+	if (*domainMCSPDU != MCSPDU)
+		return false;
+	return true;
+}
+
+/* do not return false on MCSPDU */
 tbool mcs_read_domain_mcspdu_header(STREAM* s, enum DomainMCSPDU* domainMCSPDU, uint16* length)
 {
 	uint8 choice;
-	enum DomainMCSPDU MCSPDU;
 
 	*length = tpkt_read_header(s);
 
 	if (tpdu_read_data(s) == 0)
 		return false;
 
-	MCSPDU = *domainMCSPDU;
 	per_read_choice(s, &choice);
 	*domainMCSPDU = (choice >> 2);
-
-	if (*domainMCSPDU != MCSPDU)
-		return false;
 
 	return true;
 }
@@ -562,7 +570,7 @@ tbool mcs_recv_erect_domain_request(rdpMcs* mcs, STREAM* s)
 	enum DomainMCSPDU MCSPDU;
 
 	MCSPDU = DomainMCSPDU_ErectDomainRequest;
-	if (!mcs_read_domain_mcspdu_header(s, &MCSPDU, &length))
+	if (!mcs_read_domain_mcspdu_header_check(s, &MCSPDU, &length))
 		return false;
 
 	return true;
@@ -604,7 +612,7 @@ tbool mcs_recv_attach_user_request(rdpMcs* mcs, STREAM* s)
 	enum DomainMCSPDU MCSPDU;
 
 	MCSPDU = DomainMCSPDU_AttachUserRequest;
-	if (!mcs_read_domain_mcspdu_header(s, &MCSPDU, &length))
+	if (!mcs_read_domain_mcspdu_header_check(s, &MCSPDU, &length))
 		return false;
 
 	return true;
@@ -643,7 +651,7 @@ tbool mcs_recv_attach_user_confirm(rdpMcs* mcs, STREAM* s)
 	enum DomainMCSPDU MCSPDU;
 
 	MCSPDU = DomainMCSPDU_AttachUserConfirm;
-	if (!mcs_read_domain_mcspdu_header(s, &MCSPDU, &length))
+	if (!mcs_read_domain_mcspdu_header_check(s, &MCSPDU, &length))
 		return false;
 
 	per_read_enumerated(s, &result, MCS_Result_enum_length); /* result */
@@ -690,7 +698,7 @@ tbool mcs_recv_channel_join_request(rdpMcs* mcs, STREAM* s, uint16* channel_id)
 	uint16 user_id;
 
 	MCSPDU = DomainMCSPDU_ChannelJoinRequest;
-	if (!mcs_read_domain_mcspdu_header(s, &MCSPDU, &length))
+	if (!mcs_read_domain_mcspdu_header_check(s, &MCSPDU, &length))
 		return false;
 
 	if (!per_read_integer16(s, &user_id, MCS_BASE_CHANNEL_ID))
@@ -742,7 +750,7 @@ tbool mcs_recv_channel_join_confirm(rdpMcs* mcs, STREAM* s, uint16* channel_id)
 	enum DomainMCSPDU MCSPDU;
 
 	MCSPDU = DomainMCSPDU_ChannelJoinConfirm;
-	if (!mcs_read_domain_mcspdu_header(s, &MCSPDU, &length))
+	if (!mcs_read_domain_mcspdu_header_check(s, &MCSPDU, &length))
 		return false;
 
 	per_read_enumerated(s, &result, MCS_Result_enum_length); /* result */

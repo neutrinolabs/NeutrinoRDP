@@ -8,7 +8,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *		 http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -76,7 +76,7 @@ int credssp_ntlmssp_init(rdpCredssp* credssp)
 {
 	freerdp* instance;
 	NTLMSSP* ntlmssp = credssp->ntlmssp;
-	rdpSettings* settings = credssp->transport->settings;
+	rdpSettings* settings = credssp->settings;
 	instance = (freerdp*) settings->instance;
 
 	if ((settings->password == NULL) || (settings->username == NULL))
@@ -128,7 +128,7 @@ int credssp_get_public_key(rdpCredssp* credssp)
 	int status;
 	CryptoCert cert;
 
-	cert = tls_get_certificate(credssp->transport->tls);
+	cert = tls_get_certificate(credssp->tls);
 
 	if (cert == NULL)
 	{
@@ -136,8 +136,8 @@ int credssp_get_public_key(rdpCredssp* credssp)
 		return 0;
 	}
 
-	if (!tls_verify_certificate(credssp->transport->tls, cert, credssp->transport->settings->hostname))
-		tls_disconnect(credssp->transport->tls);
+	if (!tls_verify_certificate(credssp->tls, cert, credssp->settings->hostname))
+		tls_disconnect(credssp->tls);
 
 	status = crypto_cert_get_public_key(cert, &credssp->public_key);
 	crypto_cert_free(cert);
@@ -530,7 +530,7 @@ void credssp_send(rdpCredssp* credssp, rdpBlob* negoToken, rdpBlob* authInfo, rd
 		ber_write_octet_string(s, pubKeyAuth->data, length);
 	}
 
-	transport_write(credssp->transport, s);
+	tls_write(credssp->tls, s->data, stream_get_length(s));
 	stream_free(s);
 }
 
@@ -550,8 +550,8 @@ int credssp_recv(rdpCredssp* credssp, rdpBlob* negoToken, rdpBlob* authInfo, rdp
 	int status;
 	uint32 version;
 
-	s = transport_recv_stream_init(credssp->transport, 2048);
-	status = transport_read(credssp->transport, s);
+	s = stream_new(2048);
+	status = tls_read(credssp->tls, s->data, stream_get_left(s));
 
 	if (status < 0)
 		return -1;
@@ -635,20 +635,19 @@ void credssp_current_time(uint8* timestamp)
  * @return new CredSSP state machine.
  */
 
-rdpCredssp* credssp_new(rdpTransport* transport)
+rdpCredssp* credssp_new(freerdp* instance, struct rdp_tls* tls, rdpSettings* settings)
 {
 	rdpCredssp* self;
 
 	self = (rdpCredssp*) xzalloc(sizeof(rdpCredssp));
-
 	if (self != NULL)
 	{
-		self->transport = transport;
+		self->instance = instance;
+		self->settings = settings;
+		self->tls = tls;
 		self->send_seq_num = 0;
 		self->ntlmssp = ntlmssp_new();
-		self->settings = transport->settings;
 	}
-
 	return self;
 }
 

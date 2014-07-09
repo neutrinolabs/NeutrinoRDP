@@ -49,8 +49,15 @@
 #include <freerdp/utils/print.h>
 #include <freerdp/utils/stream.h>
 #include <freerdp/utils/memory.h>
+#include <freerdp/utils/hexdump.h>
 
 #include "tcp.h"
+
+#define LLOG_LEVEL 11
+#define LLOGLN(_level, _args) \
+  do { if (_level < LLOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
+#define LHEXDUMP(_level, _args) \
+  do { if (_level < LLOG_LEVEL) { freerdp_hexdump _args ; } } while (0)
 
 void tcp_get_ip_address(rdpTcp * tcp)
 {
@@ -207,6 +214,9 @@ int tcp_read(rdpTcp* tcp, uint8* data, int length)
 
 	status = recv(tcp->sockfd, data, length, 0);
 
+	LLOGLN(10, ("tcp_read: length %d status %d", length, status));
+	LHEXDUMP(10, (data, length));
+
 	if (status == 0)
 	{
 		/* Peer disconnected. */
@@ -231,6 +241,10 @@ int tcp_read(rdpTcp* tcp, uint8* data, int length)
 #endif
 		return -1;
 	}
+	else
+	{
+		//freerdp_hexdump(data, status);
+	}
 
 	return status;
 }
@@ -239,7 +253,12 @@ int tcp_write(rdpTcp* tcp, uint8* data, int length)
 {
 	int status;
 
+	LLOGLN(10, ("tcp_write:"));
+
 	status = send(tcp->sockfd, data, length, MSG_NOSIGNAL);
+
+	LLOGLN(10, ("tcp_write: length %d status %d", length, status));
+	LHEXDUMP(10, (data, length));
 
 	if (status < 0)
 	{

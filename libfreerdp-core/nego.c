@@ -27,6 +27,12 @@
 
 #include "nego.h"
 
+#define LLOG_LEVEL 11
+#define LLOGLN(_level, _args) \
+  do { if (_level < LLOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
+#define LHEXDUMP(_level, _args) \
+  do { if (_level < LLOG_LEVEL) { freerdp_hexdump _args ; } } while (0)
+
 static const char* const NEGO_STATE_STRINGS[] =
 {
 	"NEGO_STATE_INITIAL",
@@ -55,13 +61,24 @@ tbool nego_connect(rdpNego* nego)
 	if (nego->state == NEGO_STATE_INITIAL)
 	{
 		if (nego->enabled_protocols[PROTOCOL_NLA] > 0)
+		{
+			LLOGLN(10, ("nego_connect: PROTOCOL_NLA"));
 			nego->state = NEGO_STATE_NLA;
+		}
 		else if (nego->enabled_protocols[PROTOCOL_TLS] > 0)
+		{
+			LLOGLN(10, ("nego_connect: PROTOCOL_TLS"));
 			nego->state = NEGO_STATE_TLS;
+		}
 		else if (nego->enabled_protocols[PROTOCOL_RDP] > 0)
+		{
+			LLOGLN(10, ("nego_connect: PROTOCOL_RDP"));
 			nego->state = NEGO_STATE_RDP;
+		}
 		else
+		{
 			nego->state = NEGO_STATE_FAIL;
+		}
 	}
 
 	do
@@ -86,7 +103,7 @@ tbool nego_connect(rdpNego* nego)
 	nego->transport->settings->selected_protocol = nego->selected_protocol;
 	nego->transport->settings->negotiationFlags = nego->flags;
 
-	if(nego->selected_protocol == PROTOCOL_RDP)
+	if (nego->selected_protocol == PROTOCOL_RDP)
 	{
 		nego->transport->settings->encryption = true;
 		nego->transport->settings->encryption_method = ENCRYPTION_METHOD_40BIT | ENCRYPTION_METHOD_128BIT | ENCRYPTION_METHOD_FIPS;
@@ -225,27 +242,28 @@ void nego_attempt_tls(rdpNego* nego)
 
 void nego_attempt_rdp(rdpNego* nego)
 {
+	LLOGLN(10, ("nego_attempt_rdp:"));
 	nego->requested_protocols = PROTOCOL_RDP;
-
 	DEBUG_NEGO("Attempting RDP security");
-
 	if (!nego_tcp_connect(nego))
 	{
 		nego->state = NEGO_STATE_FAIL;
 		return;
 	}
-
+	LLOGLN(10, ("nego_attempt_rdp: nego_tcp_connect ok"));
 	if (!nego_send_negotiation_request(nego))
 	{
 		nego->state = NEGO_STATE_FAIL;
 		return;
 	}
-
+	LLOGLN(10, ("nego_attempt_rdp: nego_send_negotiation_request ok"));
 	if (!nego_recv_response(nego))
 	{
 		nego->state = NEGO_STATE_FAIL;
 		return;
 	}
+	//freerdp_usleep(1000 * 1000 * 360);
+	LLOGLN(10, ("nego_attempt_rdp: out"));
 }
 
 /**
@@ -255,10 +273,18 @@ void nego_attempt_rdp(rdpNego* nego)
 
 tbool nego_recv_response(rdpNego* nego)
 {
+	tbool rv;
 	STREAM* s = transport_recv_stream_init(nego->transport, 1024);
+
+	LLOGLN(10, ("nego_recv_response:"));
 	if (transport_read(nego->transport, s) < 0)
+	{
+		LLOGLN(0, ("nego_recv_response: transport_read failed"));
 		return false;
-	return nego_recv(nego->transport, s, nego->transport->recv_extra);
+	}
+	rv = nego_recv(nego->transport, s, nego->transport->recv_extra);
+	LLOGLN(10, ("nego_recv_response: out"));
+	return rv;
 }
 
 /**
@@ -275,8 +301,13 @@ tbool nego_recv(rdpTransport* transport, STREAM* s, void* extra)
 	uint8 type;
 	rdpNego* nego = (rdpNego*) extra;
 
+	LLOGLN(10, ("nego_recv:"));
+
 	if (tpkt_read_header(s) == 0)
+	{
+		LLOGLN(0, ("nego_recv: tpkt_read_header failed"));
 		return false;
+	}
 
 	li = tpdu_read_connection_confirm(s);
 
@@ -366,6 +397,7 @@ tbool nego_read_request(rdpNego* nego, STREAM* s)
 
 void nego_send(rdpNego* nego)
 {
+	LLOGLN(10, ("nego_send:"));
 	if (nego->state == NEGO_STATE_NLA)
 		nego_attempt_nla(nego);
 	else if (nego->state == NEGO_STATE_TLS)
