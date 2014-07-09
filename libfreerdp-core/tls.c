@@ -8,7 +8,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *		 http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,10 +22,19 @@
 
 #include "tls.h"
 
+#define LLOG_LEVEL 1
+#define LLOGLN(_level, _args) \
+  do { if (_level < LLOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
+#define LHEXDUMP(_level, _args) \
+  do { if (_level < LLOG_LEVEL) { freerdp_hexdump _args ; } } while (0)
+
+static int g_total_read = 0;
+
 tbool tls_connect(rdpTls* tls)
 {
 	int connection_status;
 
+	LLOGLN(10, ("tls_connect:"));
 	tls->ctx = SSL_CTX_new(TLSv1_client_method());
 
 	if (tls->ctx == NULL)
@@ -126,53 +135,139 @@ tbool tls_disconnect(rdpTls* tls)
 	return true;
 }
 
+/* try to read length bytes
+ * returns the number of bytes read or -1 on error
+ * returns zero on SSL_ERROR_WANT_READ or SSL_ERROR_WANT_WRITE
+ * returns zero if length < 1 */
 int tls_read(rdpTls* tls, uint8* data, int length)
 {
 	int status;
+	int left;
+
+	LLOGLN(10, ("tls_read: in length %d", length));
+
+	if (length < 1)
+	{
+		return 0;
+	}
+
+	if (tls->read_extra != NULL)
+	{
+		LLOGLN(10, ("tls_read: got left over, using first"));
+		left = stream_get_left(tls->read_extra);
+		if (length < left)
+		{
+			memcpy(data, tls->read_extra->p, length);
+			tls->read_extra->p += length;
+			LHEXDUMP(10, (data, length));
+			return length;
+		}
+		memcpy(data, tls->read_extra->p, left);
+		LLOGLN(10, ("tls_read: freeing read_extra"));
+		stream_free(tls->read_extra);
+		tls->read_extra = NULL;
+		status = tls_read(tls, data + left, length - left);
+		if (status < 0)
+		{
+			return -1;
+		}
+		LHEXDUMP(10, (data, left + status));
+		return left + status;
+	}
 
 	status = SSL_read(tls->ssl, data, length);
 
+	LLOGLN(10, ("tls_read: ssl %p SSL_read rv %d", tls->ssl, status));
+	if (status > 0)
+	{
+		g_total_read += status;
+		LLOGLN(10, ("tls_read: g_total_read %d", g_total_read));
+		LHEXDUMP(10, (data, status));
+		return status;
+	}
+
+	if (status == 0)
+	{
+		return -1; /* disconnected */
+	}
+
+	/* status must be < 0 */
 	switch (SSL_get_error(tls->ssl, status))
 	{
 		case SSL_ERROR_NONE:
 			break;
-
 		case SSL_ERROR_WANT_READ:
 		case SSL_ERROR_WANT_WRITE:
 			status = 0;
 			break;
-
 		default:
 			tls_print_error("SSL_read", tls->ssl, status);
 			status = -1;
 			break;
 	}
-
+	LLOGLN(10, ("tls_read: out status %d", status));
 	return status;
+}
+
+int tls_return(rdpTls* tls, uint8* data, int length)
+{
+	int offset;
+	int org_size;
+
+	LLOGLN(10, ("tls_return: returning %d bytes", length));
+	if (length < 1)
+	{
+		return 0;
+	}
+	if (tls->read_extra == NULL)
+	{
+		tls->read_extra = stream_new(length);
+		memcpy(tls->read_extra->data, data, length);
+		return 0;
+	}
+	org_size = tls->read_extra->size;
+	offset = (int) (tls->read_extra->p - tls->read_extra->data);
+	tls->read_extra->size += length;
+	tls->read_extra->data = (uint8*) xrealloc(tls->read_extra->data, tls->read_extra->size);
+	tls->read_extra->p = tls->read_extra->data + offset;
+	memcpy(tls->read_extra->data + org_size, data, length);
+	return 0;
 }
 
 int tls_write(rdpTls* tls, uint8* data, int length)
 {
 	int status;
 
+	LLOGLN(10, ("tls_write: int length %d", length));
+
 	status = SSL_write(tls->ssl, data, length);
+
+	LLOGLN(10, ("tls_write: ssl %p SSL_write rv %d", tls->ssl, status));
+	if (status > 0)
+	{
+		LHEXDUMP(10, (data, status));
+		return status;
+	}
+
+	if (status == 0)
+	{
+		return -1; /* disconnected */
+	}
 
 	switch (SSL_get_error(tls->ssl, status))
 	{
 		case SSL_ERROR_NONE:
 			break;
-
 		case SSL_ERROR_WANT_READ:
 		case SSL_ERROR_WANT_WRITE:
 			status = 0;
 			break;
-
 		default:
 			tls_print_error("SSL_write", tls->ssl, status);
 			status = -1;
 			break;
 	}
-
+	LLOGLN(10, ("tls_write: out status %d", status));
 	return status;
 }
 

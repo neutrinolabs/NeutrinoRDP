@@ -24,6 +24,12 @@
 
 #include "orders.h"
 
+#define LLOG_LEVEL 1
+#define LLOGLN(_level, _args) \
+  do { if (_level < LLOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
+#define LHEXDUMP(_level, _args) \
+  do { if (_level < LLOG_LEVEL) { freerdp_hexdump _args ; } } while (0)
+
 #ifdef WITH_DEBUG_ORDERS
 
 static const char* const PRIMARY_DRAWING_ORDER_STRINGS[] =
@@ -1689,6 +1695,8 @@ void update_recv_primary_order(rdpUpdate* update, STREAM* s, uint8 flags)
 	rdpContext* context = update->context;
 	rdpPrimaryUpdate* primary = update->primary;
 
+	LLOGLN(10, ("update_recv_primary_order:"));
+
 	orderInfo = &(primary->order_info);
 
 	if (flags & ORDER_TYPE_CHANGE)
@@ -1717,116 +1725,139 @@ void update_recv_primary_order(rdpUpdate* update, STREAM* s, uint8 flags)
 	switch (orderInfo->orderType)
 	{
 		case ORDER_TYPE_DSTBLT:
+			LLOGLN(10, ("update_recv_primary_order: ORDER_TYPE_DSTBLT"));
 			update_read_dstblt_order(s, orderInfo, &(primary->dstblt));
 			IFCALL(primary->DstBlt, context, &primary->dstblt);
 			break;
 
 		case ORDER_TYPE_PATBLT:
+			LLOGLN(10, ("update_recv_primary_order: ORDER_TYPE_PATBLT"));
 			update_read_patblt_order(s, orderInfo, &(primary->patblt));
 			IFCALL(primary->PatBlt, context, &primary->patblt);
 			break;
 
 		case ORDER_TYPE_SCRBLT:
+			LLOGLN(10, ("update_recv_primary_order: ORDER_TYPE_SCRBLT"));
 			update_read_scrblt_order(s, orderInfo, &(primary->scrblt));
 			IFCALL(primary->ScrBlt, context, &primary->scrblt);
 			break;
 
 		case ORDER_TYPE_OPAQUE_RECT:
+			LLOGLN(10, ("update_recv_primary_order: ORDER_TYPE_OPAQUE_RECT"));
 			update_read_opaque_rect_order(s, orderInfo, &(primary->opaque_rect));
 			IFCALL(primary->OpaqueRect, context, &primary->opaque_rect);
 			break;
 
 		case ORDER_TYPE_DRAW_NINE_GRID:
+			LLOGLN(10, ("update_recv_primary_order: ORDER_TYPE_DRAW_NINE_GRID"));
 			update_read_draw_nine_grid_order(s, orderInfo, &(primary->draw_nine_grid));
 			IFCALL(primary->DrawNineGrid, context, &primary->draw_nine_grid);
 			break;
 
 		case ORDER_TYPE_MULTI_DSTBLT:
+			LLOGLN(10, ("update_recv_primary_order: ORDER_TYPE_MULTI_DSTBLT"));
 			update_read_multi_dstblt_order(s, orderInfo, &(primary->multi_dstblt));
 			IFCALL(primary->MultiDstBlt, context, &primary->multi_dstblt);
 			break;
 
 		case ORDER_TYPE_MULTI_PATBLT:
+			LLOGLN(10, ("update_recv_primary_order: ORDER_TYPE_MULTI_PATBLT"));
 			update_read_multi_patblt_order(s, orderInfo, &(primary->multi_patblt));
 			IFCALL(primary->MultiPatBlt, context, &primary->multi_patblt);
 			break;
 
 		case ORDER_TYPE_MULTI_SCRBLT:
+			LLOGLN(10, ("update_recv_primary_order: ORDER_TYPE_MULTI_SCRBLT"));
 			update_read_multi_scrblt_order(s, orderInfo, &(primary->multi_scrblt));
 			IFCALL(primary->MultiScrBlt, context, &primary->multi_scrblt);
 			break;
 
 		case ORDER_TYPE_MULTI_OPAQUE_RECT:
+			LLOGLN(10, ("update_recv_primary_order: ORDER_TYPE_MULTI_OPAQUE_RECT"));
 			update_read_multi_opaque_rect_order(s, orderInfo, &(primary->multi_opaque_rect));
 			IFCALL(primary->MultiOpaqueRect, context, &primary->multi_opaque_rect);
 			break;
 
 		case ORDER_TYPE_MULTI_DRAW_NINE_GRID:
+			LLOGLN(10, ("update_recv_primary_order: ORDER_TYPE_MULTI_DRAW_NINE_GRID"));
 			update_read_multi_draw_nine_grid_order(s, orderInfo, &(primary->multi_draw_nine_grid));
 			IFCALL(primary->MultiDrawNineGrid, context, &primary->multi_draw_nine_grid);
 			break;
 
 		case ORDER_TYPE_LINE_TO:
+			LLOGLN(10, ("update_recv_primary_order: ORDER_TYPE_LINE_TO"));
 			update_read_line_to_order(s, orderInfo, &(primary->line_to));
 			IFCALL(primary->LineTo, context, &primary->line_to);
 			break;
 
 		case ORDER_TYPE_POLYLINE:
+			LLOGLN(10, ("update_recv_primary_order: ORDER_TYPE_POLYLINE"));
 			update_read_polyline_order(s, orderInfo, &(primary->polyline));
 			IFCALL(primary->Polyline, context, &primary->polyline);
 			break;
 
 		case ORDER_TYPE_MEMBLT:
+			LLOGLN(10, ("update_recv_primary_order: ORDER_TYPE_MEMBLT"));
 			update_read_memblt_order(s, orderInfo, &(primary->memblt));
 			IFCALL(primary->MemBlt, context, &primary->memblt);
 			break;
 
 		case ORDER_TYPE_MEM3BLT:
+			LLOGLN(10, ("update_recv_primary_order: ORDER_TYPE_MEM3BLT"));
 			update_read_mem3blt_order(s, orderInfo, &(primary->mem3blt));
 			IFCALL(primary->Mem3Blt, context, &primary->mem3blt);
 			break;
 
 		case ORDER_TYPE_SAVE_BITMAP:
+			LLOGLN(10, ("update_recv_primary_order: ORDER_TYPE_SAVE_BITMAP"));
 			update_read_save_bitmap_order(s, orderInfo, &(primary->save_bitmap));
 			IFCALL(primary->SaveBitmap, context, &primary->save_bitmap);
 			break;
 
 		case ORDER_TYPE_GLYPH_INDEX:
+			LLOGLN(10, ("update_recv_primary_order: ORDER_TYPE_GLYPH_INDEX"));
 			update_read_glyph_index_order(s, orderInfo, &(primary->glyph_index));
 			IFCALL(primary->GlyphIndex, context, &primary->glyph_index);
 			break;
 
 		case ORDER_TYPE_FAST_INDEX:
+			LLOGLN(10, ("update_recv_primary_order: ORDER_TYPE_FAST_INDEX"));
 			update_read_fast_index_order(s, orderInfo, &(primary->fast_index));
 			IFCALL(primary->FastIndex, context, &primary->fast_index);
 			break;
 
 		case ORDER_TYPE_FAST_GLYPH:
+			LLOGLN(10, ("update_recv_primary_order: ORDER_TYPE_FAST_GLYPH"));
 			update_read_fast_glyph_order(s, orderInfo, &(primary->fast_glyph));
 			IFCALL(primary->FastGlyph, context, &primary->fast_glyph);
 			break;
 
 		case ORDER_TYPE_POLYGON_SC:
+			LLOGLN(10, ("update_recv_primary_order: ORDER_TYPE_POLYGON_SC"));
 			update_read_polygon_sc_order(s, orderInfo, &(primary->polygon_sc));
 			IFCALL(primary->PolygonSC, context, &primary->polygon_sc);
 			break;
 
 		case ORDER_TYPE_POLYGON_CB:
+			LLOGLN(10, ("update_recv_primary_order: ORDER_TYPE_POLYGON_CB"));
 			update_read_polygon_cb_order(s, orderInfo, &(primary->polygon_cb));
 			IFCALL(primary->PolygonCB, context, &primary->polygon_cb);
 			break;
 
 		case ORDER_TYPE_ELLIPSE_SC:
+			LLOGLN(10, ("update_recv_primary_order: ORDER_TYPE_ELLIPSE_SC"));
 			update_read_ellipse_sc_order(s, orderInfo, &(primary->ellipse_sc));
 			IFCALL(primary->EllipseSC, context, &primary->ellipse_sc);
 			break;
 
 		case ORDER_TYPE_ELLIPSE_CB:
+			LLOGLN(10, ("update_recv_primary_order: ORDER_TYPE_ELLIPSE_CB"));
 			update_read_ellipse_cb_order(s, orderInfo, &(primary->ellipse_cb));
 			IFCALL(primary->EllipseCB, context, &primary->ellipse_cb);
 			break;
 
 		default:
+			LLOGLN(10, ("update_recv_primary_order: unknown order %d", orderInfo->orderType));
 			break;
 	}
 
@@ -1844,6 +1875,8 @@ void update_recv_secondary_order(rdpUpdate* update, STREAM* s, uint8 flags)
 	uint16 orderLength;
 	rdpContext* context = update->context;
 	rdpSecondaryUpdate* secondary = update->secondary;
+
+	LLOGLN(10, ("update_recv_secondary_order:"));
 
 	stream_read_uint16(s, orderLength); /* orderLength (2 bytes) */
 	stream_read_uint16(s, extraFlags); /* extraFlags (2 bytes) */
@@ -1921,6 +1954,7 @@ void update_recv_altsec_order(rdpUpdate* update, STREAM* s, uint8 flags)
 	rdpContext* context = update->context;
 	rdpAltSecUpdate* altsec = update->altsec;
 
+	LLOGLN(10, ("update_recv_altsec_order:"));
 	orderType = flags >>= 2; /* orderType is in higher 6 bits of flags field */
 
 #ifdef WITH_DEBUG_ORDERS
@@ -2008,12 +2042,22 @@ void update_recv_order(rdpUpdate* update, STREAM* s)
 {
 	uint8 controlFlags;
 
+	LLOGLN(10, ("update_recv_order:"));
 	stream_read_uint8(s, controlFlags); /* controlFlags (1 byte) */
 
 	if (!(controlFlags & ORDER_STANDARD))
+	{
+		LLOGLN(10, ("update_recv_order: calling update_recv_altsec_order"));
 		update_recv_altsec_order(update, s, controlFlags);
+	}
 	else if (controlFlags & ORDER_SECONDARY)
+	{
+		LLOGLN(10, ("update_recv_order: calling update_recv_secondary_order"));
 		update_recv_secondary_order(update, s, controlFlags);
+	}
 	else
+	{
+		LLOGLN(10, ("update_recv_order: calling update_recv_primary_order"));
 		update_recv_primary_order(update, s, controlFlags);
+	}
 }

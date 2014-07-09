@@ -2,7 +2,7 @@
  * FreeRDP: A Remote Desktop Protocol client.
  * Arguments Parsing
  *
- * Copyright 2009-2013 Jay Sorg <jay.sorg@gmail.com>
+ * Copyright 2009-2014 Jay Sorg <jay.sorg@gmail.com>
  * Copyright 2011 Vic Lee
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -117,6 +117,7 @@ int freerdp_parse_args(rdpSettings* settings, int argc, char** argv,
 				"  --no-rdp: disable Standard RDP encryption\n"
 				"  --no-tls: disable TLS encryption\n"
 				"  --no-nla: disable network level authentication\n"
+				"  --tsg <TSG Username>:<Password>:<Domain>:<TSG Adress>: Connect through TSG\n"
 				"  --ntlm: force NTLM authentication protocol version (1 or 2)\n"
 				"  --ignore-certificate: ignore verification of logon certificate\n"
 				"  --sec: force protocol security (rdp, tls or nla)\n"
@@ -573,6 +574,72 @@ int freerdp_parse_args(rdpSettings* settings, int argc, char** argv,
 		else if (strcmp("--no-nla", argv[index]) == 0)
 		{
 			settings->nla_security = false;
+		}
+		else if (strcmp("--tsg", argv[index]) == 0)
+		{
+			char* ptr1;
+			char* ptr2;
+			settings->tsg = true;
+			index++;
+			if (index == argc)
+			{
+				printf("missing TSG params\n");
+				return -1;
+			}
+			/* username */
+			ptr1 = argv[index];
+			ptr2 = strstr(ptr1, ":");
+			if (ptr2 == NULL)
+			{
+				printf("missing TSG params\n");
+				return -1;
+			}
+			settings->tsg_username = strndup(ptr1, ptr2 - ptr1);
+			/* password */
+			ptr1 = ptr2 + 1;
+			ptr2 = strstr(ptr1, ":");
+			if (ptr2 == NULL)
+			{
+				printf("missing TSG params\n");
+				return -1;
+			}
+			settings->tsg_password = strndup(ptr1, ptr2 - ptr1);
+			/* domain */
+			ptr1 = ptr2 + 1;
+			ptr2 = strstr(ptr1, ":");
+			if (ptr2 == NULL)
+			{
+				printf("missing TSG params\n");
+				return -1;
+			}
+			settings->tsg_domain = strndup(ptr1, ptr2 - ptr1);
+			/* gateway name */
+			ptr1 = ptr2 + 1;
+			settings->tsg_server = strdup(ptr1);
+#if 0
+			settings->tsg_username = xstrdup(argv[index]);
+			index++;
+			if (index == argc)
+			{
+				printf("missing TSG password\n");
+				return -1;
+			}
+			settings->tsg_password = xstrdup(argv[index]);
+			index++;
+			if (index == argc)
+			{
+				printf("missing TSG domain\n");
+				return -1;
+			}
+			settings->tsg_domain = xstrdup(argv[index]);
+			index++;
+			if (index == argc)
+			{
+				printf("missing TSG server\n");
+				return -1;
+			}
+			settings->tsg_server = xstrdup(argv[index]);
+#endif
 		}
 		else if (strcmp("--sec", argv[index]) == 0)
 		{

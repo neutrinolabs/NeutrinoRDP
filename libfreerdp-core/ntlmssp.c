@@ -941,7 +941,7 @@ void ntlmssp_input_av_pairs(NTLMSSP* ntlmssp, STREAM* s)
 void ntlmssp_output_av_pairs(NTLMSSP* ntlmssp, STREAM* s)
 {
 	AV_PAIRS* av_pairs = ntlmssp->av_pairs;
-	
+
 	if (av_pairs->NbDomainName.length > 0)
 	{
 		stream_write_uint16(s, MsvAvNbDomainName); /* AvId */
@@ -1107,7 +1107,7 @@ void ntlmssp_print_av_pairs(NTLMSSP* ntlmssp)
 void ntlmssp_free_av_pairs(NTLMSSP* ntlmssp)
 {
 	AV_PAIRS *av_pairs = ntlmssp->av_pairs;
-	
+
 	if (av_pairs != NULL)
 	{
 		if (av_pairs->NbComputerName.value != NULL)
@@ -1156,7 +1156,7 @@ void ntlmssp_compute_message_integrity_check(NTLMSSP* ntlmssp)
 {
 	HMAC_CTX hmac_ctx;
 
-	/* 
+	/*
 	 * Compute the HMAC-MD5 hash of ConcatenationOf(NEGOTIATE_MESSAGE,
 	 * CHALLENGE_MESSAGE, AUTHENTICATE_MESSAGE) using the ExportedSessionKey
 	 */
@@ -1193,11 +1193,14 @@ void ntlmssp_encrypt_message(NTLMSSP* ntlmssp, rdpBlob* msg, rdpBlob* encrypted_
 	HMAC_Update(&hmac_ctx, msg->data, msg->length);
 	HMAC_Final(&hmac_ctx, digest, NULL);
 
-	/* Allocate space for encrypted message */
-	freerdp_blob_alloc(encrypted_msg, msg->length);
+	if (encrypted_msg != NULL)
+	{
+		/* Allocate space for encrypted message */
+		freerdp_blob_alloc(encrypted_msg, msg->length);
 
-	/* Encrypt message using with RC4 */
-	crypto_rc4(ntlmssp->send_rc4_seal, msg->length, msg->data, encrypted_msg->data);
+		/* Encrypt message using with RC4 */
+		crypto_rc4(ntlmssp->send_rc4_seal, msg->length, msg->data, encrypted_msg->data);
+	}
 
 	/* RC4-encrypt first 8 bytes of digest */
 	crypto_rc4(ntlmssp->send_rc4_seal, 8, digest, checksum);
@@ -1661,7 +1664,7 @@ void ntlmssp_send_authenticate_message(NTLMSSP* ntlmssp, STREAM* s)
 #ifdef WITH_DEBUG_NLA
 	ntlmssp_print_negotiate_flags(negotiateFlags);
 #endif
-	
+
 	if (negotiateFlags & NTLMSSP_NEGOTIATE_VERSION)
 	{
 		/* Only present if NTLMSSP_NEGOTIATE_VERSION is set */
@@ -1758,7 +1761,7 @@ void ntlmssp_send_authenticate_message(NTLMSSP* ntlmssp, STREAM* s)
 	{
 		/* Message Integrity Check */
 		ntlmssp_compute_message_integrity_check(ntlmssp);
-		
+
 		s->p = mic_offset;
 		stream_write(s, ntlmssp->message_integrity_check, 16);
 		s->p = s->data + length;
@@ -1790,12 +1793,10 @@ int ntlmssp_send(NTLMSSP* ntlmssp, STREAM* s)
 {
 	if (ntlmssp->state == NTLMSSP_STATE_INITIAL)
 		ntlmssp->state = NTLMSSP_STATE_NEGOTIATE;
-
 	if (ntlmssp->state == NTLMSSP_STATE_NEGOTIATE)
 		ntlmssp_send_negotiate_message(ntlmssp, s);
 	else if (ntlmssp->state == NTLMSSP_STATE_AUTHENTICATE)
 		ntlmssp_send_authenticate_message(ntlmssp, s);
-
 	return (ntlmssp->state == NTLMSSP_STATE_FINAL) ? 0 : 1;
 }
 

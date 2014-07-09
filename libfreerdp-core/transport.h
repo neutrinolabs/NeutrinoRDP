@@ -24,6 +24,7 @@ typedef enum
 {
 	TRANSPORT_LAYER_TCP,
 	TRANSPORT_LAYER_TLS,
+	TRANSPORT_LAYER_TSG,
 	TRANSPORT_LAYER_CLOSED
 } TRANSPORT_LAYER;
 
@@ -32,6 +33,7 @@ typedef struct rdp_transport rdpTransport;
 #include "tcp.h"
 #include "tls.h"
 #include "credssp.h"
+#include "tsg.h"
 
 #include <time.h>
 #include <freerdp/types.h>
@@ -46,16 +48,21 @@ struct rdp_transport
 	STREAM* recv_stream;
 	STREAM* send_stream;
 	TRANSPORT_LAYER layer;
-	struct rdp_tcp* tcp;
-	struct rdp_tls* tls;
+	struct rdp_tcp* tcp_in;
+	struct rdp_tcp* tcp_out;
+	struct rdp_tls* tls_in;
+	struct rdp_tls* tls_out;
 	struct rdp_settings* settings;
 	struct rdp_credssp* credssp;
+	struct rdp_tsg* tsg;
 	uint32 usleep_interval;
 	void* recv_extra;
 	STREAM* recv_buffer;
 	TransportRecv recv_callback;
 	boolean blocking;
 	int level;
+	STREAM* proc_buffer;
+	int tsg_frag_state;
 };
 
 STREAM* transport_recv_stream_init(rdpTransport* transport, int size);

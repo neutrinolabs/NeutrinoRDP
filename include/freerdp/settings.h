@@ -443,6 +443,14 @@ struct rdp_settings
 	struct rdp_ext_set extensions[16];
 
 	int skip_bs;
+
+	/* TSG */
+	tbool tsg;
+	char* tsg_username;
+	char* tsg_password;
+	char* tsg_domain;
+	char* tsg_server;
+
 };
 typedef struct rdp_settings rdpSettings;
 

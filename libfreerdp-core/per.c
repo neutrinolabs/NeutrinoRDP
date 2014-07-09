@@ -8,7 +8,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,10 +30,18 @@ tbool per_read_length(STREAM* s, uint16* length)
 {
 	uint8 byte;
 
+	if (stream_get_left(s) < 1)
+	{
+		return false;
+	}
 	stream_read_uint8(s, byte);
 
 	if (byte & 0x80)
 	{
+		if (stream_get_left(s) < 1)
+		{
+			return false;
+		}
 		byte &= ~(0x80);
 		*length = (byte << 8);
 		stream_read_uint8(s, byte);
@@ -250,12 +258,11 @@ void per_write_integer16(STREAM* s, uint16 integer, uint16 min)
 
 tbool per_read_enumerated(STREAM* s, uint8* enumerated, uint8 count)
 {
-	stream_read_uint8(s, *enumerated);
-
-	/* check that enumerated value falls within expected range */
-	if (*enumerated + 1 > count)
+	if (stream_get_left(s) < 1)
+	{
 		return false;
-
+	}
+	stream_read_uint8(s, *enumerated);
 	return true;
 }
 

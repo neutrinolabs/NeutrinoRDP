@@ -23,6 +23,12 @@
 
 #include "connection.h"
 
+#define LLOG_LEVEL 11
+#define LLOGLN(_level, _args) \
+  do { if (_level < LLOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
+#define LHEXDUMP(_level, _args) \
+  do { if (_level < LLOG_LEVEL) { freerdp_hexdump _args ; } } while (0)
+
 /**
  *                                      Connection Sequence
  *     client                                                                    server
@@ -88,18 +94,30 @@ tbool rdp_client_connect(rdpRdp* rdp)
 
 	status = false;
 	if (selectedProtocol & PROTOCOL_NLA)
+	{
 		status = transport_connect_nla(rdp->transport);
+	}
 	else if (selectedProtocol & PROTOCOL_TLS)
+	{
 		status = transport_connect_tls(rdp->transport);
+	}
 	else if (selectedProtocol == PROTOCOL_RDP) /* 0 */
+	{
 		status = transport_connect_rdp(rdp->transport);
+	}
 
 	if (status == false)
+	{
 		return false;
+	}
 
 	rdp_set_blocking_mode(rdp, false);
 	rdp->state = CONNECTION_STATE_NEGO;
 	rdp->finalize_sc_pdus = 0;
+
+	LLOGLN(10, ("rdp_client_connect: calling mcs_send_connect_initial"));
+
+	//freerdp_usleep(1000 * 1000 * 10);
 
 	if (mcs_send_connect_initial(rdp->mcs) == false)
 	{
@@ -107,10 +125,17 @@ tbool rdp_client_connect(rdpRdp* rdp)
 		return false;
 	}
 
+	//freerdp_usleep(1000 * 1000 * 10);
+
 	while (rdp->state != CONNECTION_STATE_ACTIVE)
 	{
+		/* TODO: don't use sleep here */
+		freerdp_usleep(1000 * 100);
 		if (rdp_check_fds(rdp) < 0)
+		{
+			LLOGLN(0, ("rdp_client_connect: error rdp_check_fds failed"));
 			return false;
+		}
 	}
 
 	return true;

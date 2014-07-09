@@ -293,7 +293,7 @@ void license_generate_hwid(rdpLicense* license)
 	uint8* mac_address;
 
 	memset(license->hwid, 0, HWID_LENGTH);
-	mac_address = license->rdp->transport->tcp->mac_address;
+	mac_address = license->rdp->transport->tcp_in->mac_address;
 
 	md5 = crypto_md5_init();
 	crypto_md5_update(md5, mac_address, 6);
