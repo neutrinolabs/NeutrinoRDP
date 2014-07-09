@@ -26,8 +26,11 @@
 #define LLOG_LEVEL 1
 #define LLOGLN(_level, _args) \
   do { if (_level < LLOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
+<<<<<<< HEAD
 #define LHEXDUMP(_level, _args) \
   do { if (_level < LLOG_LEVEL) { freerdp_hexdump _args ; } } while (0)
+=======
+>>>>>>> b013ab51c8860e763a9f0a14201679b4c2eff54e
 
 static const char* const DATA_PDU_TYPE_STRINGS[] =
 {
@@ -733,7 +736,13 @@ static tbool rdp_recv_tpkt_pdu(rdpRdp* rdp, STREAM* s)
 		LLOGLN(0, ("Incorrect RDP header."));
 		return false;
 	}
+<<<<<<< HEAD
 	LLOGLN(10, ("rdp_recv_tpkt_pdu: length %d", length));
+=======
+
+	LLOGLN(10, ("rdp_recv_tpkt_pdu length %d", length));
+
+>>>>>>> b013ab51c8860e763a9f0a14201679b4c2eff54e
 	if (rdp->disconnect)
 	{
 		LLOGLN(0, ("rdp_recv_tpkt_pdu: disconnect"));

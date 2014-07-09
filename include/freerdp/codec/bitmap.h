@@ -22,6 +22,18 @@
 
 #include <freerdp/types.h>
 
+struct bitmap_extra
+{
+    uint8* temp;
+    int flags;
+    int pad0;
+    int pad1;
+    int pad2;
+};
+
+typedef struct bitmap_extra bitmapExtra;
+
 FREERDP_API tbool bitmap_decompress(uint8* srcData, uint8* dstData, int width, int height, int size, int srcBpp, int dstBpp);
+FREERDP_API tbool bitmap_decompress_ex(uint8* srcData, uint8* dstData, int width, int height, int size, int srcBpp, int dstBpp, bitmapExtra* be);
 
 #endif /* __BITMAP_H */

@@ -3,7 +3,7 @@
  * Xrdp video redirection channel
  *
  * Copyright 2012 Laxmikant Rashinkar <LK.Rashinkar@gmail.com>
- * Copyright 2013 Jay Sorg <jay.sorg@gmail.com>
+ * Copyright 2013-2014 Jay Sorg <jay.sorg@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,10 +58,20 @@ ubuntu 11.11
 #define LIBAVCODEC_VERSION_MINOR 34
 #define LIBAVCODEC_VERSION_MICRO  0
 
-mint 13
+mint 13, ubuntu 12.04
 #define LIBAVCODEC_VERSION_MAJOR 53
 #define LIBAVCODEC_VERSION_MINOR 35
 #define LIBAVCODEC_VERSION_MICRO  0
+
+ubuntu 14.04
+#define LIBAVCODEC_VERSION_MAJOR 54
+#define LIBAVCODEC_VERSION_MINOR 35
+#define LIBAVCODEC_VERSION_MICRO  0
+
+debian 7
+#define LIBAVCODEC_VERSION_MAJOR 54
+#define LIBAVCODEC_VERSION_MINOR 59
+#define LIBAVCODEC_VERSION_MICRO 100
 
 */
 
@@ -81,8 +91,18 @@ mint 13
 #define DISTRO_UBUNTU1204
 #endif
 
+#if LIBAVCODEC_VERSION_MAJOR == 54 && LIBAVCODEC_VERSION_MINOR == 59
+#define DISTRO_DEBIAN7
+#endif
+
+#if LIBAVCODEC_VERSION_MAJOR == 54 && LIBAVCODEC_VERSION_MINOR == 35
+#define DISTRO_UBUNTU1404
+#endif
+
+
 #if !defined(DISTRO_DEBIAN6) && !defined(DISTRO_UBUNTU1104) && \
-    !defined(DISTRO_UBUNTU1111) && !defined(DISTRO_UBUNTU1204)
+    !defined(DISTRO_UBUNTU1111) && !defined(DISTRO_UBUNTU1204) && \
+    !defined(DISTRO_DEBIAN7) && !defined(DISTRO_UBUNTU1404)
 #warning unsupported distro
 #endif
 
@@ -141,9 +161,13 @@ static int get_decoded_video_dimension(PLAYER_STATE_INFO *psi, uint32_t *width, 
 static uint32_t get_decoded_video_format(PLAYER_STATE_INFO *psi);
 static int display_picture(PLAYER_STATE_INFO *psi);
 
-#if defined(DISTRO_UBUNTU1204) || defined(DISTRO_UBUNTU1111)
+#if defined(DISTRO_UBUNTU1204) || defined(DISTRO_UBUNTU1111) || defined(DISTRO_DEBIAN7) || defined(DISTRO_UBUNTU1404)
 #define CODEC_TYPE_VIDEO AVMEDIA_TYPE_VIDEO
 #define CODEC_TYPE_AUDIO AVMEDIA_TYPE_AUDIO
+#endif
+
+#if defined(DISTRO_DEBIAN7) || defined(DISTRO_UBUNTU1404)
+#define SAMPLE_FMT_U8 AV_SAMPLE_FMT_U8
 #endif
 
 void* init_context(int codec_id);
@@ -695,7 +719,7 @@ play_audio(PLAYER_STATE_INFO *psi, AVPacket *av_pkt)
 			len = avcodec_decode_audio3(psi->audio_codec_ctx, (int16_t *) dst, &frame_size, &pkt);
 		}
 #endif
-#if defined(DISTRO_UBUNTU1204) || defined(DISTRO_UBUNTU1111)
+#if defined(DISTRO_UBUNTU1204) || defined(DISTRO_UBUNTU1111) || defined(DISTRO_DEBIAN7)
 		if (1)
 		{
 			AVFrame *decoded_frame = avcodec_alloc_frame();

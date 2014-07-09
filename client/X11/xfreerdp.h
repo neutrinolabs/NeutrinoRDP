@@ -33,6 +33,9 @@ typedef struct xf_info xfInfo;
 #include "xf_window.h"
 #include "xf_monitor.h"
 
+/* 1 is grab keyboard, 2 is grab key */
+#define XF_GRAB_MODE 2
+
 #define GET_DST(_xfi, _dst) \
 do \
 { \

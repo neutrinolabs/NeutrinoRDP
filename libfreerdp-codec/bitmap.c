@@ -275,7 +275,7 @@ static int process_rle_plane(uint8* in, int width, int height, uint8* out, int s
 	indexh = 0;
 	while (indexh < height)
 	{
-		out = (org_out + width * height * 4) - ((indexh + 1) * width * 4);
+		out = org_out + indexh * width;
 		color = 0;
 		this_line = out;
 		indexw = 0;
@@ -296,14 +296,14 @@ static int process_rle_plane(uint8* in, int width, int height, uint8* out, int s
 				{
 					color = IN_UINT8_MV(in);
 					*out = color;
-					out += 4;
+					out += 1;
 					indexw++;
 					collen--;
 				}
 				while (replen > 0)
 				{
 					*out = color;
-					out += 4;
+					out += 1;
 					indexw++;
 					replen--;
 				}
@@ -336,17 +336,17 @@ static int process_rle_plane(uint8* in, int width, int height, uint8* out, int s
 						x = x >> 1;
 						color = x;
 					}
-					x = last_line[indexw * 4] + color;
+					x = last_line[indexw] + color;
 					*out = x;
-					out += 4;
+					out += 1;
 					indexw++;
 					collen--;
 				}
 				while (replen > 0)
 				{
-					x = last_line[indexw * 4] + color;
+					x = last_line[indexw] + color;
 					*out = x;
-					out += 4;
+					out += 1;
 					indexw++;
 					replen--;
 				}
@@ -358,36 +358,51 @@ static int process_rle_plane(uint8* in, int width, int height, uint8* out, int s
 	return (int) (in - org_in);
 }
 
-/**
- * process a raw color plane
- */
-static int process_raw_plane(uint8* srcData, int width, int height, uint8* dstData, int size)
+static int unsplit4(uint8* planes[], uint8* dstData, int width, int height)
 {
-	int x, y;
+	int index;
+	int jndex;
+	int pixel;
+	int offset;
+	int* dst32;
 
-	for (y = 0; y < height; y++)
+	offset = 0;
+	for (jndex = 0; jndex < height; jndex++)
 	{
-		for (x = 0; x < width; x++)
+		dst32 = (int*) dstData;
+		dst32 += width * height;
+		dst32 -= (jndex + 1) * width;
+		for (index = 0; index < width; index++)
 		{
-			dstData[(((height - y - 1) * width) + x) * 4] = srcData[((y * width) + x)];
+			pixel  = planes[0][offset] << 24;
+			pixel |= planes[1][offset] << 16;
+			pixel |= planes[2][offset] <<  8;
+			pixel |= planes[3][offset] <<  0;
+			*dst32 = pixel;
+			dst32++;
+			offset++;
 		}
 	}
-
-	return (width * height);
+	return 0;
 }
 
 /**
  * 4 byte bitmap decompress
  * RDP6_BITMAP_STREAM
  */
-static tbool bitmap_decompress4(uint8* srcData, uint8* dstData, int width, int height, int size)
+static tbool bitmap_decompress4(uint8* srcData, uint8* dstData, int width, int height, int size, uint8* temp)
 {
 	int RLE;
 	int code;
 	int NoAlpha;
 	int bytes_processed;
 	int total_processed;
+	uint8* planes[4];
 
+	planes[0] = temp;
+	planes[1] = planes[0] + width * height;
+	planes[2] = planes[1] + width * height;
+	planes[3] = planes[2] + width * height;
 	code = IN_UINT8_MV(srcData);
 	RLE = code & 0x10;
 
@@ -396,37 +411,56 @@ static tbool bitmap_decompress4(uint8* srcData, uint8* dstData, int width, int h
 
 	if (NoAlpha == 0)
 	{
-		bytes_processed = process_rle_plane(srcData, width, height, dstData + 3, size - total_processed);
-		total_processed += bytes_processed;
-		srcData += bytes_processed;
+		if (RLE != 0)
+		{
+			bytes_processed = process_rle_plane(srcData, width, height, planes[0], size - total_processed);
+			total_processed += bytes_processed;
+			srcData += bytes_processed;
+		}
+		else
+		{
+			planes[0] = srcData;
+			bytes_processed = width * height;
+			total_processed += bytes_processed;
+			srcData += bytes_processed;
+		}
+	}
+	else
+	{
+		memset(planes[0], 0xff, width * height);
 	}
 
 	if (RLE != 0)
 	{
-		bytes_processed = process_rle_plane(srcData, width, height, dstData + 2, size - total_processed);
+		bytes_processed = process_rle_plane(srcData, width, height, planes[1], size - total_processed);
 		total_processed += bytes_processed;
 		srcData += bytes_processed;
 
-		bytes_processed = process_rle_plane(srcData, width, height, dstData + 1, size - total_processed);
+		bytes_processed = process_rle_plane(srcData, width, height, planes[2], size - total_processed);
 		total_processed += bytes_processed;
 		srcData += bytes_processed;
 
-		bytes_processed = process_rle_plane(srcData, width, height, dstData + 0, size - total_processed);
+		bytes_processed = process_rle_plane(srcData, width, height, planes[3], size - total_processed);
 		total_processed += bytes_processed;
 	}
 	else
 	{
-		bytes_processed = process_raw_plane(srcData, width, height, dstData + 2, size - total_processed);
+		planes[1] = srcData;
+		bytes_processed = width * height;
 		total_processed += bytes_processed;
 		srcData += bytes_processed;
 
-		bytes_processed = process_raw_plane(srcData, width, height, dstData + 1, size - total_processed);
+		planes[2] = srcData;
+		bytes_processed = width * height;
 		total_processed += bytes_processed;
 		srcData += bytes_processed;
 
-		bytes_processed = process_raw_plane(srcData, width, height, dstData + 0, size - total_processed);
+		planes[3] = srcData;
+		bytes_processed = width * height;
 		total_processed += bytes_processed + 1;
 	}
+
+	unsplit4(planes, dstData, width, height);
 
 	return (size == total_processed) ? true : false;
 }
@@ -580,7 +614,7 @@ int save_bitmap(uint8* data, int width, int height, int bpp)
 /**
  * bitmap decompression routine
  */
-tbool bitmap_decompress(uint8* srcData, uint8* dstData, int width, int height, int size, int srcBpp, int dstBpp)
+tbool bitmap_decompress_ex(uint8* srcData, uint8* dstData, int width, int height, int size, int srcBpp, int dstBpp, bitmapExtra* be)
 {
 	if (srcBpp == 16 && dstBpp == 16)
 	{
@@ -591,7 +625,7 @@ tbool bitmap_decompress(uint8* srcData, uint8* dstData, int width, int height, i
 	}
 	else if (srcBpp == 32 && dstBpp == 32)
 	{
-		if (!bitmap_decompress4(srcData, dstData, width, height, size))
+		if (!bitmap_decompress4(srcData, dstData, width, height, size, be->temp))
 			return false;
 	}
 	else if (srcBpp == 15 && dstBpp == 15)
@@ -615,4 +649,20 @@ tbool bitmap_decompress(uint8* srcData, uint8* dstData, int width, int height, i
 	}
 
 	return true;
+}
+
+/**
+ * bitmap decompression routine
+ * do not use, for compatability
+ */
+tbool bitmap_decompress(uint8* srcData, uint8* dstData, int width, int height, int size, int srcBpp, int dstBpp)
+{
+	tbool rv;
+	struct bitmap_extra be;
+
+	memset(&be, 0, sizeof(be));
+	be.temp = (uint8*) xmalloc(32 * 1024);
+	rv = bitmap_decompress_ex(srcData, dstData, width, height, size, srcBpp, dstBpp, &be);
+	xfree(be.temp);
+	return rv;
 }

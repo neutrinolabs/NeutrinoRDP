@@ -175,11 +175,32 @@ static const char* const mcs_result_enumerated[] =
 */
 
 /**
+ * Read a DomainMCSPDU header and do check.
+ * @param s stream
+ * @param domainMCSPDU DomainMCSPDU type
+ * @param length TPKT length
+ * @return
+ */
+
+static tbool mcs_read_domain_mcspdu_header_check(STREAM* s, enum DomainMCSPDU* domainMCSPDU, uint16* length)
+{
+	enum DomainMCSPDU MCSPDU;
+
+	MCSPDU = *domainMCSPDU;
+	if (!mcs_read_domain_mcspdu_header(s, domainMCSPDU, length))
+		return false;
+	if (*domainMCSPDU != MCSPDU)
+		return false;
+	return true;
+}
+
+/**
  * Read a DomainMCSPDU header.
  * @param s stream
  * @param domainMCSPDU DomainMCSPDU type
  * @param length TPKT length
  * @return
+ * do not return false on MCSPDU
  */
 
 static tbool mcs_read_domain_mcspdu_header_check(STREAM* s, enum DomainMCSPDU* domainMCSPDU, uint16* length)
