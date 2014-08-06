@@ -203,18 +203,6 @@ static tbool mcs_read_domain_mcspdu_header_check(STREAM* s, enum DomainMCSPDU* d
  * do not return false on MCSPDU
  */
 
-static tbool mcs_read_domain_mcspdu_header_check(STREAM* s, enum DomainMCSPDU* domainMCSPDU, uint16* length)
-{
-	enum DomainMCSPDU MCSPDU;
-
-	MCSPDU = *domainMCSPDU;
-	if (!mcs_read_domain_mcspdu_header(s, domainMCSPDU, length))
-		return false;
-	if (*domainMCSPDU != MCSPDU)
-		return false;
-	return true;
-}
-
 /* do not return false on MCSPDU */
 tbool mcs_read_domain_mcspdu_header(STREAM* s, enum DomainMCSPDU* domainMCSPDU, uint16* length)
 {
