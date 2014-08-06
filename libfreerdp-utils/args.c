@@ -120,7 +120,7 @@ int freerdp_parse_args(rdpSettings* settings, int argc, char** argv,
 				"  --tsg <TSG Username>:<Password>:<Domain>:<TSG Adress>: Connect through TSG\n"
 				"  --ntlm: force NTLM authentication protocol version (1 or 2)\n"
 				"  --ignore-certificate: ignore verification of logon certificate\n"
-				"  --sec: force protocol security (rdp, tls or nla)\n"
+				"  --sec: force protocol security (none, rdp, tls or nla)\n"
 				"  --secure-checksum: use salted checksums with Standard RDP encryption\n"
 				"  --version: print version information\n"
 				"  --skip-bs: do not keep backing store\n"
@@ -649,7 +649,17 @@ int freerdp_parse_args(rdpSettings* settings, int argc, char** argv,
 				printf("missing protocol security\n");
 				return FREERDP_ARGS_PARSE_FAILURE;
 			}
-			if (strncmp("rdp", argv[index], 1) == 0) /* Standard RDP */
+			if (strncmp("none", argv[index], 1) == 0)
+			{
+				settings->rdp_security = true;
+				settings->tls_security = false;
+				settings->nla_security = false;
+				settings->encryption = true;
+				settings->encryption_method = ENCRYPTION_METHOD_NONE;
+				settings->encryption_level = ENCRYPTION_LEVEL_NONE;
+				printf("none set\n");
+			}
+			else if (strncmp("rdp", argv[index], 1) == 0) /* Standard RDP */
 			{
 				settings->rdp_security = true;
 				settings->tls_security = false;
