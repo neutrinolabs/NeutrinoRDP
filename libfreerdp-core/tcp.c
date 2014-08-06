@@ -53,7 +53,7 @@
 
 #include "tcp.h"
 
-#define LLOG_LEVEL 11
+#define LLOG_LEVEL 1
 #define LLOGLN(_level, _args) \
   do { if (_level < LLOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
 #define LHEXDUMP(_level, _args) \
