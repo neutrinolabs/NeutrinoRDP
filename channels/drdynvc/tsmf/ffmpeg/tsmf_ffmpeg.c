@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <freerdp/utils/memory.h>
 #include <freerdp/utils/event.h>
 #include <freerdp/plugins/tsmf.h>
@@ -54,7 +55,7 @@ static tbool tsmf_ffmpeg_init_context(ITSMFDecoder* decoder)
 {
 	TSMFFFmpegDecoder* mdecoder = (TSMFFFmpegDecoder*) decoder;
 
-	mdecoder->codec_context = avcodec_alloc_context();
+	mdecoder->codec_context = avcodec_alloc_context3(NULL);
 	if (!mdecoder->codec_context)
 	{
 		DEBUG_WARN("avcodec_alloc_context failed.");
@@ -174,9 +175,9 @@ static tbool tsmf_ffmpeg_prepare(ITSMFDecoder* decoder)
 {
 	TSMFFFmpegDecoder* mdecoder = (TSMFFFmpegDecoder*) decoder;
 
-	if (avcodec_open(mdecoder->codec_context, mdecoder->codec) < 0)
+	if (avcodec_open2(mdecoder->codec_context, mdecoder->codec, NULL) < 0)
 	{
-		DEBUG_WARN("avcodec_open failed.");
+		DEBUG_WARN("avcodec_open2 failed.");
 		return false;
 	}
 
@@ -240,9 +241,6 @@ static tbool tsmf_ffmpeg_set_format(ITSMFDecoder* decoder, TS_AM_MEDIA_TYPE* med
 			break;
 		case TSMF_SUB_TYPE_AC3:
 			mdecoder->codec_id = CODEC_ID_AC3;
-			break;
-		case TSMF_SUB_TYPE_MPEG4:
-			mdecoder->codec_id = CODEC_ID_MPEG4;
 			break;
 		default:
 			return false;
@@ -410,19 +408,29 @@ static tbool tsmf_ffmpeg_decode_audio(ITSMFDecoder* decoder, const uint8* data, 
 			}
 			dst += mdecoder->decoded_size;
 		}
+		
 		frame_size = mdecoder->decoded_size_max - mdecoder->decoded_size;
 #if LIBAVCODEC_VERSION_MAJOR < 52 || (LIBAVCODEC_VERSION_MAJOR == 52 && LIBAVCODEC_VERSION_MINOR <= 20)
 		len = avcodec_decode_audio2(mdecoder->codec_context,
-			(int16_t*) dst, &frame_size,
-			src, src_size);
+			(int16_t*) dst, &frame_size, src, src_size);
 #else
 		{
+            AVFrame* decoded_frame = avcodec_alloc_frame();
+			int got_frame = 0;
 			AVPacket pkt;
 			av_init_packet(&pkt);
 			pkt.data = (uint8*) src;
 			pkt.size = src_size;
-			len = avcodec_decode_audio3(mdecoder->codec_context,
-				(int16_t*) dst, &frame_size, &pkt);
+			len = avcodec_decode_audio4(mdecoder->codec_context, decoded_frame, &got_frame, &pkt);
+			
+			if (len >= 0 && got_frame)
+			{
+	            frame_size = av_samples_get_buffer_size(NULL, mdecoder->codec_context->channels,
+					decoded_frame->nb_samples, mdecoder->codec_context->sample_fmt, 1);
+				memcpy(dst, decoded_frame->data[0], frame_size);
+			}
+			
+			av_free(decoded_frame);
 		}
 #endif
 		if (len <= 0 || frame_size <= 0)
@@ -548,7 +556,6 @@ TSMFDecoderEntry(void)
 
 	if (!initialized)
 	{
-		avcodec_init();
 		avcodec_register_all();
 		initialized = true;
 	}
