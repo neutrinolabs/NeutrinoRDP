@@ -278,10 +278,10 @@ int transport_read_layer(rdpTransport* transport, uint8* data, int bytes)
 		{
 			case TRANSPORT_LAYER_TSG:
 			case TRANSPORT_LAYER_TLS:
-				status = tls_read(transport->tls_out, data + read, bytes - read);
+				status = tls_read(transport->tls_in, data + read, bytes - read);
 				break;
 			case TRANSPORT_LAYER_TCP:
-				status = tcp_read(transport->tcp_out, data + read, bytes - read);
+				status = tcp_read(transport->tcp_in, data + read, bytes - read);
 				break;
 			//case TRANSPORT_LAYER_TSG:
 				//status = tsg_read(transport->tsg, data + read, bytes - read);

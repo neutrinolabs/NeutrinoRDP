@@ -146,6 +146,12 @@ int tls_read(rdpTls* tls, uint8* data, int length)
 
 	LLOGLN(10, ("tls_read: in length %d", length));
 
+	if (tls == NULL)
+	{
+		LLOGLN(0, ("tls_read: error, tls not inited"));
+		return -1;
+	}
+
 	if (length < 1)
 	{
 		return 0;
