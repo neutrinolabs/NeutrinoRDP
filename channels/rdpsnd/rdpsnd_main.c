@@ -67,6 +67,12 @@ struct rdpsnd_plugin
 	int n_supported_formats;
 	int current_format;
 
+	/* for audio recording */
+	rdpsndFormat* supported_formats_rec;
+	int           n_supported_formats_rec;
+	int           current_format_rec;
+	int           rec_device_opened;
+
 	tbool expectingWave;
 	uint8 waveData[4];
 	uint16 waveDataSize;
@@ -103,9 +109,13 @@ static uint32 get_mstime(void)
 /* process the linked list of data that has queued to be sent */
 static void rdpsnd_process_interval(rdpSvcPlugin* plugin)
 {
+	int len;
+
 	rdpsndPlugin* rdpsnd = (rdpsndPlugin*)plugin;
 	struct data_out_item* item;
 	uint32 cur_time;
+
+	/* handle playback */
 
 	while (rdpsnd->data_out_list->head)
 	{
@@ -138,6 +148,25 @@ static void rdpsnd_process_interval(rdpSvcPlugin* plugin)
 	if (rdpsnd->data_out_list->head == NULL && !rdpsnd->is_open)
 	{
 		rdpsnd->plugin.interval_ms = 0;
+	}
+
+	/* handle recording */
+
+	if (rdpsnd->rec_device_opened)
+	{
+		STREAM* out = stream_new(4 + 32768);
+
+		len = rdpsnd->device->RecCapture(rdpsnd->device,
+						(char *) &out->data[4], 32768);
+		if (len)
+		{
+			stream_write_uint16(out, RDPSND_REC_DATA);
+			stream_write_uint16(out, len);
+			stream_set_pos(out, 4 + len);
+			svc_plugin_send((rdpSvcPlugin*) plugin, out);
+		}
+
+		rdpsnd->plugin.interval_ms = 10;
 	}
 }
 
@@ -386,6 +415,153 @@ static void rdpsnd_process_message_setvolume(rdpsndPlugin* rdpsnd, STREAM* data_
 		IFCALL(rdpsnd->device->SetVolume, rdpsnd->device, dwVolume);
 }
 
+static void rdpsnd_process_message_rec_negotiate(rdpsndPlugin* rdpsnd, STREAM* data_in)
+{
+	STREAM*       out;
+	uint16        numFormats;
+	uint16        wVersion;
+	rdpsndFormat* rec_formats;
+	rdpsndFormat* format;
+	int           pos;
+	int           i;
+
+	stream_seek_uint32(data_in); /* unused */
+	stream_seek_uint32(data_in); /* unused */
+	stream_read_uint16(data_in, numFormats);
+	stream_read_uint16(data_in, wVersion);
+
+	// RASH TODO this needs to be freed when plugin is freed
+	rec_formats = (rdpsndFormat *) xzalloc(numFormats * sizeof(rdpsndFormat));
+
+	for (i = 0; i < numFormats; i++)
+	{
+		format = &rec_formats[i];
+		stream_read_uint16(data_in, format->wFormatTag);
+		stream_read_uint16(data_in, format->nChannels);
+		stream_read_uint32(data_in, format->nSamplesPerSec);
+		stream_read_uint32(data_in, format->nAvgBytesPerSec);
+		stream_read_uint16(data_in, format->nBlockAlign);
+		stream_read_uint16(data_in, format->wBitsPerSample);
+		stream_read_uint16(data_in, format->cbSize);
+
+		if (format->cbSize > 0)
+		{
+			format->data = xmalloc(format->cbSize);
+			stream_read(data_in, format->data, format->cbSize);
+		}
+	}
+
+	rdpsnd->n_supported_formats_rec = numFormats;
+	if (numFormats > 0)
+	{
+		rdpsnd->supported_formats_rec = rec_formats;
+	}
+	else
+	{
+		xfree(rec_formats);
+		DEBUG_WARN("no recording formats supported");
+	}
+
+	/*
+	 * let server know we support the same recording formats
+	 */
+
+	out = stream_new(16 + (18 * numFormats));
+
+	stream_write_uint8(out, RDPSND_REC_NEGOTIATE);
+	stream_write_uint8(out, 1);
+	stream_write_uint16(out, 0); /* write real bytes to follow later */
+
+	stream_write_uint32(out, 0); /* flags - unused */
+	stream_write_uint32(out, 0); /* volume - unused */
+	stream_write_uint16(out, numFormats);
+	stream_write_uint16(out, 1); /* version */
+
+	for (i = 0; i < numFormats; i++)
+	{
+		format = &rec_formats[i];
+		stream_write_uint16(out, format->wFormatTag);
+		stream_write_uint16(out, format->nChannels);
+		stream_write_uint32(out, format->nSamplesPerSec);
+		stream_write_uint32(out, format->nAvgBytesPerSec);
+		stream_write_uint16(out, format->nBlockAlign);
+		stream_write_uint16(out, format->wBitsPerSample);
+		stream_write_uint16(out, 0); /* cbSize not used */
+	}
+
+	pos = stream_get_pos(out);
+	stream_set_pos(out, 2);
+	stream_write_uint16(out, pos - 4); /* real bytes to follow */
+	stream_set_pos(out, pos);
+
+	svc_plugin_send((rdpSvcPlugin*) rdpsnd, out);
+}
+
+static void
+rdpsnd_process_message_rec_start(rdpsndPlugin* rdpsnd, STREAM* data_in)
+{
+	int formatIndex;
+
+	/* if rec dev already opened, just return */
+	if (rdpsnd->rec_device_opened)
+	{
+		DEBUG_WARN("recording already in progress");
+		return;
+	}
+
+	/* if plugin not inited, cant continue */
+	if (!rdpsnd->device)
+	{
+		DEBUG_WARN("sound plugin in NULL");
+		return;
+	}
+
+	/* get recording format and save it */
+	stream_read_uint16(data_in, formatIndex);
+	if (formatIndex > rdpsnd->n_supported_formats_rec)
+	{
+		DEBUG_WARN("Unsupported recording format");
+		return;
+	}
+
+	rdpsnd->current_format_rec = formatIndex;
+
+	// RASH_TODO need to support latency
+	/* open recording device and set flag */
+	if (rdpsnd->device->RecOpen(rdpsnd->device, &rdpsnd->supported_formats_rec[formatIndex], 0))
+	{
+		DEBUG_WARN("Error opening recording device");
+		return;
+	}
+
+	rdpsnd->rec_device_opened = 1;
+	rdpsnd->plugin.interval_ms = 10;
+}
+
+static void
+rdpsnd_process_message_rec_stop(rdpsndPlugin* rdpsnd, STREAM* data_in)
+{
+	/* if rec dev not opened, just return */
+	if (!rdpsnd->rec_device_opened)
+	{
+		DEBUG_WARN("recording device not opened");
+		return;
+	}
+
+	/* if plugin not inited, cant continue */
+	if (!rdpsnd->device)
+	{
+		DEBUG_WARN("sound plugin in NULL");
+		return;
+	}
+
+	rdpsnd->device->RecClose(rdpsnd->device);
+	rdpsnd->rec_device_opened = 0;
+	rdpsnd->plugin.interval_ms = 0;
+
+	return;
+}
+
 static void rdpsnd_process_receive(rdpSvcPlugin* plugin, STREAM* data_in)
 {
 	rdpsndPlugin* rdpsnd = (rdpsndPlugin*)plugin;
@@ -421,6 +597,15 @@ static void rdpsnd_process_receive(rdpSvcPlugin* plugin, STREAM* data_in)
 			break;
 		case SNDC_SETVOLUME:
 			rdpsnd_process_message_setvolume(rdpsnd, data_in);
+			break;
+		case RDPSND_REC_NEGOTIATE:
+			rdpsnd_process_message_rec_negotiate(rdpsnd, data_in);
+			break;
+		case RDPSND_REC_START:
+			rdpsnd_process_message_rec_start(rdpsnd, data_in);
+			break;
+		case RDPSND_REC_STOP:
+			rdpsnd_process_message_rec_stop(rdpsnd, data_in);
 			break;
 		default:
 			DEBUG_WARN("unknown msgType %d", msgType);
@@ -520,6 +705,7 @@ static void rdpsnd_process_connect(rdpSvcPlugin* plugin)
 		default_data[0].size = sizeof(RDP_PLUGIN_DATA);
 		default_data[0].data[0] = "pulse";
 		default_data[0].data[1] = "";
+
 		if (!rdpsnd_load_device_plugin(rdpsnd, "pulse", default_data))
 		{
 			default_data[0].data[0] = "alsa";
@@ -560,4 +746,3 @@ static void rdpsnd_process_terminate(rdpSvcPlugin* plugin)
 
 DEFINE_SVC_PLUGIN(rdpsnd, "rdpsnd",
 	CHANNEL_OPTION_INITIALIZED | CHANNEL_OPTION_ENCRYPT_RDP)
-

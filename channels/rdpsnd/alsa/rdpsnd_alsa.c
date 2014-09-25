@@ -29,23 +29,31 @@
 
 #include "rdpsnd_main.h"
 
+static int rdpsnd_alsa_rec_close(rdpsndDevicePlugin* device);
+
 typedef struct rdpsnd_alsa_plugin rdpsndAlsaPlugin;
 struct rdpsnd_alsa_plugin
 {
 	rdpsndDevicePlugin device;
 
-	char* device_name;
-	snd_pcm_t* out_handle;
-	uint32 source_rate;
-	uint32 actual_rate;
-	snd_pcm_format_t format;
-	uint32 source_channels;
-	uint32 actual_channels;
-	int bytes_per_channel;
-	int wformat;
-	int block_size;
-	int latency;
-	ADPCM adpcm;
+	char*             device_name;
+	snd_pcm_t*        out_handle;
+	snd_pcm_t*        rec_handle;
+	uint32            source_rate;
+	uint32            actual_rate;
+	snd_pcm_format_t  format;
+	uint32            source_channels;
+	uint32            actual_channels;
+	int               bytes_per_channel;
+	int               wformat;
+	int               block_size;
+	int               latency;
+	ADPCM             adpcm;
+
+	/* for recording */
+	int rec_dev_opened;
+	int rec_bytes_per_sample;
+	int rec_num_channels;
 };
 
 static void rdpsnd_alsa_set_params(rdpsndAlsaPlugin* alsa)
@@ -162,7 +170,7 @@ static void rdpsnd_alsa_open(rdpsndDevicePlugin* device, rdpsndFormat* format, i
 	DEBUG_SVC("opening");
 
 	error = snd_pcm_open(&alsa->out_handle, alsa->device_name,
-		SND_PCM_STREAM_PLAYBACK, 0);
+		             SND_PCM_STREAM_PLAYBACK, 0);
 	if (error < 0)
 	{
 		DEBUG_WARN("snd_pcm_open failed");
@@ -186,6 +194,169 @@ static void rdpsnd_alsa_close(rdpsndDevicePlugin* device)
 		snd_pcm_close(alsa->out_handle);
 		alsa->out_handle = 0;
 	}
+}
+
+static int rdpsnd_alsa_rec_set_format(rdpsndDevicePlugin* device, rdpsndFormat* format, int latency)
+{
+	snd_pcm_hw_params_t* hwparams = NULL;
+	int                  err;
+	unsigned int         buffertime;
+	short                samplewidth;
+	int                  audiochannels;
+	unsigned int         rate;
+
+	rdpsndAlsaPlugin*    alsa = (rdpsndAlsaPlugin*)device;
+	snd_pcm_t*           pcm  = alsa->rec_handle;
+
+	samplewidth = format->wBitsPerSample / 8;
+
+	if ((err = snd_pcm_hw_params_malloc(&hwparams)) < 0)
+	{
+		DEBUG_SVC("snd_pcm_hw_params_malloc() failed");
+		return -1;
+	}
+
+	if ((err = snd_pcm_hw_params_any(pcm, hwparams)) < 0)
+	{
+		DEBUG_SVC("snd_pcm_hw_params_any() failed");
+		return -1;
+	}
+
+	if ((err = snd_pcm_hw_params_set_access(pcm, hwparams, SND_PCM_ACCESS_RW_INTERLEAVED)) < 0)
+	{
+		DEBUG_SVC("snd_pcm_hw_params_set_access() failed");
+		return -1;
+	}
+
+	if (format->wBitsPerSample == 16)
+	{
+		if ((err = snd_pcm_hw_params_set_format(pcm, hwparams, SND_PCM_FORMAT_S16_LE)) < 0)
+		{
+			DEBUG_SVC("snd_pcm_hw_params_set_format() failed");
+			return -1;
+		}
+	}
+	else
+	{
+		if ((err = snd_pcm_hw_params_set_format(pcm, hwparams, SND_PCM_FORMAT_S8)) < 0)
+		{
+			DEBUG_SVC("snd_pcm_hw_params_set_format() failed");
+			return -1;
+		}
+	}
+
+#if 0
+	if ((err = snd_pcm_hw_params_set_rate_resample(pcm, hwparams, 1)) < 0)
+	{
+		DEBUG_SVC("snd_pcm_hw_params_set_rate_resample() failed");
+		return -1;
+	}
+#endif
+
+	rate = format->nSamplesPerSec;
+	if ((err = snd_pcm_hw_params_set_rate_near(pcm, hwparams, &rate, 0)) < 0)
+	{
+		DEBUG_SVC("snd_pcm_hw_params_set_rate_near() failed");
+		return -1;
+	}
+
+	audiochannels = format->nChannels;
+	if ((err = snd_pcm_hw_params_set_channels(pcm, hwparams, format->nChannels)) < 0)
+	{
+		DEBUG_SVC("snd_pcm_hw_params_set_channels() failed");
+		return -1;
+	}
+
+	buffertime = 500000;	/* microseconds */
+	if ((err = snd_pcm_hw_params_set_buffer_time_near(pcm, hwparams, &buffertime, 0)) < 0)
+	{
+		DEBUG_SVC("snd_pcm_hw_params_set_buffer_time_near() failed");
+		return -1;
+	}
+
+	if ((err = snd_pcm_hw_params(pcm, hwparams)) < 0)
+	{
+		DEBUG_SVC("snd_pcm_hw_params() failed");
+		return -1;
+	}
+
+	snd_pcm_hw_params_free(hwparams);
+
+	if ((err = snd_pcm_prepare(pcm)) < 0)
+	{
+		DEBUG_SVC("snd_pcm_prepare() failed");
+		return -1;
+	}
+
+	return 0;
+}
+
+static int rdpsnd_alsa_rec_open(rdpsndDevicePlugin* device, rdpsndFormat* format, int latency)
+{
+	rdpsndAlsaPlugin* alsa = (rdpsndAlsaPlugin*) device;
+	int               err;
+
+	/* if recording device already open, just return */
+	if (alsa->rec_handle != 0)
+	{	DEBUG_WARN("Recording device already open");
+		return -1;
+	}
+
+	/* open recording device */
+	if (snd_pcm_open(&alsa->rec_handle, alsa->device_name,
+			 SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK) < 0)
+	{
+		DEBUG_WARN("Error opening alsa device: %s", alsa->device_name);
+		return -1;
+	}
+
+	/* set recording format */
+	if (rdpsnd_alsa_rec_set_format(device, format, latency))
+	{
+		rdpsnd_alsa_rec_close(device);
+		DEBUG_WARN("Error setting recording format on alsa device: %s", alsa->device_name);
+		return -1;
+	}
+
+	/* start recording */
+	if ((err = snd_pcm_start(alsa->rec_handle)) < 0)
+		DEBUG_SVC("snd_pcm_start() failed");
+
+	alsa->rec_bytes_per_sample = format->wBitsPerSample / 8;
+	alsa->rec_num_channels = format->nChannels;
+
+	return 0;
+}
+
+static int rdpsnd_alsa_rec_close(rdpsndDevicePlugin* device)
+{
+	rdpsndAlsaPlugin* alsa = (rdpsndAlsaPlugin*) device;
+
+	if (alsa->rec_handle == 0)
+		return 0;
+
+	snd_pcm_drain(alsa->rec_handle);
+	snd_pcm_close(alsa->rec_handle);
+	alsa->rec_handle = 0;
+
+	return 0;
+}
+
+static int rdpsnd_alsa_rec_capture(rdpsndDevicePlugin* device, char* data_buffer, int buf_len)
+{
+	rdpsndAlsaPlugin* alsa = (rdpsndAlsaPlugin*) device;
+	int               len;
+
+	len = snd_pcm_readi(alsa->rec_handle, data_buffer,
+			buf_len / (alsa->rec_bytes_per_sample * alsa->rec_num_channels));
+
+	if (len < 0)
+	{
+		snd_pcm_prepare(alsa->rec_handle);
+		len = 0;
+	}
+
+	return len * alsa->rec_bytes_per_sample * alsa->rec_num_channels;
 }
 
 static void rdpsnd_alsa_free(rdpsndDevicePlugin* device)
@@ -335,6 +506,9 @@ int FreeRDPRdpsndDeviceEntry(PFREERDP_RDPSND_DEVICE_ENTRY_POINTS pEntryPoints)
 	alsa->device.Play = rdpsnd_alsa_play;
 	alsa->device.Start = rdpsnd_alsa_start;
 	alsa->device.Close = rdpsnd_alsa_close;
+	alsa->device.RecOpen = rdpsnd_alsa_rec_open;
+	alsa->device.RecClose = rdpsnd_alsa_rec_close;
+	alsa->device.RecCapture = rdpsnd_alsa_rec_capture;
 	alsa->device.Free = rdpsnd_alsa_free;
 
 	data = pEntryPoints->plugin_data;

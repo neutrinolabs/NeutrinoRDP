@@ -20,6 +20,12 @@
 #ifndef __RDPSND_MAIN_H
 #define __RDPSND_MAIN_H
 
+#define RDPSND_REC_NEGOTIATE	39
+#define RDPSND_REC_START		40
+#define RDPSND_REC_STOP			41
+#define RDPSND_REC_DATA			42
+#define RDPSND_REC_SET_VOLUME	43
+
 typedef struct rdpsnd_plugin rdpsndPlugin;
 
 typedef struct rdpsnd_format rdpsndFormat;
@@ -28,6 +34,7 @@ struct rdpsnd_format
 	uint16 wFormatTag;
 	uint16 nChannels;
 	uint32 nSamplesPerSec;
+	uint32 nAvgBytesPerSec;
 	uint16 nBlockAlign;
 	uint16 wBitsPerSample;
 	uint16 cbSize;
@@ -44,6 +51,9 @@ typedef void (*pcPlay) (rdpsndDevicePlugin* device, uint8* data, int size);
 typedef void (*pcStart) (rdpsndDevicePlugin* device);
 typedef void (*pcClose) (rdpsndDevicePlugin* device);
 typedef void (*pcFree) (rdpsndDevicePlugin* device);
+typedef int  (*pcRecOpen) (rdpsndDevicePlugin* device, rdpsndFormat* format, int latency);
+typedef int  (*pcRecClose) (rdpsndDevicePlugin* device);
+typedef int  (*pcRecCapture) (rdpsndDevicePlugin* device, char* data_bufer, int buf_len);
 
 struct rdpsnd_device_plugin
 {
@@ -55,6 +65,9 @@ struct rdpsnd_device_plugin
 	pcStart Start;
 	pcClose Close;
 	pcFree Free;
+    pcRecOpen RecOpen;
+    pcRecClose RecClose;
+    pcRecCapture RecCapture;
 };
 
 #define RDPSND_DEVICE_EXPORT_FUNC_NAME "FreeRDPRdpsndDeviceEntry"
@@ -73,4 +86,3 @@ typedef FREERDP_RDPSND_DEVICE_ENTRY_POINTS* PFREERDP_RDPSND_DEVICE_ENTRY_POINTS;
 typedef int (*PFREERDP_RDPSND_DEVICE_ENTRY)(PFREERDP_RDPSND_DEVICE_ENTRY_POINTS pEntryPoints);
 
 #endif /* __RDPSND_MAIN_H */
-
