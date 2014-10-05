@@ -43,6 +43,8 @@ struct rdpsnd_format
 
 typedef struct rdpsnd_device_plugin rdpsndDevicePlugin;
 
+typedef void (*SourceDataAvailable) (void* user_data, STREAM* s, int buf_len);
+
 typedef boolean (*pcFormatSupported) (rdpsndDevicePlugin* device, rdpsndFormat* format);
 typedef void (*pcOpen) (rdpsndDevicePlugin* device, rdpsndFormat* format, int latency);
 typedef void (*pcSetFormat) (rdpsndDevicePlugin* device, rdpsndFormat* format, int latency);
@@ -51,7 +53,7 @@ typedef void (*pcPlay) (rdpsndDevicePlugin* device, uint8* data, int size);
 typedef void (*pcStart) (rdpsndDevicePlugin* device);
 typedef void (*pcClose) (rdpsndDevicePlugin* device);
 typedef void (*pcFree) (rdpsndDevicePlugin* device);
-typedef int  (*pcRecOpen) (rdpsndDevicePlugin* device, rdpsndFormat* format, int latency);
+typedef int  (*pcRecOpen) (rdpsndDevicePlugin* device, rdpsndFormat* format, int latency, SourceDataAvailable sda, void* plugin);
 typedef int  (*pcRecClose) (rdpsndDevicePlugin* device);
 typedef int  (*pcRecCapture) (rdpsndDevicePlugin* device, char* data_bufer, int buf_len);
 
@@ -65,9 +67,9 @@ struct rdpsnd_device_plugin
 	pcStart Start;
 	pcClose Close;
 	pcFree Free;
-    pcRecOpen RecOpen;
-    pcRecClose RecClose;
-    pcRecCapture RecCapture;
+	pcRecOpen RecOpen;
+	pcRecClose RecClose;
+	pcRecCapture RecCapture;
 };
 
 #define RDPSND_DEVICE_EXPORT_FUNC_NAME "FreeRDPRdpsndDeviceEntry"

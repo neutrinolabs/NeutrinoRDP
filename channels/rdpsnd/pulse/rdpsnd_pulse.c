@@ -28,22 +28,45 @@
 
 #include "rdpsnd_main.h"
 
+typedef void (*SourceDataAvailable) (void* user_data, STREAM* s, int buf_len);
+
 typedef struct rdpsnd_pulse_plugin rdpsndPulsePlugin;
 struct rdpsnd_pulse_plugin
 {
-	rdpsndDevicePlugin device;
+	rdpsndDevicePlugin    device;
 
-	char* device_name;
+	char*                 device_name;
 	pa_threaded_mainloop *mainloop;
-	pa_context *context;
-	pa_sample_spec sample_spec;
-	pa_stream *stream;
-	int format;
-	int block_size;
-	int latency;
-	ADPCM adpcm;
+	pa_context           *context;
+	pa_sample_spec        sample_spec;
+	pa_stream            *stream;
+	int                   format;
+	int                   block_size;
+	int                   latency;
+	ADPCM                 adpcm;
+
+	/* for recording */
+	SourceDataAvailable   rec_src_data_available;
+	void*                 rec_rdpsnd_plugin;
+
+	pa_stream            *rec_stream;
+	pa_sample_spec        rec_sample_spec;
+	ADPCM                 rec_adpcm;
+	char*                 rec_device_name;
+	int 		      rec_dev_opened;
+	int 		      rec_num_channels;
+
+	int                   rec_format;
+	int                   rec_block_size;
+	int		      rec_bytes_per_frame;
+	uint32 		      rec_frames_per_packet;
 };
 
+static int rdpsnd_pulse_rec_close(rdpsndDevicePlugin* device);
+
+/**
+ * Called whenever there is a change in context state
+ *****************************************************************************/
 static void rdpsnd_pulse_context_state_callback(pa_context* context, void* userdata)
 {
 	rdpsndPulsePlugin* pulse = (rdpsndPulsePlugin*)userdata;
@@ -69,6 +92,9 @@ static void rdpsnd_pulse_context_state_callback(pa_context* context, void* userd
 	}
 }
 
+/**
+ * Connect to default pulseaudio server
+ *****************************************************************************/
 static tbool rdpsnd_pulse_connect(rdpsndDevicePlugin* device)
 {
 	rdpsndPulsePlugin* pulse = (rdpsndPulsePlugin*)device;
@@ -157,11 +183,67 @@ static void rdpsnd_pulse_stream_state_callback(pa_stream* stream, void* userdata
 	}
 }
 
+static void rdpsnd_rec_pulse_stream_state_callback(pa_stream* stream, void* userdata)
+{
+	rdpsndPulsePlugin* pulse = (rdpsndPulsePlugin *) userdata;
+	pa_stream_state_t  state;
+
+	state = pa_stream_get_state(stream);
+	switch (state)
+	{
+		case PA_STREAM_READY:
+			DEBUG_SVC("PA_STREAM_READY");
+			pa_threaded_mainloop_signal(pulse->mainloop, 0);
+			break;
+
+		case PA_STREAM_FAILED:
+		case PA_STREAM_TERMINATED:
+			DEBUG_SVC("state %d", (int)state);
+			pa_threaded_mainloop_signal(pulse->mainloop, 0);
+			break;
+
+		default:
+			DEBUG_SVC("state %d", (int)state);
+			break;
+	}
+}
+
 static void rdpsnd_pulse_stream_request_callback(pa_stream* stream, size_t length, void* userdata)
 {
 	rdpsndPulsePlugin* pulse = (rdpsndPulsePlugin*)userdata;
 
 	pa_threaded_mainloop_signal(pulse->mainloop, 0);
+}
+
+static void rdpsnd_rec_pulse_stream_request_callback(pa_stream* stream, size_t length, void* userdata)
+{
+	STREAM*      out_stream;
+	size_t       nbytes;
+	const void*  data;
+
+	rdpsndPulsePlugin* pulse = (rdpsndPulsePlugin*) userdata;
+
+	pa_stream_peek(stream, &data, &nbytes);
+
+	/* if there is no data, just return */
+	if (data == NULL && nbytes == 0)
+		return;
+
+	/* did we got a hole? */
+	if (data == NULL && nbytes != 0)
+	{
+		pa_stream_drop(stream);
+		return;
+	}
+
+	/* we have valid data */
+
+	out_stream = stream_new(4 + nbytes);
+	stream_seek(out_stream, 4);
+	stream_write(out_stream, data, nbytes);
+
+	pulse->rec_src_data_available(pulse->rec_rdpsnd_plugin, out_stream, nbytes);
+	pa_stream_drop(stream);
 }
 
 static void rdpsnd_pulse_close(rdpsndDevicePlugin* device)
@@ -180,7 +262,7 @@ static void rdpsnd_pulse_close(rdpsndDevicePlugin* device)
 	pa_threaded_mainloop_unlock(pulse->mainloop);
 }
 
-static void rdpsnd_pulse_set_format_spec(rdpsndPulsePlugin* pulse, rdpsndFormat* format)
+static void rdpsnd_pulse_set_format_spec(rdpsndPulsePlugin* pulse, rdpsndFormat* format, int rec)
 {
 	pa_sample_spec sample_spec = { 0 };
 
@@ -216,9 +298,18 @@ static void rdpsnd_pulse_set_format_spec(rdpsndPulsePlugin* pulse, rdpsndFormat*
 			break;
 	}
 
-	pulse->sample_spec = sample_spec;
-	pulse->format = format->wFormatTag;
-	pulse->block_size = format->nBlockAlign;
+	if (rec)
+	{
+		pulse->rec_sample_spec = sample_spec;
+		pulse->rec_format = format->wFormatTag;
+		pulse->rec_block_size = format->nBlockAlign;
+	}
+	else
+	{
+		pulse->sample_spec = sample_spec;
+		pulse->format = format->wFormatTag;
+		pulse->block_size = format->nBlockAlign;
+	}
 }
 
 static void rdpsnd_pulse_open(rdpsndDevicePlugin* device, rdpsndFormat* format, int latency)
@@ -235,7 +326,7 @@ static void rdpsnd_pulse_open(rdpsndDevicePlugin* device, rdpsndFormat* format, 
 		return;
 	}
 
-	rdpsnd_pulse_set_format_spec(pulse, format);
+	rdpsnd_pulse_set_format_spec(pulse, format, 0);
 	pulse->latency = latency;
 
 	if (pa_sample_spec_valid(&pulse->sample_spec) == 0)
@@ -329,6 +420,7 @@ static void rdpsnd_pulse_free(rdpsndDevicePlugin* device)
 		pulse->mainloop = NULL;
 	}
 	xfree(pulse->device_name);
+	xfree(pulse->rec_device_name);
 	xfree(pulse);
 }
 
@@ -455,6 +547,116 @@ static void rdpsnd_pulse_start(rdpsndDevicePlugin* device)
 	pa_stream_trigger(pulse->stream, NULL, NULL);
 }
 
+/******************************************************************************
+ *                                                                            *
+ *                             Recording code                                 *
+ *                                                                            *
+ *****************************************************************************/
+
+static int rdpsnd_pulse_rec_open(rdpsndDevicePlugin* device,
+				rdpsndFormat* format, int latency,
+				SourceDataAvailable sda, void* plugin)
+{
+	pa_stream_state_t  state;
+	pa_buffer_attr     buffer_attr = { 0 };
+	rdpsndPulsePlugin* pulse = (rdpsndPulsePlugin*) device;
+
+	pulse->rec_src_data_available = sda;
+	pulse->rec_rdpsnd_plugin = plugin;
+
+	if (!pulse->context)
+		return -1;
+
+	rdpsnd_pulse_set_format_spec(pulse, format, 1);
+
+	if (!pulse->rec_sample_spec.rate || pulse->rec_stream)
+		return -1;
+
+	pa_threaded_mainloop_lock(pulse->mainloop);
+
+	pulse->rec_stream = pa_stream_new(pulse->context, "freerdp_rec",
+				          &pulse->rec_sample_spec, NULL);
+	if (!pulse->rec_stream)
+	{
+		pa_threaded_mainloop_unlock(pulse->mainloop);
+		DEBUG_SVC("pa_stream_new failed (%d)", pa_context_errno(pulse->context));
+		return -1;
+	}
+
+	pulse->rec_bytes_per_frame = pa_frame_size(&pulse->rec_sample_spec);
+	pa_stream_set_state_callback(pulse->rec_stream, rdpsnd_rec_pulse_stream_state_callback, pulse);
+	pa_stream_set_read_callback(pulse->rec_stream, rdpsnd_rec_pulse_stream_request_callback, pulse);
+	buffer_attr.maxlength = (uint32_t) -1;
+	buffer_attr.tlength = (uint32_t) -1;
+	buffer_attr.prebuf = (uint32_t) -1;
+	buffer_attr.minreq = (uint32_t) -1;
+
+	/* 500ms latency */
+	buffer_attr.fragsize = pa_usec_to_bytes(500000, &pulse->rec_sample_spec);
+
+	if (pa_stream_connect_record(pulse->rec_stream,
+				     pulse->rec_device_name[0] ? pulse->rec_device_name : NULL,
+				     &buffer_attr, PA_STREAM_ADJUST_LATENCY) < 0)
+	{
+		pa_threaded_mainloop_unlock(pulse->mainloop);
+		DEBUG_WARN("pa_stream_connect_playback failed (%d)",
+			   pa_context_errno(pulse->context));
+
+		return -1;
+	}
+
+	for (;;)
+	{
+		state = pa_stream_get_state(pulse->rec_stream);
+		if (state == PA_STREAM_READY)
+			break;
+
+		if (!PA_STREAM_IS_GOOD(state))
+		{
+			DEBUG_WARN("bad stream state (%d)",
+				   pa_context_errno(pulse->context));
+			break;
+		}
+
+		pa_threaded_mainloop_wait(pulse->mainloop);
+	}
+
+	pa_threaded_mainloop_unlock(pulse->mainloop);
+
+	if (state == PA_STREAM_READY)
+	{
+		memset(&pulse->rec_adpcm, 0, sizeof(ADPCM));
+		DEBUG_SVC("connected");
+	}
+	else
+	{
+		rdpsnd_pulse_rec_close(device);
+	}
+
+	return 0;
+}
+
+static int rdpsnd_pulse_rec_close(rdpsndDevicePlugin* device)
+{
+	rdpsndPulsePlugin* pulse = (rdpsndPulsePlugin*) device;
+
+	if (!pulse->context || !pulse->rec_stream)
+		return -1;
+
+	pa_threaded_mainloop_lock(pulse->mainloop);
+	pa_stream_disconnect(pulse->rec_stream);
+	pa_stream_unref(pulse->rec_stream);
+	pulse->rec_stream = NULL;
+	pa_threaded_mainloop_unlock(pulse->mainloop);
+
+	return 0;
+}
+
+static int rdpsnd_pulse_rec_capture(rdpsndDevicePlugin* device, char* data_buffer, int buf_len)
+{
+    return 0;
+}
+
 int FreeRDPRdpsndDeviceEntry(PFREERDP_RDPSND_DEVICE_ENTRY_POINTS pEntryPoints)
 {
 	rdpsndPulsePlugin* pulse;
@@ -471,22 +673,34 @@ int FreeRDPRdpsndDeviceEntry(PFREERDP_RDPSND_DEVICE_ENTRY_POINTS pEntryPoints)
 	pulse->device.Close = rdpsnd_pulse_close;
 	pulse->device.Free = rdpsnd_pulse_free;
 
+	pulse->device.RecOpen = rdpsnd_pulse_rec_open;
+	pulse->device.RecClose = rdpsnd_pulse_rec_close;
+	pulse->device.RecCapture = rdpsnd_pulse_rec_capture;
+
 	data = pEntryPoints->plugin_data;
+
 	if (data && strcmp((char*)data->data[0], "pulse") == 0)
 	{
+#if 0 // RASH_TODO this block causes segfaults
 		if(strlen((char*)data->data[1]) > 0)
 			pulse->device_name = xstrdup((char*)data->data[1]);
 		else
 			pulse->device_name = NULL;
-	}
+#else
+		pulse->device_name = NULL;
+		pulse->rec_device_name = strdup("");
+#endif
+    }
 
 	pulse->mainloop = pa_threaded_mainloop_new();
+
 	if (!pulse->mainloop)
 	{
 		DEBUG_WARN("pa_threaded_mainloop_new failed");
 		rdpsnd_pulse_free((rdpsndDevicePlugin*)pulse);
 		return 1;
 	}
+
 	pulse->context = pa_context_new(pa_threaded_mainloop_get_api(pulse->mainloop), "freerdp");
 	if (!pulse->context)
 	{
@@ -494,6 +708,7 @@ int FreeRDPRdpsndDeviceEntry(PFREERDP_RDPSND_DEVICE_ENTRY_POINTS pEntryPoints)
 		rdpsnd_pulse_free((rdpsndDevicePlugin*)pulse);
 		return 1;
 	}
+
 	pa_context_set_state_callback(pulse->context, rdpsnd_pulse_context_state_callback, pulse);
 	if (!rdpsnd_pulse_connect((rdpsndDevicePlugin*)pulse))
 	{
@@ -506,4 +721,3 @@ int FreeRDPRdpsndDeviceEntry(PFREERDP_RDPSND_DEVICE_ENTRY_POINTS pEntryPoints)
 
 	return 0;
 }
-

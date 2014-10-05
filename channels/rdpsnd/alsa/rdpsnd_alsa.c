@@ -29,6 +29,8 @@
 
 #include "rdpsnd_main.h"
 
+typedef void (*SourceDataAvailable) (void* user_data, STREAM* s, int buf_len);
+
 static int rdpsnd_alsa_rec_close(rdpsndDevicePlugin* device);
 
 typedef struct rdpsnd_alsa_plugin rdpsndAlsaPlugin;
@@ -291,7 +293,9 @@ static int rdpsnd_alsa_rec_set_format(rdpsndDevicePlugin* device, rdpsndFormat* 
 	return 0;
 }
 
-static int rdpsnd_alsa_rec_open(rdpsndDevicePlugin* device, rdpsndFormat* format, int latency)
+static int rdpsnd_alsa_rec_open(rdpsndDevicePlugin* device,
+				rdpsndFormat* format, int latency,
+				SourceDataAvailable sda, void* plugin)
 {
 	rdpsndAlsaPlugin* alsa = (rdpsndAlsaPlugin*) device;
 	int               err;
@@ -506,10 +510,11 @@ int FreeRDPRdpsndDeviceEntry(PFREERDP_RDPSND_DEVICE_ENTRY_POINTS pEntryPoints)
 	alsa->device.Play = rdpsnd_alsa_play;
 	alsa->device.Start = rdpsnd_alsa_start;
 	alsa->device.Close = rdpsnd_alsa_close;
+	alsa->device.Free = rdpsnd_alsa_free;
+
 	alsa->device.RecOpen = rdpsnd_alsa_rec_open;
 	alsa->device.RecClose = rdpsnd_alsa_rec_close;
 	alsa->device.RecCapture = rdpsnd_alsa_rec_capture;
-	alsa->device.Free = rdpsnd_alsa_free;
 
 	data = pEntryPoints->plugin_data;
 	if (data && strcmp((char*)data->data[0], "alsa") == 0)
@@ -532,4 +537,3 @@ int FreeRDPRdpsndDeviceEntry(PFREERDP_RDPSND_DEVICE_ENTRY_POINTS pEntryPoints)
 
 	return 0;
 }
-

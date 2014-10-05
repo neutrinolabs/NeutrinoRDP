@@ -106,6 +106,29 @@ static uint32 get_mstime(void)
 	return (tp.tv_sec * 1000) + (tp.tv_usec / 1000);
 }
 
+/**
+ * Called whenever pulseaudio has source (microphone) data
+ *
+ *****************************************************************************/
+static void rdpsnd_source_data_callback(void* plugin, STREAM* s, int buf_length)
+{
+	rdpsndPlugin* rdpsnd = (rdpsndPlugin*) plugin;
+	int           pos;
+
+	/* save current stream pos */
+	pos = stream_get_pos(s);
+
+	/* write header at beginning of stream */
+	stream_set_pos(s, 0);
+	stream_write_uint16(s, RDPSND_REC_DATA);
+	stream_write_uint16(s, buf_length);
+
+	/* restore stream pos */
+	stream_set_pos(s, pos);
+
+	svc_plugin_send((rdpSvcPlugin*) &rdpsnd->plugin, s);
+}
+
 /* process the linked list of data that has queued to be sent */
 static void rdpsnd_process_interval(rdpSvcPlugin* plugin)
 {
@@ -174,12 +197,23 @@ static void rdpsnd_free_supported_formats(rdpsndPlugin* rdpsnd)
 {
 	uint16 i;
 
+	/* free playback formats */
 	for (i = 0; i < rdpsnd->n_supported_formats; i++)
 		xfree(rdpsnd->supported_formats[i].data);
+
 	xfree(rdpsnd->supported_formats);
 
 	rdpsnd->supported_formats = NULL;
 	rdpsnd->n_supported_formats = 0;
+
+	/* free recording formats */
+	for (i = 0; i < rdpsnd->n_supported_formats_rec; i++)
+		xfree(rdpsnd->supported_formats_rec[i].data);
+
+	xfree(rdpsnd->supported_formats_rec);
+
+	rdpsnd->supported_formats_rec = NULL;
+	rdpsnd->n_supported_formats_rec = 0;
 }
 
 /* receives a list of server supported formats and returns a list
@@ -430,7 +464,6 @@ static void rdpsnd_process_message_rec_negotiate(rdpsndPlugin* rdpsnd, STREAM* d
 	stream_read_uint16(data_in, numFormats);
 	stream_read_uint16(data_in, wVersion);
 
-	// RASH TODO this needs to be freed when plugin is freed
 	rec_formats = (rdpsndFormat *) xzalloc(numFormats * sizeof(rdpsndFormat));
 
 	for (i = 0; i < numFormats; i++)
@@ -509,7 +542,7 @@ rdpsnd_process_message_rec_start(rdpsndPlugin* rdpsnd, STREAM* data_in)
 		return;
 	}
 
-	/* if plugin not inited, cant continue */
+	/* if plugin not inited, can't continue */
 	if (!rdpsnd->device)
 	{
 		DEBUG_WARN("sound plugin in NULL");
@@ -526,9 +559,10 @@ rdpsnd_process_message_rec_start(rdpsndPlugin* rdpsnd, STREAM* data_in)
 
 	rdpsnd->current_format_rec = formatIndex;
 
-	// RASH_TODO need to support latency
 	/* open recording device and set flag */
-	if (rdpsnd->device->RecOpen(rdpsnd->device, &rdpsnd->supported_formats_rec[formatIndex], 0))
+	if (rdpsnd->device->RecOpen(rdpsnd->device,
+		&rdpsnd->supported_formats_rec[formatIndex], 0,
+		(SourceDataAvailable) rdpsnd_source_data_callback, (void*) rdpsnd))
 	{
 		DEBUG_WARN("Error opening recording device");
 		return;
@@ -631,7 +665,9 @@ static tbool rdpsnd_load_device_plugin(rdpsndPlugin* rdpsnd, const char* name, R
 	char* fullname;
 
 	if (strrchr(name, '.') != NULL)
+    {
 		entry = (PFREERDP_RDPSND_DEVICE_ENTRY)freerdp_load_plugin(name, RDPSND_DEVICE_EXPORT_FUNC_NAME);
+    }
 	else
 	{
 		fullname = xzalloc(strlen(name) + 8);
@@ -653,6 +689,7 @@ static tbool rdpsnd_load_device_plugin(rdpsndPlugin* rdpsnd, const char* name, R
 		DEBUG_WARN("%s entry returns error.", name);
 		return false;
 	}
+
 	return true;
 }
 
