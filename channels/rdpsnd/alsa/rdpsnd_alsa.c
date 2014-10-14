@@ -29,7 +29,7 @@
 
 #include "rdpsnd_main.h"
 
-typedef void (*SourceDataAvailable) (void* user_data, STREAM* s, int buf_len);
+typedef void (*SourceDataAvailable) (void* user_data, void* buf, int buf_len);
 
 static int rdpsnd_alsa_rec_close(rdpsndDevicePlugin* device);
 

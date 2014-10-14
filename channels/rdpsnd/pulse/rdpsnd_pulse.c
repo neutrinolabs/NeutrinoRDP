@@ -28,7 +28,7 @@
 
 #include "rdpsnd_main.h"
 
-typedef void (*SourceDataAvailable) (void* user_data, STREAM* s, int buf_len);
+typedef void (*SourceDataAvailable) (void* user_data, void* buf, int buf_len);
 
 typedef struct rdpsnd_pulse_plugin rdpsndPulsePlugin;
 struct rdpsnd_pulse_plugin
@@ -217,7 +217,6 @@ static void rdpsnd_pulse_stream_request_callback(pa_stream* stream, size_t lengt
 
 static void rdpsnd_rec_pulse_stream_request_callback(pa_stream* stream, size_t length, void* userdata)
 {
-	STREAM*      out_stream;
 	size_t       nbytes;
 	const void*  data;
 
@@ -236,13 +235,9 @@ static void rdpsnd_rec_pulse_stream_request_callback(pa_stream* stream, size_t l
 		return;
 	}
 
-	/* we have valid data */
+	/* we have valid data, send it */
 
-	out_stream = stream_new(4 + nbytes);
-	stream_seek(out_stream, 4);
-	stream_write(out_stream, data, nbytes);
-
-	pulse->rec_src_data_available(pulse->rec_rdpsnd_plugin, out_stream, nbytes);
+	pulse->rec_src_data_available(pulse->rec_rdpsnd_plugin, (void*) data, nbytes);
 	pa_stream_drop(stream);
 }
 
@@ -271,6 +266,7 @@ static void rdpsnd_pulse_set_format_spec(rdpsndPulsePlugin* pulse, rdpsndFormat*
 
 	sample_spec.rate = format->nSamplesPerSec;
 	sample_spec.channels = format->nChannels;
+
 	switch (format->wFormatTag)
 	{
 		case 1: /* PCM */
@@ -681,14 +677,14 @@ int FreeRDPRdpsndDeviceEntry(PFREERDP_RDPSND_DEVICE_ENTRY_POINTS pEntryPoints)
 
 	if (data && strcmp((char*)data->data[0], "pulse") == 0)
 	{
-#if 0 // RASH_TODO this block causes segfaults
+#if 0
 		if(strlen((char*)data->data[1]) > 0)
 			pulse->device_name = xstrdup((char*)data->data[1]);
 		else
 			pulse->device_name = NULL;
 #else
 		pulse->device_name = NULL;
-		pulse->rec_device_name = strdup("");
+		pulse->rec_device_name = xstrdup("");
 #endif
     }
 

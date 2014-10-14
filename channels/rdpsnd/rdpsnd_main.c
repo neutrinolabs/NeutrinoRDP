@@ -110,23 +110,18 @@ static uint32 get_mstime(void)
  * Called whenever pulseaudio has source (microphone) data
  *
  *****************************************************************************/
-static void rdpsnd_source_data_callback(void* plugin, STREAM* s, int buf_length)
+static void rdpsnd_source_data_callback(void* plugin, void* buf, int buf_length)
 {
 	rdpsndPlugin* rdpsnd = (rdpsndPlugin*) plugin;
-	int           pos;
+	STREAM*       out_stream;
 
-	/* save current stream pos */
-	pos = stream_get_pos(s);
+	out_stream = stream_new(4 + buf_length);
 
-	/* write header at beginning of stream */
-	stream_set_pos(s, 0);
-	stream_write_uint16(s, RDPSND_REC_DATA);
-	stream_write_uint16(s, buf_length);
+	stream_write_uint16(out_stream, RDPSND_REC_DATA);
+	stream_write_uint16(out_stream, buf_length);
+	stream_write(out_stream, buf, buf_length);
 
-	/* restore stream pos */
-	stream_set_pos(s, pos);
-
-	svc_plugin_send((rdpSvcPlugin*) &rdpsnd->plugin, s);
+	svc_plugin_send((rdpSvcPlugin*) &rdpsnd->plugin, out_stream);
 }
 
 /* process the linked list of data that has queued to be sent */

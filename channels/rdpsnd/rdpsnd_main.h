@@ -21,9 +21,9 @@
 #define __RDPSND_MAIN_H
 
 #define RDPSND_REC_NEGOTIATE	39
-#define RDPSND_REC_START		40
-#define RDPSND_REC_STOP			41
-#define RDPSND_REC_DATA			42
+#define RDPSND_REC_START	40
+#define RDPSND_REC_STOP		41
+#define RDPSND_REC_DATA		42
 #define RDPSND_REC_SET_VOLUME	43
 
 typedef struct rdpsnd_plugin rdpsndPlugin;
@@ -43,7 +43,7 @@ struct rdpsnd_format
 
 typedef struct rdpsnd_device_plugin rdpsndDevicePlugin;
 
-typedef void (*SourceDataAvailable) (void* user_data, STREAM* s, int buf_len);
+typedef void (*SourceDataAvailable) (void* user_data, void* buf, int buf_len);
 
 typedef boolean (*pcFormatSupported) (rdpsndDevicePlugin* device, rdpsndFormat* format);
 typedef void (*pcOpen) (rdpsndDevicePlugin* device, rdpsndFormat* format, int latency);
