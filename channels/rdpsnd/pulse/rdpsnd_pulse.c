@@ -587,8 +587,8 @@ static int rdpsnd_pulse_rec_open(rdpsndDevicePlugin* device,
 	buffer_attr.prebuf = (uint32_t) -1;
 	buffer_attr.minreq = (uint32_t) -1;
 
-	/* 500ms latency */
-	buffer_attr.fragsize = pa_usec_to_bytes(500000, &pulse->rec_sample_spec);
+	/* 100ms latency */
+	buffer_attr.fragsize = pa_usec_to_bytes(100000, &pulse->rec_sample_spec);
 
 	if (pa_stream_connect_record(pulse->rec_stream,
 				     pulse->rec_device_name[0] ? pulse->rec_device_name : NULL,

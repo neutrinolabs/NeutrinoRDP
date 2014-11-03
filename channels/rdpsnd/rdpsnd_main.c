@@ -183,6 +183,10 @@ static void rdpsnd_process_interval(rdpSvcPlugin* plugin)
 			stream_set_pos(out, 4 + len);
 			svc_plugin_send((rdpSvcPlugin*) plugin, out);
 		}
+		else
+		{
+			stream_free(out);
+		}
 
 		rdpsnd->plugin.interval_ms = 10;
 	}
