@@ -356,7 +356,10 @@ static int rdpsnd_alsa_rec_capture(rdpsndDevicePlugin* device, char* data_buffer
 
 	if (len < 0)
 	{
-		snd_pcm_prepare(alsa->rec_handle);
+		if (len != -EAGAIN)
+		{
+			snd_pcm_prepare(alsa->rec_handle);
+		}
 		len = 0;
 	}
 
