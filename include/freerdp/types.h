@@ -41,6 +41,14 @@
 #include <endian.h>
 #endif
 
+#if defined(BYTE_ORDER)
+#if BYTE_ORDER == BIG_ENDIAN
+#define B_ENDIAN
+#else
+#define L_ENDIAN
+#endif
+#endif
+
 #if !(defined(L_ENDIAN) || defined(B_ENDIAN))
 #if defined(__sparc__) || defined(__PPC__) || defined(__ppc__) || defined(__hppa__)
 #define B_ENDIAN
