@@ -214,9 +214,15 @@ static uint32 ExtractRunLength(uint32 code, uint8* pbOrderHdr, uint32* advance)
 #undef WRITEFIRSTLINEFGBGIMAGE
 #undef RLEDECOMPRESS
 #undef RLEEXTRA
+#if defined(NEED_ALIGN)
+#define DESTWRITEPIXEL(_buf, _pix) do { (_buf)[0] = (uint8)(_pix); (_buf)[1] = (uint8)((_pix) >> 8); } while (0)
+#define DESTREADPIXEL(_pix, _buf) _pix = ((_buf)[0] | ((_buf)[1] << 8))
+#define SRCREADPIXEL(_pix, _buf) _pix = ((_buf)[0] | ((_buf)[1] << 8))
+#else
 #define DESTWRITEPIXEL(_buf, _pix) ((uint16*)(_buf))[0] = (uint16)(_pix)
 #define DESTREADPIXEL(_pix, _buf) _pix = ((uint16*)(_buf))[0]
 #define SRCREADPIXEL(_pix, _buf) _pix = ((uint16*)(_buf))[0]
+#endif
 #define DESTNEXTPIXEL(_buf) _buf += 2
 #define SRCNEXTPIXEL(_buf) _buf += 2
 #define WRITEFGBGIMAGE WriteFgBgImage16to16
