@@ -19,7 +19,7 @@
 #cmakedefine HAVE_INTTYPES_H
 
 /* Endian */
-#cmakedefine BIG_ENDIAN
+#cmakedefine B_ENDIAN
 
 /* Options */
 #cmakedefine WITH_DEBUG_TRANSPORT

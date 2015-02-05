@@ -130,7 +130,7 @@ if(NOT WIN32)
 endif()
 
 # Endian
-test_big_endian(BIG_ENDIAN)
+test_big_endian(B_ENDIAN)
 
 # Path to put keymaps
 set(FREERDP_KEYMAP_PATH "${CMAKE_INSTALL_PREFIX}/freerdp/keymaps")
