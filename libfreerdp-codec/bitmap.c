@@ -77,35 +77,25 @@ static const uint8 g_MaskLiteRunLength = 0x0F;
  */
 static uint32 ExtractCodeId(uint8 bOrderHdr)
 {
-	int code;
-
-	switch (bOrderHdr)
+	if ((bOrderHdr & 0xC0U) != 0xC0U)
 	{
-		case MEGA_MEGA_BG_RUN:
-		case MEGA_MEGA_FG_RUN:
-		case MEGA_MEGA_SET_FG_RUN:
-		case MEGA_MEGA_DITHERED_RUN:
-		case MEGA_MEGA_COLOR_RUN:
-		case MEGA_MEGA_FGBG_IMAGE:
-		case MEGA_MEGA_SET_FGBG_IMAGE:
-		case MEGA_MEGA_COLOR_IMAGE:
-		case SPECIAL_FGBG_1:
-		case SPECIAL_FGBG_2:
-		case SPECIAL_WHITE:
-		case SPECIAL_BLACK:
-			return bOrderHdr;
+		/* REGULAR orders
+		 * (000x xxxx, 001x xxxx, 010x xxxx, 011x xxxx, 100x xxxx)
+		 */
+		return bOrderHdr >> 5;
 	}
-	code = bOrderHdr >> 5;
-	switch (code)
+	else if ((bOrderHdr & 0xF0U) == 0xF0U)
 	{
-		case REGULAR_BG_RUN:
-		case REGULAR_FG_RUN:
-		case REGULAR_COLOR_RUN:
-		case REGULAR_FGBG_IMAGE:
-		case REGULAR_COLOR_IMAGE:
-			return code;
+		/* MEGA and SPECIAL orders (0xF*) */
+		return bOrderHdr;
 	}
-	return bOrderHdr >> 4;
+	else
+	{
+		/* LITE orders
+		 * 1100 xxxx, 1101 xxxx, 1110 xxxx)
+		 */
+		return bOrderHdr >> 4;
+	}
 }
 
 /**
