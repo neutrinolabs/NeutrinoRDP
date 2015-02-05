@@ -35,6 +35,21 @@
 #include <stdint.h>
 #endif
 
+/* check endianess */
+#if !(defined(L_ENDIAN) || defined(B_ENDIAN))
+#if !defined(__BYTE_ORDER) && defined(__linux__)
+#include <endian.h>
+#endif
+
+#if !(defined(L_ENDIAN) || defined(B_ENDIAN))
+#if defined(__sparc__) || defined(__PPC__) || defined(__ppc__) || defined(__hppa__)
+#define B_ENDIAN
+#else
+#define L_ENDIAN
+#endif
+#endif
+#endif
+
 #if !(defined(NO_NEED_ALIGN) || defined(NEED_ALIGN))
 #if defined(__x86__) || defined(__x86_64__) || defined(__AMD64__) || defined(_M_IX86) || defined (_M_AMD64) || defined(__i386__)
 #define NO_NEED_ALIGN

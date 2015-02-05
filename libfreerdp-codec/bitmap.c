@@ -215,8 +215,13 @@ static uint32 ExtractRunLength(uint32 code, uint8* pbOrderHdr, uint32* advance)
 #undef RLEDECOMPRESS
 #undef RLEEXTRA
 #if defined(NEED_ALIGN)
+#if defined(B_ENDIAN)
+#define DESTWRITEPIXEL(_buf, _pix) do { (_buf)[1] = (uint8)(_pix); (_buf)[0] = (uint8)((_pix) >> 8); } while (0)
+#define DESTREADPIXEL(_pix, _buf) _pix = ((_buf)[1] | ((_buf)[0] << 8))
+#else
 #define DESTWRITEPIXEL(_buf, _pix) do { (_buf)[0] = (uint8)(_pix); (_buf)[1] = (uint8)((_pix) >> 8); } while (0)
 #define DESTREADPIXEL(_pix, _buf) _pix = ((_buf)[0] | ((_buf)[1] << 8))
+#endif
 #define SRCREADPIXEL(_pix, _buf) _pix = ((_buf)[0] | ((_buf)[1] << 8))
 #else
 #define DESTWRITEPIXEL(_buf, _pix) ((uint16*)(_buf))[0] = (uint16)(_pix)
