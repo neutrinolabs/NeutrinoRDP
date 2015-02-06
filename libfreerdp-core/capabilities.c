@@ -65,6 +65,9 @@ static const char* const CAPSET_TYPE_STRINGS[] =
 /* CODEC_GUID_JPEG 0x430C9EED1BAF4CE6869ACB8B37B66237*/
 #define CODEC_GUID_JPEG "\xE6\x4C\xAF\x1B\xED\x9E\x0C\x43\x86\x9A\xCB\x8B\x37\xB6\x62\x37"
 
+/* MFVideoFormat_H264 ({34363248-0000-0010-8000-00AA00389B71}) */
+#define CODEC_GUID_H264 "\x48\x32\x36\x34\x00\x00\x10\x00\x80\x00\x00\xAA\x00\x38\x9B\x71"
+
 void rdp_read_capability_set_header(STREAM* s, uint16* length, uint16* type)
 {
 	stream_read_uint16(s, *type); /* capabilitySetType */
@@ -1534,6 +1537,12 @@ void rdp_write_jpeg_client_capability_container(STREAM* s, rdpSettings* settings
 	stream_write_uint8(s, settings->jpeg_quality);
 }
 
+void rdp_write_h264_client_capability_container(STREAM* s, rdpSettings* settings)
+{
+	stream_write_uint16(s, 64); /* codecPropertiesLength */
+	stream_write_zero(s, 64);
+}
+
 /**
  * Write RemoteFX Server Capability Container.\n
  * @param s stream
@@ -1629,6 +1638,12 @@ void rdp_write_bitmap_codecs_capability_set(STREAM* s, rdpSettings* settings)
 			stream_write_uint8(s, CODEC_ID_JPEG); /* codecID */
 			rdp_write_jpeg_client_capability_container(s, settings);
 		}
+	}
+	if (settings->h264_codec)
+	{
+		stream_write(s, CODEC_GUID_H264, 16);
+		stream_write_uint8(s, CODEC_ID_H264); /* codecID */
+		rdp_write_h264_client_capability_container(s, settings);
 	}
 	rdp_capability_set_finish(s, header, CAPSET_TYPE_BITMAP_CODECS);
 }

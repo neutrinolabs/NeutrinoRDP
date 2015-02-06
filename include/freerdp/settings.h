@@ -372,7 +372,8 @@ struct rdp_settings
 	uint32 jpeg_codec_id; /* 287 */
 	uint32 jpeg_quality; /* 288 */
 	uint32 v3_codec_id; /* 289 */
-	uint32 paddingM[296 - 290]; /* 290 */
+	boolean h264_codec; /* 290 */
+	uint32 paddingM[296 - 291]; /* 291 */
 
 	/* Recording */
 	boolean dump_rfx; /* 296 */

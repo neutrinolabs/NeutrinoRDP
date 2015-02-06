@@ -109,6 +109,9 @@ int freerdp_parse_args(rdpSettings* settings, int argc, char** argv,
 				"  --jpeg: enable jpeg codec, uses 75 quality\n"
 				"  --jpegex: enable jpeg and set quality(1..99)\n"
 #endif
+#if defined(WITH_H264)
+				"  --h264: enable h264 codec\n"
+#endif
 				"  --disable-wallpaper: disables wallpaper\n"
 				"  --composition: enable desktop composition\n"
 				"  --disable-full-window-drag: disables full window drag\n"
@@ -420,6 +423,12 @@ int freerdp_parse_args(rdpSettings* settings, int argc, char** argv,
 			}
 			settings->jpeg_codec = true;
 			settings->jpeg_quality = atoi(argv[index]);
+		}
+#endif
+#if defined(WITH_H264)
+		else if (strcmp("--h264", argv[index]) == 0)
+		{
+			settings->h264_codec = true;
 		}
 #endif
 		else if (strcmp("--rfx", argv[index]) == 0)

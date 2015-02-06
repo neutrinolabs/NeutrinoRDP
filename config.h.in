@@ -39,6 +39,7 @@
 #cmakedefine WITH_SSE2_TARGET
 #cmakedefine WITH_JPEG
 #cmakedefine WITH_TJPEG
+#cmakedefine WITH_H264
 #cmakedefine WITH_NEON
 #cmakedefine WITH_DEBUG_X11
 #cmakedefine WITH_DEBUG_X11_CLIPRDR

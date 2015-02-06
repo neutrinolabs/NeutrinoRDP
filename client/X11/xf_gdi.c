@@ -650,7 +650,10 @@ void xf_gdi_surface_bits(rdpContext* context, SURFACE_BITS_COMMAND* surface_bits
 	RFX_CONTEXT* rfx_context = (RFX_CONTEXT*) xfi->rfx_context;
 	NSC_CONTEXT* nsc_context = (NSC_CONTEXT*) xfi->nsc_context;
 
-	if (surface_bits_command->codecID == CODEC_ID_JPEG)
+	if (surface_bits_command->codecID == CODEC_ID_H264)
+	{
+	}
+	else if (surface_bits_command->codecID == CODEC_ID_JPEG)
 	{
 		tui8* comp;
 		tbool ok;
