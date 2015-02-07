@@ -1593,6 +1593,8 @@ void rdp_write_bitmap_codecs_capability_set(STREAM* s, rdpSettings* settings)
 		bitmapCodecCount++;
 	if (settings->jpeg_codec)
 		bitmapCodecCount++;
+	if (settings->h264_codec)
+		bitmapCodecCount++;
 
 	stream_write_uint8(s, bitmapCodecCount);
 

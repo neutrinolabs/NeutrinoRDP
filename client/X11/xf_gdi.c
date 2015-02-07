@@ -652,6 +652,19 @@ void xf_gdi_surface_bits(rdpContext* context, SURFACE_BITS_COMMAND* surface_bits
 
 	if (surface_bits_command->codecID == CODEC_ID_H264)
 	{
+		STREAM* s;
+		int num_rects;
+		int h264_bytes;
+
+		s = stream_new(0);
+		stream_attach(s, surface_bits_command->bitmapData, surface_bits_command->bitmapDataLength);
+		stream_read_uint16(s, num_rects);
+		stream_seek(s, num_rects * 8);
+		stream_read_uint32(s, h264_bytes);
+		stream_attach(s, 0, 0);
+		stream_free(s);
+		printf("h264 bytes %d num_rects %d h264_bytes %d\n",
+				surface_bits_command->bitmapDataLength, num_rects, h264_bytes);
 	}
 	else if (surface_bits_command->codecID == CODEC_ID_JPEG)
 	{
