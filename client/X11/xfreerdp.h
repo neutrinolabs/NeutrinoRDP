@@ -180,6 +180,7 @@ struct xf_info
 
 	struct shm_info_t* shm_info;
 	int skip_bs;
+	int frameId;
 };
 
 void xf_toggle_fullscreen(xfInfo* xfi);

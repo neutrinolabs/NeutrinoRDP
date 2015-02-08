@@ -36,6 +36,12 @@
 
 #include "xf_gdi.h"
 
+#define LLOG_LEVEL 1
+#define LLOGLN(_level, _args) \
+  do { if (_level < LLOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
+#define LHEXDUMP(_level, _args) \
+  do { if (_level < LLOG_LEVEL) { freerdp_hexdump _args ; } } while (0)
+
 static const uint8 xf_rop2_table[] =
 {
 	0,
@@ -638,7 +644,14 @@ void xf_gdi_mem3blt(rdpContext* context, MEM3BLT_ORDER* mem3blt)
 
 void xf_gdi_surface_frame_marker(rdpContext* context, SURFACE_FRAME_MARKER* surface_frame_marker)
 {
+	xfInfo* xfi;
 
+	LLOGLN(10, ("xf_gdi_surface_frame_marker: action %d", surface_frame_marker->frameAction));
+	xfi = ((xfContext*) context)->xfi;
+	if (surface_frame_marker->frameAction == 0) /* begin */
+	{
+		xfi->frameId = surface_frame_marker->frameId;
+	}
 }
 
 void xf_gdi_surface_bits(rdpContext* context, SURFACE_BITS_COMMAND* surface_bits_command)
@@ -824,7 +837,11 @@ void xf_gdi_surface_bits(rdpContext* context, SURFACE_BITS_COMMAND* surface_bits
 	{
 		printf("Unsupported codecID %d\n", surface_bits_command->codecID);
 	}
+
+	LLOGLN(10, ("xf_gdi_surface_bits: sending frame ack"));
+	xfi->instance->SendFrameAck(xfi->instance, xfi->frameId);
 }
+
 
 void xf_gdi_register_update_callbacks(rdpUpdate* update)
 {

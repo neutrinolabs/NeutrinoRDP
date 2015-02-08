@@ -412,6 +412,7 @@ int freerdp_parse_args(rdpSettings* settings, int argc, char** argv,
 		{
 			settings->jpeg_codec = true;
 			settings->jpeg_quality = 75;
+			settings->frame_acknowledge = true;
 		}
 		else if (strcmp("--jpegex", argv[index]) == 0)
 		{
@@ -436,7 +437,7 @@ int freerdp_parse_args(rdpSettings* settings, int argc, char** argv,
 			settings->rfx_codec = true;
 			settings->fastpath_output = true;
 			settings->color_depth = 32;
-			settings->frame_acknowledge = false;
+			settings->frame_acknowledge = true;
 			settings->performance_flags = PERF_FLAG_NONE;
 			settings->large_pointer = true;
 		}
