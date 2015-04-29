@@ -23,7 +23,9 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
-#ifdef WITH_XINERAMA
+#if defined(WITH_XRANDR)
+#include <X11/extensions/Xrandr.h>
+#elif defined(WITH_XINERAMA)
 #include <X11/extensions/Xinerama.h>
 #endif
 
@@ -36,10 +38,21 @@ tbool xf_detect_monitors(xfInfo* xfi, rdpSettings* settings)
 	int i;
 	VIRTUAL_SCREEN* vscreen;
 
-#ifdef WITH_XINERAMA
+#if defined(WITH_XRANDR)
+	int ignored, ignored2;
+	RROutput primary_output;
+	XRRScreenResources *screen_resources;
+	Window root;
+	XRROutputInfo *oi;
+	XRRCrtcInfo *ci;
+	RROutput output;
+	int count;
+#elif defined(WITH_XINERAMA)
 	int ignored, ignored2;
 	XineramaScreenInfo* screen_info = NULL;
 #endif
+
+	printf("xf_detect_monitors:\n");
 
 	if (settings->num_monitors > 0)
 	{
@@ -76,19 +89,52 @@ tbool xf_detect_monitors(xfInfo* xfi, rdpSettings* settings)
 	if (settings->fullscreen == false && settings->workarea == false)
 		return true;
 
-#ifdef WITH_XINERAMA
+	vscreen->monitors = xzalloc(sizeof(MONITOR_INFO) * 16);
+
+#if defined(WITH_XRANDR)
+	if (XRRQueryExtension(xfi->display, &ignored, &ignored2))
+	{
+		root = RootWindowOfScreen(xfi->screen);
+		primary_output = XRRGetOutputPrimary(xfi->display, root);
+		screen_resources = XRRGetScreenResources(xfi->display, root);
+		if (screen_resources != NULL)
+		{
+			count = 0;
+			for (i = 0; i < screen_resources->noutput; i++)
+			{
+				output = screen_resources->outputs[i];
+				oi = XRRGetOutputInfo(xfi->display, screen_resources, output);
+				if (oi != NULL)
+				{
+					if (oi->connection == RR_Connected)
+					{
+						ci = XRRGetCrtcInfo(xfi->display, screen_resources, oi->crtc);
+						if (ci != NULL && count < 16)
+						{
+							vscreen->monitors[count].area.left = ci->x;
+							vscreen->monitors[count].area.top = ci->y;
+							vscreen->monitors[count].area.right = ci->x + ci->width - 1;
+							vscreen->monitors[count].area.bottom = ci->y + ci->height - 1;
+							vscreen->monitors[count].primary = output == primary_output;
+							XRRFreeCrtcInfo(ci);
+							count++;
+						}
+					}
+					XRRFreeOutputInfo(oi); 
+				}
+			}
+			vscreen->nmonitors = count;
+			XRRFreeScreenResources(screen_resources); 
+		}
+	}
+#elif defined(WITH_XINERAMA)
 	if (XineramaQueryExtension(xfi->display, &ignored, &ignored2))
 	{
 		if (XineramaIsActive(xfi->display))
 		{
 			screen_info = XineramaQueryScreens(xfi->display, &vscreen->nmonitors);
-
-			if (vscreen->nmonitors > 16)
-				vscreen->nmonitors = 0;
-
-			vscreen->monitors = xzalloc(sizeof(MONITOR_INFO) * vscreen->nmonitors);
-
-			if (vscreen->nmonitors)
+			vscreen->nmonitors = MIN(16, vscreen->nmonitors);
+			if (vscreen->nmonitors > 0)
 			{
 				for (i = 0; i < vscreen->nmonitors; i++)
 				{
@@ -96,12 +142,10 @@ tbool xf_detect_monitors(xfInfo* xfi, rdpSettings* settings)
 					vscreen->monitors[i].area.top = screen_info[i].y_org;
 					vscreen->monitors[i].area.right = screen_info[i].x_org + screen_info[i].width - 1;
 					vscreen->monitors[i].area.bottom = screen_info[i].y_org + screen_info[i].height - 1;
-
 					if ((screen_info[i].x_org == 0) && (screen_info[i].y_org == 0))
 						vscreen->monitors[i].primary = true;
 				}
 			}
-
 			XFree(screen_info);
 		}
 	}

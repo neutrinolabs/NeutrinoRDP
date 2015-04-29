@@ -30,3 +30,6 @@ option(WITH_H264 "Use H264 decoding." OFF)
 option(WITH_CUPS "Use CUPS printing." OFF)
 option(WITH_XRDPVR "Use xrdp video redirection." ON)
 option(WITH_TCUTILS "Use Thinclient utilities." ON)
+option(WITH_XINERAMA "Use xinerama extension" OFF)
+option(WITH_XRANDR "Use xrandr extension" ON)
+

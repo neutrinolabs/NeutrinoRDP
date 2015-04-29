@@ -359,7 +359,7 @@ void gcc_write_client_data_blocks(STREAM* s, rdpSettings* settings)
 
 	/* extended client data supported */
 
-	if (settings->negotiationFlags)
+	//if (settings->negotiationFlags)
 		gcc_write_client_monitor_data(s, settings);
 }
 

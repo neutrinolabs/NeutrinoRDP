@@ -85,6 +85,13 @@ if(WITH_XV)
 	target_link_libraries(xfreerdp ${XV_LIBRARIES})
 endif()
 
+find_suggested_package(Xrandr)
+if(WITH_XRANDR)
+	add_definitions(-DWITH_XRANDR)
+	include_directories(${XRANDR_INCLUDE_DIRS})
+	target_link_libraries(xfreerdp ${XRANDR_LIBRARIES})
+endif()
+
 include_directories(${CMAKE_SOURCE_DIR}/resources)
 
 target_link_libraries(xfreerdp freerdp-core)
