@@ -109,15 +109,18 @@ tbool xf_detect_monitors(xfInfo* xfi, rdpSettings* settings)
 					if (oi->connection == RR_Connected)
 					{
 						ci = XRRGetCrtcInfo(xfi->display, screen_resources, oi->crtc);
-						if (ci != NULL && count < 16)
+						if (ci != NULL)
 						{
-							vscreen->monitors[count].area.left = ci->x;
-							vscreen->monitors[count].area.top = ci->y;
-							vscreen->monitors[count].area.right = ci->x + ci->width - 1;
-							vscreen->monitors[count].area.bottom = ci->y + ci->height - 1;
-							vscreen->monitors[count].primary = output == primary_output;
+							if (count < 16)
+							{
+								vscreen->monitors[count].area.left = ci->x; 
+								vscreen->monitors[count].area.top = ci->y;
+								vscreen->monitors[count].area.right = ci->x + ci->width - 1;
+								vscreen->monitors[count].area.bottom = ci->y + ci->height - 1;
+								vscreen->monitors[count].primary = output == primary_output;
+								count++;
+							}
 							XRRFreeCrtcInfo(ci);
-							count++;
 						}
 					}
 					XRRFreeOutputInfo(oi); 
