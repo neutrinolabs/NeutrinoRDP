@@ -329,19 +329,19 @@ int credssp_skip_ts_password_creds(rdpCredssp* credssp)
 	int length;
 	int ts_password_creds_length = 0;
 
-	length = ber_skip_octet_string(credssp->ntlmssp->domain.length);
+	length = ber_sizeof_octet_string(credssp->ntlmssp->domain.length);
 	length += ber_skip_contextual_tag(length);
 	ts_password_creds_length += length;
 
-	length = ber_skip_octet_string(credssp->ntlmssp->username.length);
+	length = ber_sizeof_octet_string(credssp->ntlmssp->username.length);
 	length += ber_skip_contextual_tag(length);
 	ts_password_creds_length += length;
 
-	length = ber_skip_octet_string(credssp->ntlmssp->password.length);
+	length = ber_sizeof_octet_string(credssp->ntlmssp->password.length);
 	length += ber_skip_contextual_tag(length);
 	ts_password_creds_length += length;
 
-	length = ber_skip_sequence(ts_password_creds_length);
+	length = ber_sizeof_sequence(ts_password_creds_length);
 
 	return length;
 }
@@ -375,16 +375,16 @@ int credssp_skip_ts_credentials(rdpCredssp* credssp)
 	int ts_password_creds_length;
 	int ts_credentials_length = 0;
 
-	length = ber_skip_integer(0);
+	length = ber_sizeof_integer(0);
 	length += ber_skip_contextual_tag(length);
 	ts_credentials_length += length;
 
 	ts_password_creds_length = credssp_skip_ts_password_creds(credssp);
-	length = ber_skip_octet_string(ts_password_creds_length);
+	length = ber_sizeof_octet_string(ts_password_creds_length);
 	length += ber_skip_contextual_tag(length);
 	ts_credentials_length += length;
 
-	length = ber_skip_sequence(ts_credentials_length);
+	length = ber_sizeof_sequence(ts_credentials_length);
 
 	return length;
 }
@@ -435,7 +435,7 @@ void credssp_encode_ts_credentials(rdpCredssp* credssp)
 
 int credssp_skip_nego_token(int length)
 {
-	length = ber_skip_octet_string(length);
+	length = ber_sizeof_octet_string(length);
 	length += ber_skip_contextual_tag(length);
 	return length;
 }
@@ -443,31 +443,31 @@ int credssp_skip_nego_token(int length)
 int credssp_skip_nego_tokens(int length)
 {
 	length = credssp_skip_nego_token(length);
-	length += ber_skip_sequence_tag(length);
-	length += ber_skip_sequence_tag(length);
+	length += ber_sizeof_sequence_tag(length);
+	length += ber_sizeof_sequence_tag(length);
 	length += ber_skip_contextual_tag(length);
 	return length;
 }
 
 int credssp_skip_pub_key_auth(int length)
 {
-	length = ber_skip_octet_string(length);
+	length = ber_sizeof_octet_string(length);
 	length += ber_skip_contextual_tag(length);
 	return length;
 }
 
 int credssp_skip_auth_info(int length)
 {
-	length = ber_skip_octet_string(length);
+	length = ber_sizeof_octet_string(length);
 	length += ber_skip_contextual_tag(length);
 	return length;
 }
 
 int credssp_skip_ts_request(int length)
 {
-	length += ber_skip_integer(2);
+	length += ber_sizeof_integer(2);
 	length += ber_skip_contextual_tag(3);
-	length += ber_skip_sequence_tag(length);
+	length += ber_sizeof_sequence_tag(length);
 	return length;
 }
 
