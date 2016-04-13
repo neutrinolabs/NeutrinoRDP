@@ -42,8 +42,7 @@ int ber_read_length(STREAM* s, int* length)
 		{
 			stream_read_uint8(s, *length);
 		}
-
-		if (byte == 2)
+		else if (byte == 2)
 		{
 			stream_read_uint16_be(s, *length);
 		}
@@ -77,7 +76,7 @@ int ber_write_length(STREAM* s, int length)
 	if (length > 0x7F)
 	{
 		stream_write_uint8(s, 0x80 ^ 1);
-		stream_write_uint16_be(s, length);
+		stream_write_uint8(s, length);
 		return 2;
 	}
 	stream_write_uint8(s, length);
@@ -93,13 +92,13 @@ int _ber_sizeof_length(int length)
 	return 1;
 }
 
-int ber_get_content_length(int length)
-{
-	if (length - 1 > 0x7F)
-		return length - 4;
-	else
-		return length - 2;
-}
+//int ber_get_content_length(int length)
+//{
+//	if (length - 1 > 0x7F)
+//		return length - 4;
+//	else
+//		return length - 2;
+//}
 
 /**
  * Read BER Universal tag.
@@ -349,9 +348,7 @@ int ber_write_octet_string(STREAM* s, const uint8* oct_str, int length)
 
 	size += ber_write_universal_tag(s, BER_TAG_OCTET_STRING, false);
 	size += ber_write_length(s, length);
-
 	stream_write(s, oct_str, length);
-
 	size += length;
 	return size;
 
@@ -476,22 +473,24 @@ tbool ber_read_integer(STREAM* s, uint32* value)
 
 int ber_write_integer(STREAM* s, uint32 value)
 {
-	ber_write_universal_tag(s, BER_TAG_INTEGER, false);
 
 	if (value < 0x80)
 	{
+		ber_write_universal_tag(s, BER_TAG_INTEGER, false);
 		ber_write_length(s, 1);
 		stream_write_uint8(s, value);
 		return 3;
 	}
 	else if (value < 0x8000)
 	{
+		ber_write_universal_tag(s, BER_TAG_INTEGER, false);
 		ber_write_length(s, 2);
 		stream_write_uint16_be(s, value);
 		return 4;
 	}
 	else if (value < 0x800000)
 	{
+		ber_write_universal_tag(s, BER_TAG_INTEGER, false);
 		ber_write_length(s, 3);
 		stream_write_uint8(s, (value >> 16));
 		stream_write_uint16_be(s, (value & 0xFFFF));
@@ -499,6 +498,7 @@ int ber_write_integer(STREAM* s, uint32 value)
 	}
 	else if (value < 0x80000000)
 	{
+		ber_write_universal_tag(s, BER_TAG_INTEGER, false);
 		ber_write_length(s, 4);
 		stream_write_uint32_be(s, value);
 		return 6;

@@ -1198,8 +1198,10 @@ void ntlmssp_encrypt_message(NTLMSSP* ntlmssp, rdpBlob* msg, rdpBlob* encrypted_
 		/* Allocate space for encrypted message */
 		freerdp_blob_alloc(encrypted_msg, msg->length);
 
+		printf("rc4 %d % d %d %d\n", ntlmssp->send_rc4_seal, msg->length, msg->data, encrypted_msg->data);
 		/* Encrypt message using with RC4 */
 		crypto_rc4(ntlmssp->send_rc4_seal, msg->length, msg->data, encrypted_msg->data);
+		printf("rc4 done\n");
 	}
 
 	/* RC4-encrypt first 8 bytes of digest */
@@ -1816,7 +1818,9 @@ int ntlmssp_recv(NTLMSSP* ntlmssp, STREAM* s)
 	stream_read_uint32(s, messageType);
 
 	if (messageType == 2 && ntlmssp->state == NTLMSSP_STATE_CHALLENGE)
+	{
 		ntlmssp_recv_challenge_message(ntlmssp, s);
+	}
 
 	return 1;
 }
