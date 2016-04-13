@@ -63,7 +63,7 @@ tbool ber_read_enumerated(STREAM* s, uint8* enumerated, uint8 count);
 void ber_write_enumerated(STREAM* s, uint8 enumerated, uint8 count);
 tbool ber_read_contextual_tag(STREAM* s, uint8 tag, int* length, tbool pc);
 int ber_write_contextual_tag(STREAM* s, uint8 tag, int length, tbool pc);
-int ber_skip_contextual_tag(int length);
+int ber_sizeof_contextual_tag(int length);
 tbool ber_read_sequence_tag(STREAM* s, int* length);
 int ber_write_sequence_tag(STREAM* s, int length);
 int ber_sizeof_sequence(int length);

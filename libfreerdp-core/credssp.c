@@ -67,6 +67,12 @@
  *
  */
 
+
+#define ber_sizeof_sequence_octet_string(length) ber_sizeof_contextual_tag(ber_sizeof_octet_string(length)) + ber_sizeof_octet_string(length)
+#define ber_write_sequence_octet_string(stream, context, value, length) ber_write_contextual_tag(stream, context, ber_sizeof_octet_string(length), true) + ber_write_octet_string(stream, value, length)
+
+
+
 /**
  * Initialize NTLMSSP authentication module.
  * @param credssp
@@ -324,21 +330,21 @@ void credssp_encrypt_ts_credentials(rdpCredssp* credssp, rdpBlob* d)
 	freerdp_blob_free(&encrypted_ts_credentials);
 }
 
-int credssp_skip_ts_password_creds(rdpCredssp* credssp)
+int credssp_sizeof_ts_password_creds(rdpCredssp* credssp)
 {
 	int length;
 	int ts_password_creds_length = 0;
 
-	length = ber_sizeof_octet_string(credssp->ntlmssp->domain.length);
-	length += ber_skip_contextual_tag(length);
+	length = ber_sizeof_octet_string(credssp->ntlmssp->domain.length * 2);
+	length += ber_sizeof_contextual_tag(length);
 	ts_password_creds_length += length;
 
-	length = ber_sizeof_octet_string(credssp->ntlmssp->username.length);
-	length += ber_skip_contextual_tag(length);
+	length = ber_sizeof_octet_string(credssp->ntlmssp->username.length * 2);
+	length += ber_sizeof_contextual_tag(length);
 	ts_password_creds_length += length;
 
-	length = ber_sizeof_octet_string(credssp->ntlmssp->password.length);
-	length += ber_skip_contextual_tag(length);
+	length = ber_sizeof_octet_string(credssp->ntlmssp->password.length * 2);
+	length += ber_sizeof_contextual_tag(length);
 	ts_password_creds_length += length;
 
 	length = ber_sizeof_sequence(ts_password_creds_length);
@@ -346,71 +352,62 @@ int credssp_skip_ts_password_creds(rdpCredssp* credssp)
 	return length;
 }
 
-void credssp_write_ts_password_creds(rdpCredssp* credssp, STREAM* s)
+int credssp_write_ts_password_creds(rdpCredssp* credssp, STREAM* s)
 {
-	int length;
+	int size = 0;
+	int innerSize = credssp_sizeof_ts_password_creds(credssp);
 
-	length = credssp_skip_ts_password_creds(credssp);
+	if (innerSize > stream_get_left(s))
+	{
+		printf("\033[91m[ ERROR ] Not enough space allocated for ts_password_creds\033[0m");
+	}
 
 	/* TSPasswordCreds (SEQUENCE) */
-	length = ber_get_content_length(length);
-	ber_write_sequence_tag(s, length);
+	size += ber_write_sequence_tag(s, innerSize);
 
 	/* [0] domainName (OCTET STRING) */
-	ber_write_contextual_tag(s, 0, credssp->ntlmssp->domain.length + 2, true);
-	ber_write_octet_string(s, credssp->ntlmssp->domain.data, credssp->ntlmssp->domain.length);
+	size += ber_write_sequence_octet_string(s, 0, credssp->ntlmssp->domain.data, credssp->ntlmssp->domain.length * 2);
 
 	/* [1] userName (OCTET STRING) */
-	ber_write_contextual_tag(s, 1, credssp->ntlmssp->username.length + 2, true);
-	ber_write_octet_string(s, credssp->ntlmssp->username.data, credssp->ntlmssp->username.length);
+	size += ber_write_sequence_octet_string(s, 1, credssp->ntlmssp->username.data, credssp->ntlmssp->username.length * 2);
 
 	/* [2] password (OCTET STRING) */
-	ber_write_contextual_tag(s, 2, credssp->ntlmssp->password.length + 2, true);
-	ber_write_octet_string(s, credssp->ntlmssp->password.data, credssp->ntlmssp->password.length);
+	size += ber_write_sequence_octet_string(s, 2, credssp->ntlmssp->password.data, credssp->ntlmssp->password.length * 2);
+
+	return size;
 }
 
-int credssp_skip_ts_credentials(rdpCredssp* credssp)
+int credssp_sizeof_ts_credentials(rdpCredssp* credssp)
 {
-	int length;
-	int ts_password_creds_length;
-	int ts_credentials_length = 0;
+	int size = 0;
 
-	length = ber_sizeof_integer(0);
-	length += ber_skip_contextual_tag(length);
-	ts_credentials_length += length;
+	size += ber_sizeof_integer(1);
+	size += ber_sizeof_contextual_tag(ber_sizeof_integer(1));
+	size += ber_sizeof_octet_string(ber_sizeof_sequence(credssp_sizeof_ts_password_creds(credssp)));
 
-	ts_password_creds_length = credssp_skip_ts_password_creds(credssp);
-	length = ber_sizeof_octet_string(ts_password_creds_length);
-	length += ber_skip_contextual_tag(length);
-	ts_credentials_length += length;
-
-	length = ber_sizeof_sequence(ts_credentials_length);
-
-	return length;
+	return size;
 }
 
-void credssp_write_ts_credentials(rdpCredssp* credssp, STREAM* s)
+int credssp_write_ts_credentials(rdpCredssp* credssp, STREAM* s)
 {
-	int length;
-	int ts_password_creds_length;
-
-	length = credssp_skip_ts_credentials(credssp);
-	ts_password_creds_length = credssp_skip_ts_password_creds(credssp);
+	int size = 0;
+	int innerSize = credssp_sizeof_ts_credentials(credssp);
 
 	/* TSCredentials (SEQUENCE) */
-	length = ber_get_content_length(length);
-	length -= ber_write_sequence_tag(s, length);
+	size += ber_write_sequence_tag(s, innerSize);
 
 	/* [0] credType (INTEGER) */
-	length -= ber_write_contextual_tag(s, 0, 3, true);
-	length -= ber_write_integer(s, 1);
+	size += ber_write_contextual_tag(s, 0, ber_sizeof_integer(1), true);
+	size += ber_write_integer(s, 1);
 
 	/* [1] credentials (OCTET STRING) */
-	length -= 1;
-	length -= ber_write_contextual_tag(s, 1, length, true);
-	length -= ber_write_octet_string_tag(s, ts_password_creds_length);
+	int passwordSize = ber_sizeof_sequence(credssp_sizeof_ts_password_creds(credssp));
 
-	credssp_write_ts_password_creds(credssp, s);
+	size += ber_write_contextual_tag(s, 1, ber_sizeof_octet_string(passwordSize), true);
+	size += ber_write_octet_string_tag(s, passwordSize);
+	size += credssp_write_ts_password_creds(credssp, s);
+
+	return size;
 }
 
 /**
@@ -424,7 +421,7 @@ void credssp_encode_ts_credentials(rdpCredssp* credssp)
 	int length;
 
 	s = stream_new(0);
-	length = credssp_skip_ts_credentials(credssp);
+	length = ber_sizeof_sequence(credssp_sizeof_ts_credentials(credssp));
 	freerdp_blob_alloc(&credssp->ts_credentials, length);
 	stream_attach(s, credssp->ts_credentials.data, length);
 
@@ -433,41 +430,40 @@ void credssp_encode_ts_credentials(rdpCredssp* credssp)
 	stream_free(s);
 }
 
-int credssp_skip_nego_token(int length)
+int credssp_sizeof_nego_token(int length)
 {
 	length = ber_sizeof_octet_string(length);
-	length += ber_skip_contextual_tag(length);
+	length += ber_sizeof_contextual_tag(length);
 	return length;
 }
 
-int credssp_skip_nego_tokens(int length)
+int credssp_sizeof_nego_tokens(int length)
 {
-	length = credssp_skip_nego_token(length);
+	length = credssp_sizeof_nego_token(length);
 	length += ber_sizeof_sequence_tag(length);
 	length += ber_sizeof_sequence_tag(length);
-	length += ber_skip_contextual_tag(length);
+	length += ber_sizeof_contextual_tag(length);
 	return length;
 }
 
-int credssp_skip_pub_key_auth(int length)
+int credssp_sizeof_pub_key_auth(int length)
 {
 	length = ber_sizeof_octet_string(length);
-	length += ber_skip_contextual_tag(length);
+	length += ber_sizeof_contextual_tag(length);
 	return length;
 }
 
-int credssp_skip_auth_info(int length)
+int credssp_sizeof_auth_info(int length)
 {
 	length = ber_sizeof_octet_string(length);
-	length += ber_skip_contextual_tag(length);
+	length += ber_sizeof_contextual_tag(length);
 	return length;
 }
 
-int credssp_skip_ts_request(int length)
+int credssp_sizeof_ts_request(int length)
 {
 	length += ber_sizeof_integer(2);
-	length += ber_skip_contextual_tag(3);
-	length += ber_sizeof_sequence_tag(length);
+	length += ber_sizeof_contextual_tag(3);
 	return length;
 }
 
@@ -488,46 +484,46 @@ void credssp_send(rdpCredssp* credssp, rdpBlob* negoToken, rdpBlob* authInfo, rd
 	int pub_key_auth_length;
 	int auth_info_length;
 
-	nego_tokens_length = (negoToken != NULL) ? credssp_skip_nego_tokens(negoToken->length) : 0;
-	pub_key_auth_length = (pubKeyAuth != NULL) ? credssp_skip_pub_key_auth(pubKeyAuth->length) : 0;
-	auth_info_length = (authInfo != NULL) ? credssp_skip_auth_info(authInfo->length) : 0;
+	nego_tokens_length = (negoToken != NULL) ? credssp_sizeof_nego_tokens(negoToken->length) : 0;
+	pub_key_auth_length = (pubKeyAuth != NULL) ? credssp_sizeof_pub_key_auth(pubKeyAuth->length) : 0;
+	auth_info_length = (authInfo != NULL) ? credssp_sizeof_auth_info(authInfo->length) : 0;
 
 	length = nego_tokens_length + pub_key_auth_length + auth_info_length;
-	ts_request_length = credssp_skip_ts_request(length);
 
-	s = stream_new(ts_request_length);
+	ts_request_length = credssp_sizeof_ts_request(length);
+
+	s = stream_new(ber_sizeof_sequence(ts_request_length));
 
 	/* TSRequest */
-	length = ber_get_content_length(ts_request_length);
-	ber_write_sequence_tag(s, length); /* SEQUENCE */
-	ber_write_contextual_tag(s, 0, 3, true); /* [0] version */
+	ber_write_sequence_tag(s, ts_request_length); /* SEQUENCE */
+
+	/* [0] version */
+	ber_write_contextual_tag(s, 0, 3, true);
 	ber_write_integer(s, 2); /* INTEGER */
 
 	/* [1] negoTokens (NegoData) */
 	if (nego_tokens_length > 0)
 	{
-		length = ber_get_content_length(nego_tokens_length);
-		length -= ber_write_contextual_tag(s, 1, length, true); /* NegoData */
-		length -= ber_write_sequence_tag(s, length); /* SEQUENCE OF NegoDataItem */
-		length -= ber_write_sequence_tag(s, length); /* NegoDataItem */
-		length -= ber_write_contextual_tag(s, 0, length, true); /* [0] negoToken */
-		ber_write_octet_string(s, negoToken->data, length); /* OCTET STRING */
+		length = nego_tokens_length;
+
+		length -= ber_write_contextual_tag(s, 1, ber_sizeof_sequence(ber_sizeof_sequence(ber_sizeof_sequence_octet_string(credssp->negoToken.length))), true); /* NegoData */
+		length -= ber_write_sequence_tag(s, ber_sizeof_sequence(ber_sizeof_sequence_octet_string(credssp->negoToken.length))); /* SEQUENCE OF NegoDataItem */
+		length -= ber_write_sequence_tag(s, ber_sizeof_sequence_octet_string(credssp->negoToken.length)); /* NegoDataItem */
+		length -= ber_write_octet_string(s, negoToken->data, negoToken->length); /* OCTET STRING */
 	}
 
 	/* [2] authInfo (OCTET STRING) */
 	if (auth_info_length > 0)
 	{
-		length = ber_get_content_length(auth_info_length);
-		length -= ber_write_contextual_tag(s, 2, length, true);
-		ber_write_octet_string(s, authInfo->data, authInfo->length);
+		length = auth_info_length;
+		length -= ber_write_sequence_octet_string(s, 2, authInfo->data, authInfo->length);
 	}
 
 	/* [3] pubKeyAuth (OCTET STRING) */
 	if (pub_key_auth_length > 0)
 	{
-		length = ber_get_content_length(pub_key_auth_length);
-		length -= ber_write_contextual_tag(s, 3, length, true);
-		ber_write_octet_string(s, pubKeyAuth->data, length);
+		length = pub_key_auth_length;
+		length -= ber_write_sequence_octet_string(s, 3, pubKeyAuth->data, pubKeyAuth->length);
 	}
 
 	tls_write(credssp->tls, s->data, stream_get_length(s));

@@ -235,7 +235,7 @@ int ber_write_contextual_tag(STREAM* s, uint8 tag, int length, tbool pc)
 	return 1 + ber_write_length(s, length);
 }
 
-int ber_skip_contextual_tag(int length)
+int ber_sizeof_contextual_tag(int length)
 {
 	return 1 + _ber_sizeof_length(length);
 }
