@@ -168,7 +168,7 @@ tbool ber_read_application_tag(STREAM* s, uint8 tag, int* length)
 		if (byte != tag)
 			return false;
 
-		ber_read_length(s, length);
+		return ber_read_length(s, length);
 	}
 	else
 	{
@@ -181,7 +181,7 @@ tbool ber_read_application_tag(STREAM* s, uint8 tag, int* length)
 		if (byte != ((BER_CLASS_APPL | BER_CONSTRUCT) | (BER_TAG_MASK & tag)))
 			return false;
 
-		ber_read_length(s, length);
+		return ber_read_length(s, length);
 	}
 
 	return true;
@@ -345,7 +345,6 @@ tbool ber_read_octet_string(STREAM* s, int* length)
 int ber_write_octet_string(STREAM* s, const uint8* oct_str, int length)
 {
 	int size = 0;
-
 	size += ber_write_universal_tag(s, BER_TAG_OCTET_STRING, false);
 	size += ber_write_length(s, length);
 	stream_write(s, oct_str, length);

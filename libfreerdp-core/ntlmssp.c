@@ -1198,10 +1198,8 @@ void ntlmssp_encrypt_message(NTLMSSP* ntlmssp, rdpBlob* msg, rdpBlob* encrypted_
 		/* Allocate space for encrypted message */
 		freerdp_blob_alloc(encrypted_msg, msg->length);
 
-		printf("rc4 %d % d %d %d\n", ntlmssp->send_rc4_seal, msg->length, msg->data, encrypted_msg->data);
 		/* Encrypt message using with RC4 */
 		crypto_rc4(ntlmssp->send_rc4_seal, msg->length, msg->data, encrypted_msg->data);
-		printf("rc4 done\n");
 	}
 
 	/* RC4-encrypt first 8 bytes of digest */
