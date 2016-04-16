@@ -127,8 +127,8 @@ int freerdp_parse_args(rdpSettings* settings, int argc, char** argv,
 				"  --secure-checksum: use salted checksums with Standard RDP encryption\n"
 				"  --version: print version information\n"
 				"  --skip-bs: do not keep backing store\n"
-				"  --multimon-set: hard set monitor list num x y width height isprimary x y...\n"
-				"                  two screen example --multimon-set 2 0 0 512 768 512 0 512 768\n"
+				"  --multimon-set: hard set monitor list: <num of monitors> <x> <y> <width> <height> <isprimary>, ...\n"
+				"                  two screen example --multimon-set 2 0 0 512 768 1 512 0 512 768 0\n"
 				"\n", argv[0]);
 			return FREERDP_ARGS_PARSE_HELP; //TODO: What is the correct return
 		}
@@ -789,18 +789,33 @@ int freerdp_parse_args(rdpSettings* settings, int argc, char** argv,
 			int n;
 			settings->num_monitors = atoi(argv[index + 1]);
 			index++;
-			for (n = 0; n < settings->num_monitors; n++)
+
+			if ((argc - index) <= (settings->num_monitors * 5))
 			{
-				settings->monitors[n].x = atoi(argv[index + 1]);
-				index++;
-				settings->monitors[n].y = atoi(argv[index + 1]);
-				index++;
-				settings->monitors[n].width = atoi(argv[index + 1]);
-				index++;
-				settings->monitors[n].height = atoi(argv[index + 1]);
-				index++;
-				settings->monitors[n].is_primary = atoi(argv[index + 1]);
-				index++;
+				printf("--multimon-set: error, not enough multimon args to parse\n");
+				return FREERDP_ARGS_PARSE_FAILURE;
+			}
+
+			if (settings->num_monitors > 1 && settings->num_monitors <= 16)
+			{
+				for (n = 0; n < settings->num_monitors; n++)
+				{
+					settings->monitors[n].x = atoi(argv[index + 1]);
+					index++;
+					settings->monitors[n].y = atoi(argv[index + 1]);
+					index++;
+					settings->monitors[n].width = settings->monitors[n].x + atoi(argv[index + 1]) - 1;
+					index++;
+					settings->monitors[n].height = settings->monitors[n].y + atoi(argv[index + 1]) - 1;
+					index++;
+					settings->monitors[n].is_primary = atoi(argv[index + 1]);
+					index++;
+				}
+			}
+			else
+			{
+				printf("--multimon-set: invalid number of monitors (%d), should be between 2 to 16\n", settings->num_monitors);
+				return FREERDP_ARGS_PARSE_FAILURE;
 			}
 		}
 		else if (argv[index][0] != '-')

@@ -56,7 +56,7 @@ tbool xf_detect_monitors(xfInfo* xfi, rdpSettings* settings)
 
 	if (settings->num_monitors > 0)
 	{
-		/* already setup */
+		/* already setup in args */
 		return true;
 	}
 

@@ -50,12 +50,12 @@
 
 #define BER_PC(_pc)	(_pc ? BER_CONSTRUCT : BER_PRIMITIVE)
 
-void ber_read_length(STREAM* s, int* length);
+int ber_read_length(STREAM* s, int* length);
 int ber_write_length(STREAM* s, int length);
-int _ber_skip_length(int length);
+int _ber_sizeof_length(int length);
 int ber_get_content_length(int length);
-tbool ber_read_universal_tag(STREAM* s, uint8 tag, tbool pc);
-void ber_write_universal_tag(STREAM* s, uint8 tag, tbool pc);
+int ber_read_universal_tag(STREAM* s, uint8 tag, tbool pc);
+int ber_write_universal_tag(STREAM* s, uint8 tag, tbool pc);
 tbool ber_read_application_tag(STREAM* s, uint8 tag, int* length);
 void ber_write_application_tag(STREAM* s, uint8 tag, int length);
 tbool ber_read_application_tag(STREAM* s, uint8 tag, int* length);
@@ -63,21 +63,22 @@ tbool ber_read_enumerated(STREAM* s, uint8* enumerated, uint8 count);
 void ber_write_enumerated(STREAM* s, uint8 enumerated, uint8 count);
 tbool ber_read_contextual_tag(STREAM* s, uint8 tag, int* length, tbool pc);
 int ber_write_contextual_tag(STREAM* s, uint8 tag, int length, tbool pc);
-int ber_skip_contextual_tag(int length);
+int ber_sizeof_contextual_tag(int length);
 tbool ber_read_sequence_tag(STREAM* s, int* length);
 int ber_write_sequence_tag(STREAM* s, int length);
-int ber_skip_sequence(int length);
-int ber_skip_sequence_tag(int length);
+int ber_sizeof_sequence(int length);
+int ber_sizeof_sequence_tag(int length);
 tbool ber_read_bit_string(STREAM* s, int* length, uint8* padding);
 tbool ber_read_octet_string(STREAM* s, int* length);
-void ber_write_octet_string(STREAM* s, const uint8* oct_str, int length);
+int ber_write_octet_string(STREAM* s, const uint8* oct_str, int length);
+tbool ber_read_octet_string_tag(STREAM* s, int* length);
 int ber_write_octet_string_tag(STREAM* s, int length);
-int ber_skip_octet_string(int length);
+int ber_sizeof_octet_string(int length);
 tbool ber_read_boolean(STREAM* s, tbool* value);
 void ber_write_boolean(STREAM* s, tbool value);
 tbool ber_read_integer(STREAM* s, uint32* value);
 int ber_write_integer(STREAM* s, uint32 value);
 tbool ber_read_integer_length(STREAM* s, int* length);
-int ber_skip_integer(uint32 value);
+int ber_sizeof_integer(uint32 value);
 
 #endif /* __BER_H */

@@ -1816,7 +1816,9 @@ int ntlmssp_recv(NTLMSSP* ntlmssp, STREAM* s)
 	stream_read_uint32(s, messageType);
 
 	if (messageType == 2 && ntlmssp->state == NTLMSSP_STATE_CHALLENGE)
+	{
 		ntlmssp_recv_challenge_message(ntlmssp, s);
+	}
 
 	return 1;
 }
