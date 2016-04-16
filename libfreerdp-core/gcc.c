@@ -358,9 +358,10 @@ void gcc_write_client_data_blocks(STREAM* s, rdpSettings* settings)
 	gcc_write_client_network_data(s, settings);
 
 	/* extended client data supported */
-
-	//if (settings->negotiationFlags)
+	if (settings->negotiationFlags & EXTENDED_CLIENT_DATA_SUPPORTED)
+	{
 		gcc_write_client_monitor_data(s, settings);
+	}
 }
 
 tbool gcc_read_server_data_blocks(STREAM* s, rdpSettings* settings, int length)
@@ -1154,8 +1155,8 @@ void gcc_write_client_monitor_data(STREAM* s, rdpSettings* settings)
 		{
 			left = settings->monitors[i].x;
 			top = settings->monitors[i].y;
-			right = settings->monitors[i].x + settings->monitors[i].width - 1;
-			bottom = settings->monitors[i].y + settings->monitors[i].height - 1;
+			right = settings->monitors[i].width;
+			bottom = settings->monitors[i].height;
 			flags = settings->monitors[i].is_primary ? MONITOR_PRIMARY : 0;
 
 			stream_write_uint32(s, left); /* left */
