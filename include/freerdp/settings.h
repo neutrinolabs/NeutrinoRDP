@@ -452,6 +452,9 @@ struct rdp_settings
 	char* tsg_domain;
 	char* tsg_server;
 
+	/* No Orders */
+	tbool no_orders;
+
 };
 typedef struct rdp_settings rdpSettings;
 

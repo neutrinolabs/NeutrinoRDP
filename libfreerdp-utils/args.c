@@ -129,6 +129,7 @@ int freerdp_parse_args(rdpSettings* settings, int argc, char** argv,
 				"  --skip-bs: do not keep backing store\n"
 				"  --multimon-set: hard set monitor list: <num of monitors> <x> <y> <width> <height> <isprimary>, ...\n"
 				"                  two screen example --multimon-set 2 0 0 512 768 1 512 0 512 768 0\n"
+				"  --no-orders: do not accept any drawing orders, only bitmaps\n"
 				"\n", argv[0]);
 			return FREERDP_ARGS_PARSE_HELP; //TODO: What is the correct return
 		}
@@ -817,6 +818,10 @@ int freerdp_parse_args(rdpSettings* settings, int argc, char** argv,
 				printf("--multimon-set: invalid number of monitors (%d), should be between 2 to 16\n", settings->num_monitors);
 				return FREERDP_ARGS_PARSE_FAILURE;
 			}
+		}
+		else if (strcmp("--no-orders", argv[index]) == 0)
+		{
+		    settings->no_orders = true;
 		}
 		else if (argv[index][0] != '-')
 		{

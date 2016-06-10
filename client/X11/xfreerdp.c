@@ -482,30 +482,61 @@ tbool xf_pre_connect(freerdp* instance)
 
 	settings->os_major_type = OSMAJORTYPE_UNIX;
 	settings->os_minor_type = OSMINORTYPE_NATIVE_XSERVER;
-	settings->order_support[NEG_DSTBLT_INDEX] = true;
-	settings->order_support[NEG_PATBLT_INDEX] = true;
-	settings->order_support[NEG_SCRBLT_INDEX] = true;
-	settings->order_support[NEG_OPAQUE_RECT_INDEX] = true;
-	settings->order_support[NEG_DRAWNINEGRID_INDEX] = false;
-	settings->order_support[NEG_MULTIDSTBLT_INDEX] = false;
-	settings->order_support[NEG_MULTIPATBLT_INDEX] = false;
-	settings->order_support[NEG_MULTISCRBLT_INDEX] = false;
-	settings->order_support[NEG_MULTIOPAQUERECT_INDEX] = true;
-	settings->order_support[NEG_MULTI_DRAWNINEGRID_INDEX] = false;
-	settings->order_support[NEG_LINETO_INDEX] = true;
-	settings->order_support[NEG_POLYLINE_INDEX] = true;
-	settings->order_support[NEG_MEMBLT_INDEX] = bitmap_cache;
-	settings->order_support[NEG_MEM3BLT_INDEX] = false;
-	settings->order_support[NEG_MEMBLT_V2_INDEX] = bitmap_cache;
-	settings->order_support[NEG_MEM3BLT_V2_INDEX] = false;
-	settings->order_support[NEG_SAVEBITMAP_INDEX] = false;
-	settings->order_support[NEG_GLYPH_INDEX_INDEX] = true;
-	settings->order_support[NEG_FAST_INDEX_INDEX] = true;
-	settings->order_support[NEG_FAST_GLYPH_INDEX] = true;
-	settings->order_support[NEG_POLYGON_SC_INDEX] = false;
-	settings->order_support[NEG_POLYGON_CB_INDEX] = false;
-	settings->order_support[NEG_ELLIPSE_SC_INDEX] = false;
-	settings->order_support[NEG_ELLIPSE_CB_INDEX] = false;
+
+    if (settings->no_orders)
+    {
+        settings->order_support[NEG_DSTBLT_INDEX] = false;
+        settings->order_support[NEG_PATBLT_INDEX] = false;
+        settings->order_support[NEG_SCRBLT_INDEX] = false;
+        settings->order_support[NEG_OPAQUE_RECT_INDEX] = false;
+        settings->order_support[NEG_DRAWNINEGRID_INDEX] = false;
+        settings->order_support[NEG_MULTIDSTBLT_INDEX] = false;
+        settings->order_support[NEG_MULTIPATBLT_INDEX] = false;
+        settings->order_support[NEG_MULTISCRBLT_INDEX] = false;
+        settings->order_support[NEG_MULTIOPAQUERECT_INDEX] = false;
+        settings->order_support[NEG_MULTI_DRAWNINEGRID_INDEX] = false;
+        settings->order_support[NEG_LINETO_INDEX] = false;
+        settings->order_support[NEG_POLYLINE_INDEX] = false;
+        settings->order_support[NEG_MEMBLT_INDEX] = false;
+        settings->order_support[NEG_MEM3BLT_INDEX] = false;
+        settings->order_support[NEG_MEMBLT_V2_INDEX] = false;
+        settings->order_support[NEG_MEM3BLT_V2_INDEX] = false;
+        settings->order_support[NEG_SAVEBITMAP_INDEX] = false;
+        settings->order_support[NEG_GLYPH_INDEX_INDEX] = false;
+        settings->order_support[NEG_FAST_INDEX_INDEX] = false;
+        settings->order_support[NEG_FAST_GLYPH_INDEX] = false;
+        settings->order_support[NEG_POLYGON_SC_INDEX] = false;
+        settings->order_support[NEG_POLYGON_CB_INDEX] = false;
+        settings->order_support[NEG_ELLIPSE_SC_INDEX] = false;
+        settings->order_support[NEG_ELLIPSE_CB_INDEX] = false;
+    }
+    else
+    {
+        settings->order_support[NEG_DSTBLT_INDEX] = true;
+        settings->order_support[NEG_PATBLT_INDEX] = true;
+        settings->order_support[NEG_SCRBLT_INDEX] = true;
+        settings->order_support[NEG_OPAQUE_RECT_INDEX] = true;
+        settings->order_support[NEG_DRAWNINEGRID_INDEX] = false;
+        settings->order_support[NEG_MULTIDSTBLT_INDEX] = false;
+        settings->order_support[NEG_MULTIPATBLT_INDEX] = false;
+        settings->order_support[NEG_MULTISCRBLT_INDEX] = false;
+        settings->order_support[NEG_MULTIOPAQUERECT_INDEX] = true;
+        settings->order_support[NEG_MULTI_DRAWNINEGRID_INDEX] = false;
+        settings->order_support[NEG_LINETO_INDEX] = true;
+        settings->order_support[NEG_POLYLINE_INDEX] = true;
+        settings->order_support[NEG_MEMBLT_INDEX] = bitmap_cache;
+        settings->order_support[NEG_MEM3BLT_INDEX] = false;
+        settings->order_support[NEG_MEMBLT_V2_INDEX] = bitmap_cache;
+        settings->order_support[NEG_MEM3BLT_V2_INDEX] = false;
+        settings->order_support[NEG_SAVEBITMAP_INDEX] = false;
+        settings->order_support[NEG_GLYPH_INDEX_INDEX] = true;
+        settings->order_support[NEG_FAST_INDEX_INDEX] = true;
+        settings->order_support[NEG_FAST_GLYPH_INDEX] = true;
+        settings->order_support[NEG_POLYGON_SC_INDEX] = false;
+        settings->order_support[NEG_POLYGON_CB_INDEX] = false;
+        settings->order_support[NEG_ELLIPSE_SC_INDEX] = false;
+        settings->order_support[NEG_ELLIPSE_CB_INDEX] = false;
+    }
 
 	freerdp_channels_pre_connect(xfi->_context->channels, instance);
 
