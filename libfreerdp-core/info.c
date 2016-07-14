@@ -699,6 +699,11 @@ tbool rdp_recv_save_session_info(rdpRdp* rdp, STREAM* s)
 
 	//printf("%s\n", INFO_TYPE_LOGON_STRINGS[infoType]);
 
+	if (rdp->instance->LoginInfo != NULL)
+	{
+		rdp->instance->LoginInfo(rdp->instance, infoType, stream_get_tail(s), stream_get_left(s));
+	}
+
 	switch (infoType)
 	{
 		case INFO_TYPE_LOGON:

@@ -55,6 +55,7 @@ typedef int (*pSendChannelData)(freerdp* instance, int channelId, uint8* data, i
 typedef int (*pSendFrameAck)(freerdp* instance, int frame);
 typedef int (*pSendInvalidate)(freerdp* instance, int code, int x, int y, int w, int h);
 typedef int (*pReceiveChannelData)(freerdp* instance, int channelId, uint8* data, int size, int flags, int total_size);
+typedef int (*pLoginInfo)(freerdp* instance, int infoType, uint8* data, int data_bytes);
 
 struct rdp_context
 {
@@ -102,7 +103,9 @@ struct rdp_freerdp
 	pSendFrameAck SendFrameAck; /* 66 */
 	pSendInvalidate SendInvalidate; /* 67 */
 
-	uint32 paddingE[80 - 68]; /* 68 */
+	pLoginInfo LoginInfo; /* 68 */
+
+	uint32 paddingE[80 - 69]; /* 69 */
 };
 
 FREERDP_API void freerdp_context_new(freerdp* instance);
