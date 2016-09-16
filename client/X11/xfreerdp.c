@@ -55,6 +55,8 @@
 #include <freerdp/plugins/cliprdr.h>
 #include <freerdp/rail.h>
 
+#include <freerdp/utils/nrdp_avcodec.h>
+
 #include "xf_gdi.h"
 #include "xf_rail.h"
 #include "xf_tsmf.h"
@@ -1127,6 +1129,8 @@ int main(int argc, char* argv[])
 	freerdp_handle_signals();
 
 	setlocale(LC_ALL, "");
+
+	nrdp_avcodec_init();
 
 	freerdp_channels_global_init();
 

@@ -48,7 +48,8 @@ set(FREERDP_UTILS_SRCS
 	thread.c
 	unicode.c
 	wait_obj.c
-	git_ref.h)
+	git_ref.h
+	nrdp_avcodec.c)
 
 if(WIN32)
 else()
@@ -62,7 +63,7 @@ add_library(freerdp-utils ${FREERDP_UTILS_SRCS})
 
 set_target_properties(freerdp-utils PROPERTIES VERSION ${FREERDP_VERSION_FULL} SOVERSION ${FREERDP_VERSION} PREFIX "lib")
 
-target_link_libraries(freerdp-utils ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
+target_link_libraries(freerdp-utils ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS} ${FFMPEG_LIBRARIES})
 
 if(WIN32)
 	target_link_libraries(freerdp-utils ws2_32)

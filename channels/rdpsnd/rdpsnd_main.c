@@ -271,7 +271,7 @@ static void rdpsnd_process_message_formats(rdpsndPlugin* rdpsnd, STREAM* data_in
 		stream_read_uint16(data_in, format->wFormatTag);
 		stream_read_uint16(data_in, format->nChannels);
 		stream_read_uint32(data_in, format->nSamplesPerSec);
-		stream_seek_uint32(data_in); /* nAvgBytesPerSec */
+		stream_read_uint32(data_in, format->nAvgBytesPerSec);
 		stream_read_uint16(data_in, format->nBlockAlign);
 		stream_read_uint16(data_in, format->wBitsPerSample);
 		stream_read_uint16(data_in, format->cbSize);
@@ -280,6 +280,10 @@ static void rdpsnd_process_message_formats(rdpsndPlugin* rdpsnd, STREAM* data_in
 		format->data = NULL;
 
 		DEBUG_SVC("wFormatTag=%d nChannels=%d nSamplesPerSec=%d nBlockAlign=%d wBitsPerSample=%d",
+			format->wFormatTag, format->nChannels, format->nSamplesPerSec,
+			format->nBlockAlign, format->wBitsPerSample);
+
+		printf("wFormatTag=%d nChannels=%d nSamplesPerSec=%d nBlockAlign=%d wBitsPerSample=%d\n",
 			format->wFormatTag, format->nChannels, format->nSamplesPerSec,
 			format->nBlockAlign, format->wBitsPerSample);
 

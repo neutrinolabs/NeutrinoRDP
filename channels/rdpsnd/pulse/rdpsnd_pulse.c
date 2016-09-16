@@ -26,6 +26,8 @@
 #include <freerdp/utils/dsp.h>
 #include <freerdp/utils/svc_plugin.h>
 
+#include <freerdp/utils/nrdp_avcodec.h>
+
 #include "rdpsnd_main.h"
 
 typedef void (*SourceDataAvailable) (void* user_data, void* buf, int buf_len);
@@ -60,6 +62,8 @@ struct rdpsnd_pulse_plugin
 	int                   rec_block_size;
 	int		      rec_bytes_per_frame;
 	uint32 		      rec_frames_per_packet;
+
+	void* aac_handle;
 };
 
 static int rdpsnd_pulse_rec_close(rdpsndDevicePlugin* device);
@@ -427,8 +431,33 @@ static tbool rdpsnd_pulse_format_supported(rdpsndDevicePlugin* device, rdpsndFor
 	if (!pulse->context)
 		return false;
 
+	//printf("format->wFormatTag %x\n", format->wFormatTag);
 	switch (format->wFormatTag)
 	{
+
+		case 41222: /* AAC */
+			freerdp_hexdump(format, sizeof(rdpsndFormat));
+			printf("cbSize %d\n", format->cbSize);
+			printf("nAvgBytesPerSec %d\n", format->nAvgBytesPerSec);
+			printf("nChannels %d\n", format->nChannels);
+			printf("nSamplesPerSec %d\n", format->nSamplesPerSec);
+			if (format->nChannels == 2)
+			{
+				if (format->nSamplesPerSec == 44100)
+				{
+					if (format->nAvgBytesPerSec == 12000)
+					//if (format->nAvgBytesPerSec == 16000)
+					//if (format->nAvgBytesPerSec == 20000)
+					//if (format->nAvgBytesPerSec == 24000)
+					{
+						printf("good\n");
+						return true;
+					}
+				}
+			}
+			printf("not good\n");
+			return false;
+
 		case 1: /* PCM */
 			if (format->cbSize == 0 &&
 				(format->nSamplesPerSec <= PA_RATE_MAX) &&
@@ -438,7 +467,7 @@ static tbool rdpsnd_pulse_format_supported(rdpsndDevicePlugin* device, rdpsndFor
 				return true;
 			}
 			break;
-
+#if 0
 		case 6: /* A-LAW */
 		case 7: /* U-LAW */
 			if (format->cbSize == 0 &&
@@ -457,6 +486,10 @@ static tbool rdpsnd_pulse_format_supported(rdpsndDevicePlugin* device, rdpsndFor
 			{
 				return true;
 			}
+			break;
+#endif
+		default:
+			//printf("unknown format format->wFormatTag %x\n", format->wFormatTag);
 			break;
 	}
 	return false;
@@ -481,6 +514,10 @@ static void rdpsnd_pulse_set_volume(rdpsndDevicePlugin* device, uint32 value)
 {
 }
 
+//#include <fcntl.h>
+//#include <sys/stat.h>
+//#include <unistd.h>
+
 static void rdpsnd_pulse_play(rdpsndDevicePlugin* device, uint8* data, int size)
 {
 	rdpsndPulsePlugin* pulse = (rdpsndPulsePlugin*)device;
@@ -490,6 +527,7 @@ static void rdpsnd_pulse_play(rdpsndDevicePlugin* device, uint8* data, int size)
 	uint8* src;
 	int decoded_size;
 
+	printf("rdpsnd_pulse_play: format %d\n", pulse->format);
 	if (!pulse->stream)
 		return;
 
@@ -499,6 +537,80 @@ static void rdpsnd_pulse_play(rdpsndDevicePlugin* device, uint8* data, int size)
 			data, size, pulse->sample_spec.channels, pulse->block_size, &decoded_size);
 		size = decoded_size;
 		src = decoded_data;
+	}
+	if (pulse->format == 41222)
+	{
+		int cdata_bytes_processed;
+		int decoded;
+		int channels;
+		int format;
+		int bytes;
+		int error;
+
+		printf("rdpsnd_pulse_play: acc data size %d\n", size);
+
+		decoded_data = NULL;
+		src = data;
+
+		if (pulse->aac_handle == NULL)
+		{
+			error = nrdp_avcodec_audio_create(&(pulse->aac_handle), AUDIO_CODEC_ID_AAC);
+			if (error != 0)
+			{
+				printf("rdpsnd_pulse_play: nrdp_avcodec_audio_create failed, error %d\n", error);
+				return;
+			}
+		}
+
+		error = nrdp_avcodec_audio_decode(pulse->aac_handle, data, size, &cdata_bytes_processed, &decoded);
+		if (error == 0)
+		{
+			printf("ok cdata_bytes_processed %d decoded %d\n", cdata_bytes_processed, decoded);
+		}
+		else
+		{
+			printf("not ok\n");
+			return;
+		}
+
+		if (decoded)
+		{
+			error = nrdp_avcodec_audio_get_frame_info(pulse->aac_handle, &channels, &format, &bytes);
+			if (error == 0)
+			{
+				printf("ok channels %d format %d bytes %d\n", channels, format, bytes);
+				decoded_data = (uint8*)xzalloc(bytes);
+				error = nrdp_avcodec_audio_get_frame_data(pulse->aac_handle, decoded_data, bytes);
+				if (error == 0)
+				{
+					printf("ok nrdp_avcodec_audio_get_frame_data\n");
+				}
+				else
+				{
+					printf("not ok nrdp_avcodec_audio_get_frame_data\n");
+					return;
+				}
+				size = bytes / 2;
+				src = decoded_data;
+			}
+			else
+			{
+				printf("not ok\n");
+				return;
+			}
+		}
+		else
+		{
+			return;
+		}
+
+		//int fd;
+		//fd = open("/tmp/audio.aac", O_RDWR | O_CREAT, 0666);
+		//lseek(fd, 0, SEEK_END);
+		//write(fd, data, size);
+		//close(fd);
+		//return;
+
 	}
 	else
 	{
