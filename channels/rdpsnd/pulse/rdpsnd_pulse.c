@@ -296,6 +296,9 @@ static void rdpsnd_pulse_set_format_spec(rdpsndPulsePlugin* pulse, rdpsndFormat*
 		case 0x11: /* IMA ADPCM */
 			sample_spec.format = PA_SAMPLE_S16LE;
 			break;
+		case 41222: /* AAC */
+			sample_spec.format = PA_SAMPLE_S16LE;
+			break;
 	}
 
 	if (rec)
