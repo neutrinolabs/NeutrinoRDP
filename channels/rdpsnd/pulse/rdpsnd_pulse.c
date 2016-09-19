@@ -593,7 +593,7 @@ static void rdpsnd_pulse_play(rdpsndDevicePlugin* device, uint8* data, int size)
 					printf("not ok nrdp_avcodec_audio_get_frame_data\n");
 					return;
 				}
-				size = bytes / 2;
+				size = bytes;
 				src = decoded_data;
 			}
 			else

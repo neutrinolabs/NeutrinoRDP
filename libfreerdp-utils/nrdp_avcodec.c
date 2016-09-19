@@ -385,45 +385,7 @@ nrdp_avcodec_audio_get_frame_data(void* obj, void* data, int data_bytes)
     }
     if (self->frame->format == AV_SAMPLE_FMT_S16)
     {
-#if 0
-        int index;
-        int* src32;
-        short* src16;
-        short* dst16;
-
-        src32 = (int*)(self->frame->data[0]);
-        src16 = (short*)(self->frame->data[0]);
-        dst16 = (short*)data;
-        for (index = 0; index < data_bytes / 2; index++)
-        {
-            //dst16[index] = src32[index] >> 16;
-            dst16[index] = src16[index * 2];
-        }
-#endif
         memcpy(data, self->frame->data[0], data_bytes);
-        freerdp_hexdump(self->frame->data[0], 64);
-//	//printf("hi %d\n", frame->);
-#if 0
-     float* src[8];
-     short* dst;
-     int index;
-
-     src[0] = (float*)(self->frame->data[0]);
-     //src[1] = (float*)(self->frame->data[1]);
-     dst = (short*)data;
-
-	 for (index = 0; index < self->frame->nb_samples; index++)
-            {
-                if (data_bytes < 4) /* 2 shorts */
-                {
-                    break;
-                }
-                dst[0] = src[0][index] * 32768;
-                //dst[1] = src[1][index] * 32768;
-                dst += 2;
-                data_bytes -= 4; /* 2 shorts */
-            }
-#endif
     }
     else if (self->frame->format == AV_SAMPLE_FMT_FLTP)
     {
