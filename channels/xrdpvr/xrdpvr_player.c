@@ -340,7 +340,7 @@ get_audio_config(void *vp, int *samp_per_sec, int *num_channels, int *bits_per_s
 	switch (psi->audio_codec_ctx->sample_fmt)
 	{
 		//case AV_SAMPLE_FMT_U8:
-		case SAMPLE_FMT_U8:
+		case AV_SAMPLE_FMT_U8:
 			*bits_per_samp = 8;
 			break;
 
