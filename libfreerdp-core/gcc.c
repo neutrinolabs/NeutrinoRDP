@@ -356,12 +356,7 @@ void gcc_write_client_data_blocks(STREAM* s, rdpSettings* settings)
 	gcc_write_client_cluster_data(s, settings);
 	gcc_write_client_security_data(s, settings);
 	gcc_write_client_network_data(s, settings);
-
-	/* extended client data supported */
-	if (settings->negotiationFlags & EXTENDED_CLIENT_DATA_SUPPORTED)
-	{
-		gcc_write_client_monitor_data(s, settings);
-	}
+	gcc_write_client_monitor_data(s, settings);
 }
 
 tbool gcc_read_server_data_blocks(STREAM* s, rdpSettings* settings, int length)
