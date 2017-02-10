@@ -801,13 +801,13 @@ int freerdp_parse_args(rdpSettings* settings, int argc, char** argv,
 			{
 				for (n = 0; n < settings->num_monitors; n++)
 				{
-					settings->monitors[n].x = atoi(argv[index + 1]);
+					settings->monitors[n].left = atoi(argv[index + 1]);
 					index++;
-					settings->monitors[n].y = atoi(argv[index + 1]);
+					settings->monitors[n].top = atoi(argv[index + 1]);
 					index++;
-					settings->monitors[n].width = settings->monitors[n].x + atoi(argv[index + 1]) - 1;
+					settings->monitors[n].right = settings->monitors[n].left + atoi(argv[index + 1]) - 1;
 					index++;
-					settings->monitors[n].height = settings->monitors[n].y + atoi(argv[index + 1]) - 1;
+					settings->monitors[n].bottom = settings->monitors[n].top + atoi(argv[index + 1]) - 1;
 					index++;
 					settings->monitors[n].is_primary = atoi(argv[index + 1]);
 					index++;

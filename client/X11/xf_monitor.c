@@ -158,10 +158,10 @@ tbool xf_detect_monitors(xfInfo* xfi, rdpSettings* settings)
 
 	for (i = 0; i < vscreen->nmonitors; i++)
 	{
-		settings->monitors[i].x = vscreen->monitors[i].area.left;
-		settings->monitors[i].y = vscreen->monitors[i].area.top;
-		settings->monitors[i].width = vscreen->monitors[i].area.right - vscreen->monitors[i].area.left + 1;
-		settings->monitors[i].height = vscreen->monitors[i].area.bottom - vscreen->monitors[i].area.top + 1;
+		settings->monitors[i].left = vscreen->monitors[i].area.left;
+		settings->monitors[i].top = vscreen->monitors[i].area.top;
+		settings->monitors[i].right = vscreen->monitors[i].area.right;
+		settings->monitors[i].bottom = vscreen->monitors[i].area.bottom;
 		settings->monitors[i].is_primary = vscreen->monitors[i].primary;
 
 		vscreen->area.left = MIN(vscreen->monitors[i].area.left, vscreen->area.left);
