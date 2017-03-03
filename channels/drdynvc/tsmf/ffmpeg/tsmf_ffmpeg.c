@@ -417,7 +417,7 @@ static tbool tsmf_ffmpeg_decode_audio(ITSMFDecoder* decoder, const uint8* data, 
 	while (src_size > 0)
 	{
 		/* Ensure enough space for decoding */
-		if (mdecoder->decoded_size_max - mdecoder->decoded_size < AVCODEC_MAX_AUDIO_FRAME_SIZE)
+		if (mdecoder->decoded_size_max - mdecoder->decoded_size < MAX_AUDIO_FRAME_SIZE)
 		{
 			mdecoder->decoded_size_max = mdecoder->decoded_size_max * 2 + 16;
 			mdecoder->decoded_data = xrealloc(mdecoder->decoded_data, mdecoder->decoded_size_max);
