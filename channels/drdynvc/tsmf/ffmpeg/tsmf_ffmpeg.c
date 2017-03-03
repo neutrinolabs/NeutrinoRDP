@@ -35,12 +35,22 @@
 #define AVMEDIA_TYPE_AUDIO 1
 #endif
 
+#if LIBAVCODEC_VERSION_MAJOR < 54
+#define MAX_AUDIO_FRAME_SIZE AVCODEC_MAX_AUDIO_FRAME_SIZE
+#else
+#define MAX_AUDIO_FRAME_SIZE 192000
+#endif
+
 typedef struct _TSMFFFmpegDecoder
 {
 	ITSMFDecoder iface;
 
 	int media_type;
-	enum CodecID codec_id;
+#if LIBAVCODEC_VERSION_MAJOR < 55
+ 	enum CodecID codec_id;
+#else
+	enum AVCodecID codec_id;
+#endif
 	AVCodecContext* codec_context;
 	AVCodec* codec;
 	AVFrame* frame;
@@ -89,6 +99,7 @@ static tbool tsmf_ffmpeg_init_audio_stream(ITSMFDecoder* decoder, const TS_AM_ME
 	mdecoder->codec_context->channels = media_type->Channels;
 	mdecoder->codec_context->block_align = media_type->BlockAlign;
 
+#if LIBAVCODEC_VERSION_MAJOR < 55
 #ifdef AV_CPU_FLAG_SSE2
 	mdecoder->codec_context->dsp_mask = AV_CPU_FLAG_SSE2 | AV_CPU_FLAG_MMX2;
 #else
@@ -98,6 +109,14 @@ static tbool tsmf_ffmpeg_init_audio_stream(ITSMFDecoder* decoder, const TS_AM_ME
 	mdecoder->codec_context->dsp_mask = FF_MM_SSE2 | FF_MM_MMX2;
 #endif
 #endif
+
+#else  /* LIBAVCODEC_VERSION_MAJOR < 55 */
+#ifdef AV_CPU_FLAG_SSE2
+	av_set_cpu_flags_mask(AV_CPU_FLAG_SSE2 | AV_CPU_FLAG_MMX2);
+#else
+	av_set_cpu_flags_mask(FF_MM_SSE2 | FF_MM_MMX2);
+#endif
+#endif /* LIBAVCODEC_VERSION_MAJOR < 55 */
 
 	return true;
 }
@@ -387,7 +406,7 @@ static tbool tsmf_ffmpeg_decode_audio(ITSMFDecoder* decoder, const uint8* data, 
 #endif
 
 	if (mdecoder->decoded_size_max == 0)
-		mdecoder->decoded_size_max = AVCODEC_MAX_AUDIO_FRAME_SIZE + 16;
+		mdecoder->decoded_size_max = MAX_AUDIO_FRAME_SIZE + 16;
 	mdecoder->decoded_data = xzalloc(mdecoder->decoded_size_max);
 	/* align the memory for SSE2 needs */
 	dst = (uint8*) (((uintptr_t)mdecoder->decoded_data + 15) & ~ 0x0F);
