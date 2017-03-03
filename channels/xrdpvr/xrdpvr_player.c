@@ -227,20 +227,20 @@ void* init_player(void* plugin, char* filename)
 
     psi->audio_codec = avcodec_find_decoder(CODEC_ID_AAC);
 
-#ifdef DISTRO_DEBIAN8  || defined(DISTRO_UBUNTU1604)
+#if defined(DISTRO_DEBIAN8) || defined(DISTRO_UBUNTU1604)
     psi->audio_codec_ctx = avcodec_alloc_context3(psi->audio_codec);
 #else
     psi->audio_codec_ctx = avcodec_alloc_context();
 #endif
 
     psi->video_codec = avcodec_find_decoder(CODEC_ID_H264);
-#ifdef DISTRO_DEBIAN8 || defined(DISTRO_UBUNTU1604)
+#if defined(DISTRO_DEBIAN8) || defined(DISTRO_UBUNTU1604)
     psi->video_codec_ctx = avcodec_alloc_context3(psi->video_codec);
 #else
     psi->video_codec_ctx = avcodec_alloc_context();
 #endif
 
-#ifdef DISTRO_DEBIAN8 || defined(DISTRO_UBUNTU1604)
+#if defined(DISTRO_DEBIAN8) || defined(DISTRO_UBUNTU1604)
     psi->audio_frame = av_frame_alloc();
     psi->video_frame = av_frame_alloc();
 #else
@@ -445,7 +445,7 @@ set_audio_config(void* vp, char* extradata, int extradata_size,
         psi->audio_codec_ctx->flags |= CODEC_FLAG_TRUNCATED;
     }
 
-#ifdef DISTRO_DEBIAN8 || defined(DISTRO_UBUNTU1604)
+#if defined(DISTRO_DEBIAN8) || defined(DISTRO_UBUNTU1604)
     if (avcodec_open2(psi->audio_codec_ctx, psi->audio_codec, &psi->audio_codec_options) < 0)
 
 #else
@@ -468,7 +468,7 @@ set_video_config(void *vp)
     PLAYER_STATE_INFO *psi = (PLAYER_STATE_INFO *) vp;
 
     printf("set_video_config:\n");
-#ifdef DISTRO_DEBIAN8 || defined(DISTRO_UBUNTU1604)
+#if defined(DISTRO_DEBIAN8) || defined(DISTRO_UBUNTU1604)
     if (avcodec_open2(psi->video_codec_ctx, psi->video_codec, &psi->video_codec_options) < 0)
 
 #else
