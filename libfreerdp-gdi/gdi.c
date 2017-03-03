@@ -308,12 +308,12 @@ static const uint32 rop3_code_table[] =
 
 /* GDI Helper Functions */
 
-static INLINE uint32 gdi_rop3_code(uint8 code)
+INLINE uint32 gdi_rop3_code(uint8 code)
 {
 	return rop3_code_table[code];
 }
 
-static INLINE uint8* gdi_get_bitmap_pointer(HGDI_DC hdcBmp, int x, int y)
+INLINE uint8* gdi_get_bitmap_pointer(HGDI_DC hdcBmp, int x, int y)
 {
 	uint8* p;
 	HGDI_BITMAP hBmp = (HGDI_BITMAP) hdcBmp->selectedObject;
@@ -330,7 +330,7 @@ static INLINE uint8* gdi_get_bitmap_pointer(HGDI_DC hdcBmp, int x, int y)
 	}
 }
 
-static INLINE uint8* gdi_get_brush_pointer(HGDI_DC hdcBrush, int x, int y)
+INLINE uint8* gdi_get_brush_pointer(HGDI_DC hdcBrush, int x, int y)
 {
 	uint8 * p;
 
@@ -354,7 +354,7 @@ static INLINE uint8* gdi_get_brush_pointer(HGDI_DC hdcBrush, int x, int y)
 	return p;
 }
 
-static INLINE int gdi_is_mono_pixel_set(uint8* data, int x, int y, int width)
+INLINE int gdi_is_mono_pixel_set(uint8* data, int x, int y, int width)
 {
 	int byte;
 	int shift;
