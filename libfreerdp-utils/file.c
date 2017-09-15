@@ -83,6 +83,16 @@ char* freerdp_get_home_path(rdpSettings* settings)
 	if (settings->home_path == NULL)
 		settings->home_path = getenv(HOME_ENV_VARIABLE);
 
+	/* https://github.com/neutrinolabs/xrdp/issues/719 */
+	/* workaround if home_path still is null */
+	/* happens for exmaple if in /lib/systemd/system/xrdp.service the User line is missing: */
+	/* [Service] */
+	/* ... */
+	/* User=root */
+	/* Backport of fix from FreeRDP (Pawel Jakub Dawidek) */
+	if (settings->home_path == NULL)
+		settings->home_path = xstrdup("/");
+	
 	return settings->home_path;
 }
 
