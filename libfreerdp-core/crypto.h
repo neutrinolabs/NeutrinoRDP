@@ -33,6 +33,7 @@
 #include <openssl/bn.h>
 #include <openssl/x509v3.h>
 #include <openssl/rand.h>
+#include <openssl/evp.h>
 
 #if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x0090800f)
 #define D2I_X509_CONST const
@@ -64,12 +65,12 @@ struct crypto_rc4_struct
 
 struct crypto_des3_struct
 {
-	EVP_CIPHER_CTX des3_ctx;
+	EVP_CIPHER_CTX *des3_ctx;
 };
 
 struct crypto_hmac_struct
 {
-	HMAC_CTX hmac_ctx;
+	HMAC_CTX *hmac_ctx;
 };
 
 struct crypto_cert_struct

@@ -19,6 +19,31 @@
 
 #include "crypto.h"
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+static HMAC_CTX *HMAC_CTX_new(void)
+{
+	HMAC_CTX *ctx = xmalloc(sizeof(*ctx));
+	if (ctx == NULL) 
+	{
+		return NULL;
+	}
+
+	HMAC_CTX_init(ctx);
+	return ctx;
+}
+
+static void HMAC_CTX_free(HMAC_CTX *ctx)
+{
+	if (ctx == NULL) 
+	{
+		return;
+	}
+
+	HMAC_CTX_cleanup(ctx);
+	xfree(ctx);
+}
+#endif /* OPENSSL_VERSION_NUMBER < 0x10100000L */
+
 CryptoSha1 crypto_sha1_init(void)
 {
 	CryptoSha1 sha1 = xmalloc(sizeof(*sha1));
@@ -97,31 +122,31 @@ void crypto_rc4_free(CryptoRc4 rc4)
 CryptoDes3 crypto_des3_encrypt_init(const uint8* key, const uint8* ivec)
 {
 	CryptoDes3 des3 = xmalloc(sizeof(*des3));
-	EVP_CIPHER_CTX_init(&des3->des3_ctx);
-	EVP_EncryptInit_ex(&des3->des3_ctx, EVP_des_ede3_cbc(), NULL, key, ivec);
-	EVP_CIPHER_CTX_set_padding(&des3->des3_ctx, 0);
+	des3->des3_ctx = EVP_CIPHER_CTX_new();
+	EVP_EncryptInit_ex(des3->des3_ctx, EVP_des_ede3_cbc(), NULL, key, ivec);
+	EVP_CIPHER_CTX_set_padding(des3->des3_ctx, 0);
 	return des3;
 }
 
 CryptoDes3 crypto_des3_decrypt_init(const uint8* key, const uint8* ivec)
 {
 	CryptoDes3 des3 = xmalloc(sizeof(*des3));
-	EVP_CIPHER_CTX_init(&des3->des3_ctx);
-	EVP_DecryptInit_ex(&des3->des3_ctx, EVP_des_ede3_cbc(), NULL, key, ivec);
-	EVP_CIPHER_CTX_set_padding(&des3->des3_ctx, 0);
+	des3->des3_ctx = EVP_CIPHER_CTX_new();
+	EVP_DecryptInit_ex(des3->des3_ctx, EVP_des_ede3_cbc(), NULL, key, ivec);
+	EVP_CIPHER_CTX_set_padding(des3->des3_ctx, 0);
 	return des3;
 }
 
 void crypto_des3_encrypt(CryptoDes3 des3, uint32 length, const uint8* in_data, uint8* out_data)
 {
 	int len;
-	EVP_EncryptUpdate(&des3->des3_ctx, out_data, &len, in_data, length);
+	EVP_EncryptUpdate(des3->des3_ctx, out_data, &len, in_data, length);
 }
 
 void crypto_des3_decrypt(CryptoDes3 des3, uint32 length, const uint8* in_data, uint8* out_data)
 {
 	int len;
-	EVP_DecryptUpdate(&des3->des3_ctx, out_data, &len, in_data, length);
+	EVP_DecryptUpdate(des3->des3_ctx, out_data, &len, in_data, length);
 
 	if (length != len)
 		abort(); /* TODO */
@@ -129,35 +154,35 @@ void crypto_des3_decrypt(CryptoDes3 des3, uint32 length, const uint8* in_data, u
 
 void crypto_des3_free(CryptoDes3 des3)
 {
-	EVP_CIPHER_CTX_cleanup(&des3->des3_ctx);
+	EVP_CIPHER_CTX_free(des3->des3_ctx);
 	xfree(des3);
 }
 
 CryptoHmac crypto_hmac_new(void)
 {
 	CryptoHmac hmac = xmalloc(sizeof(*hmac));
-	HMAC_CTX_init(&hmac->hmac_ctx);
+	hmac->hmac_ctx = HMAC_CTX_new();
 	return hmac;
 }
 
 void crypto_hmac_sha1_init(CryptoHmac hmac, const uint8* data, uint32 length)
 {
-	HMAC_Init_ex(&hmac->hmac_ctx, data, length, EVP_sha1(), NULL);
+	HMAC_Init_ex(hmac->hmac_ctx, data, length, EVP_sha1(), NULL);
 }
 
 void crypto_hmac_update(CryptoHmac hmac, const uint8* data, uint32 length)
 {
-	HMAC_Update(&hmac->hmac_ctx, data, length);
+	HMAC_Update(hmac->hmac_ctx, data, length);
 }
 
 void crypto_hmac_final(CryptoHmac hmac, uint8* out_data, uint32 length)
 {
-	HMAC_Final(&hmac->hmac_ctx, out_data, &length);
+	HMAC_Final(hmac->hmac_ctx, out_data, &length);
 }
 
 void crypto_hmac_free(CryptoHmac hmac)
 {
-	HMAC_CTX_cleanup(&hmac->hmac_ctx);
+	HMAC_CTX_free(hmac->hmac_ctx);
 	xfree(hmac);
 }
 
@@ -245,14 +270,15 @@ const uint8 tssk_exponent[] =
 	0x5b, 0x7b, 0x88, 0xc0
 };
 
-static void crypto_rsa_common(const uint8* input, int length, uint32 key_length, const uint8* modulus, const uint8* exponent, int exponent_size, uint8* output)
+static void crypto_rsa_common(const uint8* input, int length, uint32 key_length,
+	const uint8* modulus, const uint8* exponent, int exponent_size, uint8* output)
 {
 	BN_CTX* ctx;
 	int output_length;
 	uint8* input_reverse;
 	uint8* modulus_reverse;
 	uint8* exponent_reverse;
-	BIGNUM mod, exp, x, y;
+	BIGNUM *mod, *exp, *x, *y;
 
 	input_reverse = (uint8*) xmalloc(2 * key_length + exponent_size);
 	modulus_reverse = input_reverse + key_length;
@@ -266,69 +292,79 @@ static void crypto_rsa_common(const uint8* input, int length, uint32 key_length,
 	crypto_reverse(input_reverse, length);
 
 	ctx = BN_CTX_new();
-	BN_init(&mod);
-	BN_init(&exp);
-	BN_init(&x);
-	BN_init(&y);
+	mod = BN_new();
+	exp = BN_new();
+	x = BN_new();
+	y = BN_new();
 
-	BN_bin2bn(modulus_reverse, key_length, &mod);
-	BN_bin2bn(exponent_reverse, exponent_size, &exp);
-	BN_bin2bn(input_reverse, length, &x);
-	BN_mod_exp(&y, &x, &exp, &mod, ctx);
+	BN_bin2bn(modulus_reverse, key_length, mod);
+	BN_bin2bn(exponent_reverse, exponent_size, exp);
+	BN_bin2bn(input_reverse, length, x);
+	BN_mod_exp(y, x, exp, mod, ctx);
 
-	output_length = BN_bn2bin(&y, output);
+	output_length = BN_bn2bin(y, output);
 	crypto_reverse(output, output_length);
 
 	if (output_length < (int) key_length)
 		memset(output + output_length, 0, key_length - output_length);
 
-	BN_free(&y);
-	BN_clear_free(&x);
-	BN_free(&exp);
-	BN_free(&mod);
+	BN_free(y);
+	BN_clear_free(x);
+	BN_free(exp);
+	BN_free(mod);
 	BN_CTX_free(ctx);
 	xfree(input_reverse);
 }
 
-static void crypto_rsa_public(const uint8* input, int length, uint32 key_length, const uint8* modulus, const uint8* exponent, uint8* output)
+static void crypto_rsa_public(const uint8* input, int length, uint32 key_length,
+	const uint8* modulus, const uint8* exponent, uint8* output)
 {
 	crypto_rsa_common(input, length, key_length, modulus, exponent, EXPONENT_MAX_SIZE, output);
 }
 
-static void crypto_rsa_private(const uint8* input, int length, uint32 key_length, const uint8* modulus, const uint8* private_exponent, uint8* output)
+static void crypto_rsa_private(const uint8* input, int length, uint32 key_length,
+	const uint8* modulus, const uint8* private_exponent, uint8* output)
 {
 
-	crypto_rsa_common(input, length, key_length, modulus, private_exponent, key_length, output);
+	crypto_rsa_common(input, length, key_length, modulus, private_exponent,
+		key_length, output);
 }
 
-void crypto_rsa_public_encrypt(const uint8* input, int length, uint32 key_length, const uint8* modulus, const uint8* exponent, uint8* output)
+void crypto_rsa_public_encrypt(const uint8* input, int length, uint32 key_length,
+	const uint8* modulus, const uint8* exponent, uint8* output)
 {
 
 	crypto_rsa_public(input, length, key_length, modulus, exponent, output);
 }
 
-void crypto_rsa_public_decrypt(const uint8* input, int length, uint32 key_length, const uint8* modulus, const uint8* exponent, uint8* output)
+void crypto_rsa_public_decrypt(const uint8* input, int length, uint32 key_length,
+	const uint8* modulus, const uint8* exponent, uint8* output)
 {
 
 	crypto_rsa_public(input, length, key_length, modulus, exponent, output);
 }
 
-void crypto_rsa_private_encrypt(const uint8* input, int length, uint32 key_length, const uint8* modulus, const uint8* private_exponent, uint8* output)
+void crypto_rsa_private_encrypt(const uint8* input, int length, uint32 key_length,
+	const uint8* modulus, const uint8* private_exponent, uint8* output)
 {
 
 	crypto_rsa_private(input, length, key_length, modulus, private_exponent, output);
 }
 
-void crypto_rsa_private_decrypt(const uint8* input, int length, uint32 key_length, const uint8* modulus, const uint8* private_exponent, uint8* output)
+void crypto_rsa_private_decrypt(const uint8* input, int length, uint32 key_length,
+	const uint8* modulus, const uint8* private_exponent, uint8* output)
 {
 
-	crypto_rsa_private(input, length, key_length, modulus, private_exponent, output);
+	crypto_rsa_private(input, length, key_length, modulus, private_exponent,
+		output);
 }
 
-void crypto_rsa_decrypt(const uint8* input, int length, uint32 key_length, const uint8* modulus, const uint8* private_exponent, uint8* output)
+void crypto_rsa_decrypt(const uint8* input, int length, uint32 key_length,
+	const uint8* modulus, const uint8* private_exponent, uint8* output)
 {
 
-	crypto_rsa_common(input, length, key_length, modulus, private_exponent, key_length, output);
+	crypto_rsa_common(input, length, key_length, modulus, private_exponent,
+		key_length, output);
 }
 
 void crypto_reverse(uint8* data, int length)

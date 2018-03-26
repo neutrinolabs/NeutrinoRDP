@@ -126,6 +126,31 @@ static const char* const AV_PAIRS_STRINGS[] =
 	"MsvChannelBindings"
 };
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+static HMAC_CTX *HMAC_CTX_new(void)
+{
+	HMAC_CTX *ctx = xmalloc(sizeof(*ctx));
+	if (ctx == NULL) 
+	{
+		return NULL;
+	}
+
+	HMAC_CTX_init(ctx);
+	return ctx;
+}
+
+static void HMAC_CTX_free(HMAC_CTX *ctx)
+{
+	if (ctx == NULL) 
+	{
+		return;
+	}
+
+	HMAC_CTX_cleanup(ctx);
+	xfree(ctx);
+}
+#endif /* OPENSSL_VERSION_NUMBER < 0x10100000L */
+
 /**
  * Set NTLMSSP username.
  * @param ntlmssp
@@ -456,7 +481,7 @@ void ntlmssp_compute_lm_hash(char* password, char* hash)
 	char text[14];
 	char des_key1[8];
 	char des_key2[8];
-	des_key_schedule ks;
+	DES_key_schedule ks;
 
 	/* LM("password") = E52CAC67419A9A224A3B108F3FA6CB6D */
 
@@ -530,7 +555,7 @@ void ntlmssp_compute_lm_response(char* password, char* challenge, char* response
 	char des_key1[8];
 	char des_key2[8];
 	char des_key3[8];
-	des_key_schedule ks;
+	DES_key_schedule ks;
 
 	/* A LM hash is 16-bytes long, but the LM response uses a LM hash null-padded to 21 bytes */
 	memset(hash, '\0', 21);
@@ -1154,19 +1179,20 @@ static void ntlmssp_output_version(STREAM* s)
 
 void ntlmssp_compute_message_integrity_check(NTLMSSP* ntlmssp)
 {
-	HMAC_CTX hmac_ctx;
+	HMAC_CTX *hmac_ctx;
 
 	/*
 	 * Compute the HMAC-MD5 hash of ConcatenationOf(NEGOTIATE_MESSAGE,
 	 * CHALLENGE_MESSAGE, AUTHENTICATE_MESSAGE) using the ExportedSessionKey
 	 */
 
-	HMAC_CTX_init(&hmac_ctx);
-	HMAC_Init_ex(&hmac_ctx, ntlmssp->exported_session_key, 16, EVP_md5(), NULL);
-	HMAC_Update(&hmac_ctx, ntlmssp->negotiate_message.data, ntlmssp->negotiate_message.length);
-	HMAC_Update(&hmac_ctx, ntlmssp->challenge_message.data, ntlmssp->challenge_message.length);
-	HMAC_Update(&hmac_ctx, ntlmssp->authenticate_message.data, ntlmssp->authenticate_message.length);
-	HMAC_Final(&hmac_ctx, ntlmssp->message_integrity_check, NULL);
+	hmac_ctx = HMAC_CTX_new();
+	HMAC_Init_ex(hmac_ctx, ntlmssp->exported_session_key, 16, EVP_md5(), NULL);
+	HMAC_Update(hmac_ctx, ntlmssp->negotiate_message.data, ntlmssp->negotiate_message.length);
+	HMAC_Update(hmac_ctx, ntlmssp->challenge_message.data, ntlmssp->challenge_message.length);
+	HMAC_Update(hmac_ctx, ntlmssp->authenticate_message.data, ntlmssp->authenticate_message.length);
+	HMAC_Final(hmac_ctx, ntlmssp->message_integrity_check, NULL);
+	HMAC_CTX_free(hmac_ctx);
 }
 
 /**
@@ -1181,17 +1207,17 @@ void ntlmssp_compute_message_integrity_check(NTLMSSP* ntlmssp)
 
 void ntlmssp_encrypt_message(NTLMSSP* ntlmssp, rdpBlob* msg, rdpBlob* encrypted_msg, uint8* signature)
 {
-	HMAC_CTX hmac_ctx;
+	HMAC_CTX *hmac_ctx;
 	uint8 digest[16];
 	uint8 checksum[8];
 	uint32 version = 1;
 
 	/* Compute the HMAC-MD5 hash of ConcatenationOf(seq_num,msg) using the client signing key */
-	HMAC_CTX_init(&hmac_ctx);
-	HMAC_Init_ex(&hmac_ctx, ntlmssp->client_signing_key, 16, EVP_md5(), NULL);
-	HMAC_Update(&hmac_ctx, (void*) &ntlmssp->send_seq_num, 4);
-	HMAC_Update(&hmac_ctx, msg->data, msg->length);
-	HMAC_Final(&hmac_ctx, digest, NULL);
+	hmac_ctx = HMAC_CTX_new();
+	HMAC_Init_ex(hmac_ctx, ntlmssp->client_signing_key, 16, EVP_md5(), NULL);
+	HMAC_Update(hmac_ctx, (void*) &ntlmssp->send_seq_num, 4);
+	HMAC_Update(hmac_ctx, msg->data, msg->length);
+	HMAC_Final(hmac_ctx, digest, NULL);
 
 	if (encrypted_msg != NULL)
 	{
@@ -1210,7 +1236,7 @@ void ntlmssp_encrypt_message(NTLMSSP* ntlmssp, rdpBlob* msg, rdpBlob* encrypted_
 	memcpy(&signature[4], (void*) checksum, 8);
 	memcpy(&signature[12], (void*) &(ntlmssp->send_seq_num), 4);
 
-	HMAC_CTX_cleanup(&hmac_ctx);
+	HMAC_CTX_free(hmac_ctx);
 
 	ntlmssp->send_seq_num++;
 }
@@ -1228,7 +1254,7 @@ void ntlmssp_encrypt_message(NTLMSSP* ntlmssp, rdpBlob* msg, rdpBlob* encrypted_
 
 int ntlmssp_decrypt_message(NTLMSSP* ntlmssp, rdpBlob* encrypted_msg, rdpBlob* msg, uint8* signature)
 {
-	HMAC_CTX hmac_ctx;
+	HMAC_CTX *hmac_ctx;
 	uint8 digest[16];
 	uint8 checksum[8];
 	uint32 version = 1;
@@ -1241,11 +1267,11 @@ int ntlmssp_decrypt_message(NTLMSSP* ntlmssp, rdpBlob* encrypted_msg, rdpBlob* m
 	crypto_rc4(ntlmssp->recv_rc4_seal, encrypted_msg->length, encrypted_msg->data, msg->data);
 
 	/* Compute the HMAC-MD5 hash of ConcatenationOf(seq_num,msg) using the client signing key */
-	HMAC_CTX_init(&hmac_ctx);
-	HMAC_Init_ex(&hmac_ctx, ntlmssp->server_signing_key, 16, EVP_md5(), NULL);
-	HMAC_Update(&hmac_ctx, (void*) &ntlmssp->recv_seq_num, 4);
-	HMAC_Update(&hmac_ctx, msg->data, msg->length);
-	HMAC_Final(&hmac_ctx, digest, NULL);
+	hmac_ctx = HMAC_CTX_new();
+	HMAC_Init_ex(hmac_ctx, ntlmssp->server_signing_key, 16, EVP_md5(), NULL);
+	HMAC_Update(hmac_ctx, (void*) &ntlmssp->recv_seq_num, 4);
+	HMAC_Update(hmac_ctx, msg->data, msg->length);
+	HMAC_Final(hmac_ctx, digest, NULL);
 
 	/* RC4-encrypt first 8 bytes of digest */
 	crypto_rc4(ntlmssp->recv_rc4_seal, 8, digest, checksum);
@@ -1262,7 +1288,7 @@ int ntlmssp_decrypt_message(NTLMSSP* ntlmssp, rdpBlob* encrypted_msg, rdpBlob* m
 		return 0;
 	}
 
-	HMAC_CTX_cleanup(&hmac_ctx);
+	HMAC_CTX_free(hmac_ctx);
 
 	ntlmssp->recv_seq_num++;
 	return 1;
