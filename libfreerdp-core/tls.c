@@ -35,7 +35,7 @@ tbool tls_connect(rdpTls* tls)
 	int connection_status;
 
 	LLOGLN(10, ("tls_connect:"));
-	tls->ctx = SSL_CTX_new(TLSv1_client_method());
+	tls->ctx = SSL_CTX_new(SSLv23_client_method());
 
 	if (tls->ctx == NULL)
 	{
@@ -52,6 +52,9 @@ tbool tls_connect(rdpTls* tls)
 	 * won't recognize it and will disconnect you after sending a TLS alert.
 	 */
 	SSL_CTX_set_options(tls->ctx, SSL_OP_ALL);
+	
+	// Explicitly disable deprecated SSL protocols
+	SSL_CTX_set_options(tls->ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
 
 	tls->ssl = SSL_new(tls->ctx);
 
