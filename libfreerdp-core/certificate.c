@@ -120,6 +120,25 @@ static const char certificate_known_hosts_file[] = "known_hosts";
  *
  */
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+void RSA_get0_key(const RSA *rsa, const BIGNUM **out_n, const BIGNUM **out_e,
+                  const BIGNUM **out_d)
+{
+  if (out_n != NULL) 
+  {
+    *out_n = rsa->n;
+  }
+  if (out_e != NULL)
+  {
+    *out_e = rsa->e;
+  }
+  if (out_d != NULL)
+  {
+    *out_d = rsa->d;
+  }
+}
+#endif
+
 /**
  * Read X.509 Certificate
  * @param certificate certificate module
@@ -483,6 +502,7 @@ rdpKey* key_new(const char* keyfile)
 	rdpKey* key;
 	RSA *rsa;
 	FILE *fp;
+	const BIGNUM *n, *e, *d;
 
 	key = (rdpKey*) xzalloc(sizeof(rdpKey));
 
@@ -525,21 +545,23 @@ rdpKey* key_new(const char* keyfile)
 			return NULL;
 	}
 
-	if (BN_num_bytes(rsa->e) > 4)
+	RSA_get0_key(rsa, &n, &e, &d);
+
+	if (BN_num_bytes(e) > 4)
 	{
 		RSA_free(rsa);
 		printf("RSA public exponent too large in %s", keyfile);
 		return NULL;
 	}
 
-	freerdp_blob_alloc(&key->modulus, BN_num_bytes(rsa->n));
-	BN_bn2bin(rsa->n, key->modulus.data);
+	freerdp_blob_alloc(&key->modulus, BN_num_bytes(n));
+	BN_bn2bin(n, key->modulus.data);
 	crypto_reverse(key->modulus.data, key->modulus.length);
-	freerdp_blob_alloc(&key->private_exponent, BN_num_bytes(rsa->d));
-	BN_bn2bin(rsa->d, key->private_exponent.data);
+	freerdp_blob_alloc(&key->private_exponent, BN_num_bytes(d));
+	BN_bn2bin(d, key->private_exponent.data);
 	crypto_reverse(key->private_exponent.data, key->private_exponent.length);
 	memset(key->exponent, 0, sizeof(key->exponent));
-	BN_bn2bin(rsa->e, key->exponent + sizeof(key->exponent) - BN_num_bytes(rsa->e));
+	BN_bn2bin(e, key->exponent + sizeof(key->exponent) - BN_num_bytes(e));
 	crypto_reverse(key->exponent, sizeof(key->exponent));
 
 	RSA_free(rsa);
