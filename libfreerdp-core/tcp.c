@@ -31,6 +31,7 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <net/if.h>
@@ -125,6 +126,29 @@ tbool tcp_connect(rdpTcp* tcp, const char* hostname, uint16 port)
 	socklen_t option_len;
 	struct addrinfo hints = { 0 };
 	struct addrinfo * res, * ai;
+
+	printf("host %s port %d\n", hostname, port);
+	if (hostname[0] == '/')
+	{
+		struct sockaddr_un s;
+		memset(&s, 0, sizeof(struct sockaddr_un));
+		s.sun_family = AF_UNIX;
+		strncpy(s.sun_path, hostname, sizeof(s.sun_path));
+		s.sun_path[sizeof(s.sun_path) - 1] = 0;
+		tcp->sockfd = socket(PF_LOCAL, SOCK_STREAM, 0);
+		if (tcp->sockfd == -1)
+		{
+			printf("socket failed, unable to connect to %s\n", hostname);
+			return false;
+		}
+		if (connect(tcp->sockfd, (struct sockaddr *)&s, sizeof(struct sockaddr_un)) < 0)
+		{
+			printf("connect failed, unable to connect to %s\n", hostname);
+			return false;
+		}
+		printf("connected to %s ok\n", hostname);
+		return true;
+	}
 
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = AF_UNSPEC;
