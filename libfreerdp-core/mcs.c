@@ -461,14 +461,14 @@ tbool mcs_send_connect_initial(rdpMcs* mcs)
 	STREAM* client_data;
 	int status;
 
-	client_data = stream_new(512);
+	client_data = stream_new(16 * 1024);
 	gcc_write_client_data_blocks(client_data, mcs->transport->settings);
 
-	gcc_CCrq = stream_new(512);
+	gcc_CCrq = stream_new(16 * 1024);
 	gcc_write_conference_create_request(gcc_CCrq, client_data);
 	length = stream_get_length(gcc_CCrq) + 7;
 
-	s = transport_send_stream_init(mcs->transport, 1024);
+	s = transport_send_stream_init(mcs->transport, length + 64);
 	stream_get_mark(s, bm);
 	stream_seek(s, 7);
 
