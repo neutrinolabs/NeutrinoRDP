@@ -511,7 +511,10 @@ tbool xf_event_MapNotify(xfInfo* xfi, XEvent* event, tbool app)
 	rdpRail* rail = ((rdpContext*) xfi->context)->rail;
 
 	if (app == false)
+	{
+		xfi->instance->SendSuppressOutput(xfi->instance, 1, 0, 0, xfi->width, xfi->height);
 		return true;
+	}
 
 	window = window_list_get_by_extra_id(rail->list, (void*) event->xany.window);
 
@@ -532,7 +535,10 @@ tbool xf_event_UnmapNotify(xfInfo* xfi, XEvent* event, tbool app)
 	rdpRail* rail = ((rdpContext*) xfi->context)->rail;
 
 	if (app == false)
+	{
+		xfi->instance->SendSuppressOutput(xfi->instance, 0, 0, 0, 0, 0);
 		return true;
+	}
 
 	window = window_list_get_by_extra_id(rail->list, (void*) event->xany.window);
 

@@ -958,10 +958,11 @@ int rdp_send_invalidate(rdpRdp* rdp, int code, int x, int y, int w, int h)
 }
 
 /* this one is not hooked up yet */
-int rdp_send_suppress_output(rdpRdp* rdp, int code, int x, int y, int w, int h)
+int rdp_send_suppress_output(rdpRdp* rdp, int code, int left, int top, int right, int bottom)
 {
 	STREAM* s;
 
+	LLOGLN(0, ("rdp_send_suppress_output: code %d left %d top %d right %d bottom %d", code, left, top, right, bottom));
 	s = rdp_data_pdu_init(rdp);
 	stream_write_uint32(s, code);
 	switch (code)
@@ -969,11 +970,10 @@ int rdp_send_suppress_output(rdpRdp* rdp, int code, int x, int y, int w, int h)
 		case 0:	/* shut the server up */
 			break;
 		case 1:	/* receive data again */
-			LLOGLN(0, ("x %d y %d w %d h %d", x, y, w, h));
-			stream_write_uint16(s, x);
-			stream_write_uint16(s, y);
-			stream_write_uint16(s, w);
-			stream_write_uint16(s, h);
+			stream_write_uint16(s, left);
+			stream_write_uint16(s, top);
+			stream_write_uint16(s, right);
+			stream_write_uint16(s, bottom);
 			break;
 	}
 	rdp_send_data_pdu(rdp, s, 35, rdp->mcs->user_id); /* RDP_DATA_PDU_SUPPRESS_OUTPUT */

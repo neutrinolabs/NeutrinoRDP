@@ -147,6 +147,11 @@ static int freerdp_send_invalidate(freerdp* instance, int code, int x, int y, in
 	return rdp_send_invalidate(instance->context->rdp, code, x, y, w, h);
 }
 
+static int freerdp_send_suppress_output(freerdp* instance, int code, int left, int top, int right, int bottom)
+{
+	return rdp_send_suppress_output(instance->context->rdp, code, left, top, right, bottom);
+}
+
 tbool freerdp_disconnect(freerdp* instance)
 {
 	rdpRdp* rdp;
@@ -226,6 +231,7 @@ freerdp* freerdp_new()
 		instance->SendChannelData = freerdp_send_channel_data;
 		instance->SendFrameAck = freerdp_send_frame_ack;
 		instance->SendInvalidate = freerdp_send_invalidate;
+		instance->SendSuppressOutput = freerdp_send_suppress_output;
 	}
 
 	return instance;
