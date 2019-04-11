@@ -512,7 +512,11 @@ tbool xf_event_MapNotify(xfInfo* xfi, XEvent* event, tbool app)
 
 	if (app == false)
 	{
-		xfi->instance->SendSuppressOutput(xfi->instance, 1, 0, 0, xfi->width, xfi->height);
+		if (xfi->suppress_output)
+		{
+			xfi->instance->SendSuppressOutput(xfi->instance, 1, 0, 0, xfi->width, xfi->height);
+			xfi->suppress_output = 0;
+		}
 		return true;
 	}
 
@@ -536,6 +540,7 @@ tbool xf_event_UnmapNotify(xfInfo* xfi, XEvent* event, tbool app)
 
 	if (app == false)
 	{
+		xfi->suppress_output = 1;
 		xfi->instance->SendSuppressOutput(xfi->instance, 0, 0, 0, 0, 0);
 		return true;
 	}
