@@ -1148,10 +1148,10 @@ void gcc_write_client_monitor_data(STREAM* s, rdpSettings* settings)
 
 		for (i = 0; i < settings->num_monitors; i++)
 		{
-			left = settings->monitors[i].x;
-			top = settings->monitors[i].y;
-			right = left + settings->monitors[i].width - 1;
-			bottom = top + settings->monitors[i].height - 1;
+			left = settings->monitors[i].left;
+			top = settings->monitors[i].top;
+			right = settings->monitors[i].right;
+			bottom = settings->monitors[i].bottom;
 			flags = settings->monitors[i].is_primary ? MONITOR_PRIMARY : 0;
 
 			stream_write_uint32(s, left); /* left */

@@ -223,10 +223,10 @@ typedef struct _GLYPH_CACHE_DEFINITION GLYPH_CACHE_DEFINITION;
 
 struct rdp_monitor
 {
-	int x;
-	int y;
-	int width;
-	int height;
+	int left;
+	int top;
+	int right;
+	int bottom;
 	int is_primary;
 };
 
