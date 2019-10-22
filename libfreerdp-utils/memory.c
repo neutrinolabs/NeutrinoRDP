@@ -25,6 +25,7 @@
 
 #include <freerdp/utils/memory.h>
 
+#define MEMORY_MAX_ALLOC (64 * 1024 * 1024)
 /**
  * Allocate memory.
  * @param size
@@ -36,12 +37,12 @@ void* xmalloc(size_t size)
 
 	if (size < 1)
 	{
-		printf("xmalloc: adjusting xmalloc bytes\n");
+		printf("xmalloc: adjusting xmalloc bytes %d\n", (int) size);
 		size = 1;
 	}
-	if (size > 16 * 1024 * 1024)
+	if (size > MEMORY_MAX_ALLOC)
 	{
-		printf("xmalloc: bad size\n");
+		printf("xmalloc: bad size %d\n", (int) size);
 		return NULL;
 	}
 	mem = malloc(size);
@@ -63,16 +64,22 @@ void* xzalloc(size_t size)
 	void* mem;
 
 	if (size < 1)
+	{
+		printf("xzalloc: adjusting xzalloc bytes %d\n", (int) size);
 		size = 1;
+	}
 
+	if (size > MEMORY_MAX_ALLOC)
+	{
+		printf("xzalloc: bad size %d\n", (int) size);
+		return NULL;
+	}
 	mem = calloc(1, size);
-
 	if (mem == NULL)
 	{
 		perror("xzalloc");
 		printf("xzalloc: failed to allocate memory of size: %d\n", (int) size);
 	}
-
 	return mem;
 }
 
@@ -87,19 +94,26 @@ void* xrealloc(void* ptr, size_t size)
 	void* mem;
 
 	if (size < 1)
+	{
+		printf("xrealloc: adjusting xrealloc bytes %d\n", (int) size);
 		size = 1;
-
+	}
+	if (size > MEMORY_MAX_ALLOC)
+	{
+		printf("xrealloc: bad size %d\n", (int) size);
+		return NULL;
+	}
 	if (ptr == NULL)
 	{
 		printf("xrealloc: null pointer given\n");
 		return NULL;
 	}
-
 	mem = realloc(ptr, size);
-
 	if (mem == NULL)
+	{
 		perror("xrealloc");
-
+		printf("xrealloc: failed to allocate memory of size: %d\n", (int) size);
+	}
 	return mem;
 }
 
