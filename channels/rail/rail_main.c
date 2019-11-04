@@ -92,8 +92,12 @@ static void rail_process_receive(rdpSvcPlugin* plugin, STREAM* s)
 static void rail_process_plugin_data(rdpRailOrder* rail_order, RDP_PLUGIN_DATA* data)
 {
 	char* exeOrFile;
+	char* workingDir;
+	char* arguments;
 
 	exeOrFile = (char*) data->data[0];
+	workingDir = (char*) data->data[1];
+	arguments = (char*) data->data[2];
 
 	if (strlen(exeOrFile) >= 2)
 	{
@@ -101,9 +105,9 @@ static void rail_process_plugin_data(rdpRailOrder* rail_order, RDP_PLUGIN_DATA* 
 			rail_order->exec.flags |= RAIL_EXEC_FLAG_FILE;
 	}
 
-	rail_string_to_unicode_string(rail_order, (char*) data->data[0], &rail_order->exec.exeOrFile);
-	rail_string_to_unicode_string(rail_order, (char*) data->data[1], &rail_order->exec.workingDir);
-	rail_string_to_unicode_string(rail_order, (char*) data->data[2], &rail_order->exec.arguments);
+	rail_string_to_unicode_string(rail_order, exeOrFile, &rail_order->exec.exeOrFile);
+	rail_string_to_unicode_string(rail_order, workingDir, &rail_order->exec.workingDir);
+	rail_string_to_unicode_string(rail_order, arguments, &rail_order->exec.arguments);
 
 	rail_send_client_exec_order(rail_order);
 }

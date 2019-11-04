@@ -41,24 +41,15 @@ void update_read_icon_info(STREAM* s, ICON_INFO* icon_info)
 	stream_read_uint16(s, icon_info->cbBitsColor); /* cbBitsColor (2 bytes) */
 
 	/* bitsMask */
-	if (icon_info->bitsMask == NULL)
-		icon_info->bitsMask = (uint8*) xmalloc(icon_info->cbBitsMask);
-	else
-		icon_info->bitsMask = (uint8*) xrealloc(icon_info->bitsMask, icon_info->cbBitsMask);
+	icon_info->bitsMask = xrenew(uint8, icon_info->bitsMask, icon_info->cbBitsMask);
 	stream_read(s, icon_info->bitsMask, icon_info->cbBitsMask);
 
 	/* colorTable */
-	if (icon_info->colorTable == NULL)
-		icon_info->colorTable = (uint8*) xmalloc(icon_info->cbColorTable);
-	else
-		icon_info->colorTable = (uint8*) xrealloc(icon_info->colorTable, icon_info->cbColorTable);
+	icon_info->colorTable = xrenew(uint8, icon_info->colorTable, icon_info->cbColorTable);
 	stream_read(s, icon_info->colorTable, icon_info->cbColorTable);
 
 	/* bitsColor */
-	if (icon_info->bitsColor == NULL)
-		icon_info->bitsColor = (uint8*) xmalloc(icon_info->cbBitsColor);
-	else
-		icon_info->bitsColor = (uint8*) xrealloc(icon_info->bitsColor, icon_info->cbBitsColor);
+	icon_info->bitsColor = xrenew(uint8, icon_info->bitsColor, icon_info->cbBitsColor);
 	stream_read(s, icon_info->bitsColor, icon_info->cbBitsColor);
 }
 
@@ -79,7 +70,6 @@ void update_read_notify_icon_infotip(STREAM* s, NOTIFY_ICON_INFOTIP* notify_icon
 void update_read_window_state_order(STREAM* s, WINDOW_ORDER_INFO* orderInfo, WINDOW_STATE_ORDER* window_state)
 {
 	int i;
-	int size;
 
 	if (orderInfo->fieldFlags & WINDOW_ORDER_FIELD_OWNER)
 		stream_read_uint32(s, window_state->ownerWindowId); /* ownerWindowId (4 bytes) */
@@ -135,10 +125,7 @@ void update_read_window_state_order(STREAM* s, WINDOW_ORDER_INFO* orderInfo, WIN
 	if (orderInfo->fieldFlags & WINDOW_ORDER_FIELD_WND_RECTS)
 	{
 		stream_read_uint16(s, window_state->numWindowRects); /* numWindowRects (2 bytes) */
-
-		size = sizeof(RECTANGLE_16) * window_state->numWindowRects;
-		window_state->windowRects = (RECTANGLE_16*) xmalloc(size);
-
+		window_state->windowRects = xrenew(RECTANGLE_16, NULL, window_state->numWindowRects);
 		/* windowRects */
 		for (i = 0; i < (int) window_state->numWindowRects; i++)
 		{
@@ -155,10 +142,7 @@ void update_read_window_state_order(STREAM* s, WINDOW_ORDER_INFO* orderInfo, WIN
 	if (orderInfo->fieldFlags & WINDOW_ORDER_FIELD_VISIBILITY)
 	{
 		stream_read_uint16(s, window_state->numVisibilityRects); /* numVisibilityRects (2 bytes) */
-
-		size = sizeof(RECTANGLE_16) * window_state->numVisibilityRects;
-		window_state->visibilityRects = (RECTANGLE_16*) xmalloc(size);
-
+		window_state->visibilityRects = xrenew(RECTANGLE_16, NULL, window_state->numVisibilityRects);
 		/* visibilityRects */
 		for (i = 0; i < (int) window_state->numVisibilityRects; i++)
 		{

@@ -183,6 +183,8 @@ struct xf_info
 	int frameId;
 
 	int suppress_output;
+	int primary_adjust_x;
+	int primary_adjust_y;
 };
 
 void xf_toggle_fullscreen(xfInfo* xfi);

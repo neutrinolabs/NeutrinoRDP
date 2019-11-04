@@ -97,7 +97,7 @@ void window_list_create(rdpWindowList* list, WINDOW_ORDER_INFO* orderInfo, WINDO
 {
 	rdpWindow* window;
 
-	window = (rdpWindow*) xzalloc(sizeof(rdpWindow));
+	window = xnew(rdpWindow);
 
 	if (window == NULL)
 		return;

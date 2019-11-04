@@ -31,20 +31,27 @@
  * @param size
  */
 
-void* xmalloc(size_t size)
+static int check_memory(const char* func, int size)
 {
-	void* mem;
-
 	if (size < 1)
 	{
-		printf("xmalloc: adjusting xmalloc bytes %d\n", (int) size);
+		printf("check_memory: func %s adjusting bytes %d\n", func, size);
 		size = 1;
 	}
 	if (size > MEMORY_MAX_ALLOC)
 	{
-		printf("xmalloc: bad size %d\n", (int) size);
-		return NULL;
+		printf("check_memory: func %s size %d\n", func, size);
+		return 1;
 	}
+	return 0;
+}
+
+void* xmalloc(size_t size)
+{
+	void* mem;
+
+	if (check_memory("xmalloc", size))
+		return NULL;
 	mem = malloc(size);
 	if (mem == NULL)
 	{
@@ -63,17 +70,8 @@ void* xzalloc(size_t size)
 {
 	void* mem;
 
-	if (size < 1)
-	{
-		printf("xzalloc: adjusting xzalloc bytes %d\n", (int) size);
-		size = 1;
-	}
-
-	if (size > MEMORY_MAX_ALLOC)
-	{
-		printf("xzalloc: bad size %d\n", (int) size);
+	if (check_memory("xzalloc", size))
 		return NULL;
-	}
 	mem = calloc(1, size);
 	if (mem == NULL)
 	{
@@ -93,16 +91,8 @@ void* xrealloc(void* ptr, size_t size)
 {
 	void* mem;
 
-	if (size < 1)
-	{
-		printf("xrealloc: adjusting xrealloc bytes %d\n", (int) size);
-		size = 1;
-	}
-	if (size > MEMORY_MAX_ALLOC)
-	{
-		printf("xrealloc: bad size %d\n", (int) size);
+	if (check_memory("xrealloc", size))
 		return NULL;
-	}
 	if (ptr == NULL)
 	{
 		printf("xrealloc: null pointer given\n");
@@ -115,6 +105,23 @@ void* xrealloc(void* ptr, size_t size)
 		printf("xrealloc: failed to allocate memory of size: %d\n", (int) size);
 	}
 	return mem;
+}
+
+void* xrealloc_check(void* ptr, size_t size)
+{
+	if (size < 1)
+	{
+		if (ptr != NULL)
+		{
+			free(ptr);
+		}
+		return NULL;
+	}
+	if (ptr == NULL)
+	{
+		return malloc(size);
+	}
+	return realloc(ptr, size);
 }
 
 /**

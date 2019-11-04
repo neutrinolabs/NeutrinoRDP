@@ -450,7 +450,12 @@ xfWindow* xf_CreateWindow(xfInfo* xfi, rdpWindow* wnd, int x, int y, int width, 
 			ColormapChangeMask | OwnerGrabButtonMask;
 
 	XSelectInput(xfi->display, window->handle, input_mask);
-	XMapWindow(xfi->display, window->handle);
+
+	if ((wnd->style & 0x10000000) /* WS_VISIBLE */
+			&& ((wnd->extendedStyle & 0x00200000) == 0)) /* WS_EX_NOREDIRECTIONBITMAP */
+	{
+		XMapWindow(xfi->display, window->handle);
+	}
 
 	memset(&gcv, 0, sizeof(gcv));
 	window->gc = XCreateGC(xfi->display, window->handle, GCGraphicsExposures, &gcv);
@@ -684,8 +689,7 @@ void xf_SetWindowVisibilityRects(xfInfo* xfi, xfWindow* window, RECTANGLE_16* re
 	int i;
 	XRectangle* xrects;
 
-	xrects = xmalloc(sizeof(XRectangle) * nrects);
-
+	xrects = xrenew(XRectangle, NULL, nrects);
 	for (i = 0; i < nrects; i++)
 	{
 		xrects[i].x = rects[i].left;

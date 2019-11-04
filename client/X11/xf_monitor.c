@@ -47,6 +47,7 @@ tbool xf_detect_monitors(xfInfo* xfi, rdpSettings* settings)
 	XRRCrtcInfo *ci;
 	RROutput output;
 	int count;
+	int got_primary;
 #elif defined(WITH_XINERAMA)
 	int ignored, ignored2;
 	XineramaScreenInfo* screen_info = NULL;
@@ -155,26 +156,52 @@ tbool xf_detect_monitors(xfInfo* xfi, rdpSettings* settings)
 #endif
 
 	settings->num_monitors = vscreen->nmonitors;
-
+	got_primary = 0;
+	printf("xf_detect_monitors: nmonitors %d\n", vscreen->nmonitors);
 	for (i = 0; i < vscreen->nmonitors; i++)
 	{
 		settings->monitors[i].x = vscreen->monitors[i].area.left;
 		settings->monitors[i].y = vscreen->monitors[i].area.top;
 		settings->monitors[i].width = vscreen->monitors[i].area.right - vscreen->monitors[i].area.left + 1;
 		settings->monitors[i].height = vscreen->monitors[i].area.bottom - vscreen->monitors[i].area.top + 1;
+#if 1 /* todo get the right primary working, windows 10 needs primary to be 0, 0 */
+		settings->monitors[i].is_primary = (settings->monitors[i].x == 0) && (settings->monitors[i].y == 0);
+#else
 		settings->monitors[i].is_primary = vscreen->monitors[i].primary;
-
+#endif
+		printf("  monitor %d left %d top %d right %d bottom %d primary %d\n", i, vscreen->monitors[i].area.left,
+				vscreen->monitors[i].area.top, vscreen->monitors[i].area.right, vscreen->monitors[i].area.bottom,
+				vscreen->monitors[i].primary);
+		if (settings->monitors[i].is_primary)
+		{
+			/* primary must be 0, 0 */
+			xfi->primary_adjust_x = settings->monitors[i].x;
+			xfi->primary_adjust_y = settings->monitors[i].y;
+			got_primary = 1;
+		}
 		vscreen->area.left = MIN(vscreen->monitors[i].area.left, vscreen->area.left);
 		vscreen->area.right = MAX(vscreen->monitors[i].area.right, vscreen->area.right);
 		vscreen->area.top = MIN(vscreen->monitors[i].area.top, vscreen->area.top);
 		vscreen->area.bottom = MAX(vscreen->monitors[i].area.bottom, vscreen->area.bottom);
 	}
-
+	printf("  got_primary %d primary_adjust_x %d primary_adjust_y %d\n", got_primary,
+			xfi->primary_adjust_x, xfi->primary_adjust_y);
+	if (got_primary)
+	{
+		for (i = 0; i < settings->num_monitors; i++)
+		{
+			settings->monitors[i].x -= xfi->primary_adjust_x;
+			settings->monitors[i].y -= xfi->primary_adjust_y;
+			printf("  after adjust monitor %d x %d y %d width %d height %d primary %d\n", i,
+					settings->monitors[i].x, settings->monitors[i].y,
+					settings->monitors[i].width, settings->monitors[i].height,
+					settings->monitors[i].is_primary);
+		}
+	}
 	if (settings->num_monitors)
 	{
 		settings->width = vscreen->area.right - vscreen->area.left + 1;
 		settings->height = vscreen->area.bottom - vscreen->area.top + 1;
 	}
-
 	return true;
 }

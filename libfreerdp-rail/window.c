@@ -166,7 +166,7 @@ void window_state_update(rdpWindow* window, WINDOW_ORDER_INFO* orderInfo, WINDOW
 	if (orderInfo->fieldFlags & WINDOW_ORDER_FIELD_TITLE)
 	{
 		window->titleInfo.length = window_state->titleInfo.length;
-		window->titleInfo.string = xmalloc(window_state->titleInfo.length);
+		window->titleInfo.string = xrenew(uint8, window->titleInfo.string, window->titleInfo.length);
 		memcpy(window->titleInfo.string, window_state->titleInfo.string, window->titleInfo.length);
 
 #ifdef WITH_DEBUG_RAIL

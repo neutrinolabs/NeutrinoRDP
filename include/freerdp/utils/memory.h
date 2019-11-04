@@ -33,6 +33,7 @@ struct shm_info_t
 FREERDP_API void* xmalloc(size_t size);
 FREERDP_API void* xzalloc(size_t size);
 FREERDP_API void* xrealloc(void* ptr, size_t size);
+FREERDP_API void* xrealloc_check(void* ptr, size_t size);
 FREERDP_API void xfree(void* ptr);
 FREERDP_API char* xstrdup(const char* str);
 
@@ -40,5 +41,7 @@ FREERDP_API struct shm_info_t* create_shm_info(size_t size);
 FREERDP_API void delete_shm_info(struct shm_info_t* shm_info);
 
 #define xnew(_type) (_type*)xzalloc(sizeof(_type))
+#define xnew0(_type, _count) (_type*)calloc(_count, sizeof(_type))
+#define xrenew(_type, _ptr, _count) (_type*)xrealloc_check(_ptr, sizeof(_type) * (_count))
 
 #endif /* __MEMORY_UTILS_H */
