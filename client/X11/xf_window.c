@@ -272,6 +272,7 @@ void ui_grab_keys(Display* dis, Window wnd)
 xfWindow* xf_CreateDesktopWindow(xfInfo* xfi, char* name, int width, int height, tbool decorations)
 {
 	xfWindow* window;
+	XEvent xevent;
 
 	window = (xfWindow*) xzalloc(sizeof(xfWindow));
 
@@ -321,6 +322,13 @@ xfWindow* xf_CreateDesktopWindow(xfInfo* xfi, char* name, int width, int height,
 		if ((xfi->rail_flags & 1) == 0) /* is window visible */
 		{
 			XMapWindow(xfi->display, window->handle);
+			/* wait for VisibilityNotify */
+			do
+			{
+				XMaskEvent(xfi->display, VisibilityChangeMask, &xevent);
+			}
+			while (xevent.type != VisibilityNotify);
+			xfi->unobscured = (xevent.xvisibility.state == VisibilityUnobscured);
 		}
 	}
 
