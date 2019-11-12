@@ -387,7 +387,8 @@ struct rdp_settings
 	uint32 num_icon_caches; /* 313 */
 	uint32 num_icon_cache_entries; /* 314 */
 	boolean rail_langbar_supported; /* 315 */
-	uint32 paddingO[320 - 316]; /* 316 */
+	uint32 rail_flags; /* 316 */
+	uint32 paddingO[320 - 317]; /* 317 */
 
 	/* Pointer */
 	boolean large_pointer; /* 320 */

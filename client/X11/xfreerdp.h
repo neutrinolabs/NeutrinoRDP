@@ -178,6 +178,7 @@ struct xf_info
 	Atom WM_PROTOCOLS;
 	Atom WM_DELETE_WINDOW;
 
+	uint32 rail_flags;
 	struct shm_info_t* shm_info;
 	int skip_bs;
 	int frameId;

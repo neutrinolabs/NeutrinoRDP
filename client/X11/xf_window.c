@@ -318,7 +318,10 @@ xfWindow* xf_CreateDesktopWindow(xfInfo* xfi, char* name, int width, int height,
 				PropModeReplace, (uint8*) xf_icon_prop, sizeof(xf_icon_prop) / sizeof(long));
 
 		XSelectInput(xfi->display, window->handle, input_mask);
-		XMapWindow(xfi->display, window->handle);
+		if ((xfi->rail_flags & 1) == 0) /* is window visible */
+		{
+			XMapWindow(xfi->display, window->handle);
+		}
 	}
 
 	XStoreName(xfi->display, window->handle, name);

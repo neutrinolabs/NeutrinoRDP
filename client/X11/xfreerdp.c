@@ -597,6 +597,7 @@ tbool xf_pre_connect(freerdp* instance)
 	xfi->fullscreen_toggle = true;
 	xfi->sw_gdi = settings->sw_gdi;
 	xfi->parent_window = (Window) settings->parent_window_xid;
+	xfi->rail_flags = settings->rail_flags;
 
 	xf_detect_monitors(xfi, settings);
 
