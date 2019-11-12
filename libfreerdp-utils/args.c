@@ -94,6 +94,7 @@ int freerdp_parse_args(rdpSettings* settings, int argc, char** argv,
 				"  -X: embed into another window with a given XID.\n"
 				"  -z: enable compression\n"
 				"  --app: RemoteApp connection. This implies -g workarea\n"
+				"  --railhmw: RemoteApp, hide the main window\n"
 				"  --ext: load an extension\n"
 				"  --no-auth: disable authentication\n"
 				"  --no-fastpath: disable fast-path\n"
