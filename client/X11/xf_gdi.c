@@ -30,11 +30,19 @@
 #include <freerdp/codec/nsc.h>
 #include <freerdp/constants.h>
 #include <freerdp/utils/memory.h>
+#include <freerdp/utils/hexdump.h>
 #include <freerdp/codec/color.h>
 #include <freerdp/codec/bitmap.h>
 #include <freerdp/codec/jpeg.h>
 
 #include "xf_gdi.h"
+
+#ifdef WITH_YAMIINF
+#include <unistd.h> /* close */
+#include <xcb/dri3.h>
+#include YAMIINF_INC_FILE
+extern struct yami_funcs g_yami_funcs; /* in xfreerdp.c */
+#endif
 
 #define LLOG_LEVEL 1
 #define LLOGLN(_level, _args) \
@@ -654,6 +662,195 @@ void xf_gdi_surface_frame_marker(rdpContext* context, SURFACE_FRAME_MARKER* surf
 	}
 }
 
+#ifdef WITH_YAMIINF
+static int xf_gdi_surface_h264(xfInfo* xfi, SURFACE_BITS_COMMAND* surface_bits_command)
+{
+	STREAM* s;
+	int error;
+	int flags;
+	int session_id;
+	int src_width;
+	int src_height;
+	int dst_width;
+	int dst_height;
+	int num_rects;
+	int h264_bytes;
+	uint8* rects_p;
+	void* decoder;
+	xcb_pixmap_t pixmap = None;
+	xcb_void_cookie_t cookie;
+	xcb_generic_error_t* xcb_error;
+
+	if ((surface_bits_command->bitmapDataLength < 1) || (surface_bits_command->bitmapData == NULL))
+	{
+		return 1;
+	}
+	s = stream_new(0);
+	stream_attach(s, surface_bits_command->bitmapData, surface_bits_command->bitmapDataLength);
+	LHEXDUMP(10, (surface_bits_command->bitmapData, surface_bits_command->bitmapDataLength));
+	if (stream_get_left(s) < 18)
+	{
+		LLOGLN(0, ("xf_gdi_surface_h264: error bytes"));
+		stream_detach(s);
+		stream_free(s);
+		return 1;
+	}
+	stream_read_uint32(s, flags);
+	stream_read_uint32(s, session_id);
+	LLOGLN(10, ("xf_gdi_surface_h264: flags 0x%8.8x session_id %d", flags, session_id));
+	stream_read_uint16(s, src_width);
+	stream_read_uint16(s, src_height);
+	stream_read_uint16(s, dst_width);
+	stream_read_uint16(s, dst_height);
+	stream_read_uint16(s, num_rects);
+	if ((num_rects < 0) || (stream_get_left(s) < num_rects * 8 + 4))
+	{
+		LLOGLN(0, ("xf_gdi_surface_h264: error bytes"));
+		stream_detach(s);
+		stream_free(s);
+		return 1;
+	}
+	stream_get_mark(s, rects_p); /* save for later */
+	stream_seek(s, num_rects * 8);
+	stream_read_uint32(s, h264_bytes);
+	/* h264_bytes can be zero */
+	if ((h264_bytes < 0) || (stream_get_left(s) < h264_bytes))
+	{
+		LLOGLN(0, ("xf_gdi_surface_h264: error bytes"));
+		stream_detach(s);
+		stream_free(s);
+		return 1;
+	}
+	session_id &= 0xF;
+	if (flags & 2) /* delete */
+	{
+		if (xfi->decoders[session_id] != NULL)
+		{
+			g_yami_funcs.yami_decoder_delete(xfi->decoders[session_id]);
+			xfi->decoders[session_id] = 0;
+		}
+	}
+	if ((h264_bytes > 0) && (num_rects > 0))
+	{
+		decoder = xfi->decoders[session_id];
+		if (decoder == NULL)
+		{
+			error = g_yami_funcs.yami_decoder_create(&decoder, src_width, src_height,
+					YI_TYPE_H264, YI_H264_DEC_FLAG_LOWLATENCY);
+			LLOGLN(0, ("xf_gdi_surface_h264: decoder_create rv %d width %d height %d", error,
+					src_width, src_height));
+			if (error == YI_SUCCESS)
+			{
+				xfi->decoders[session_id] = decoder;
+			}
+			else
+			{
+				decoder = NULL;
+			}
+		}
+		if (decoder != NULL)
+		{
+			error = g_yami_funcs.yami_decoder_decode(decoder, s->p, h264_bytes);
+			LLOGLN(10, ("xf_gdi_surface_h264: yami_decoder_decode rv %d", error));
+			if (error == YI_SUCCESS)
+			{
+				int fd;
+				int fd_width;
+				int fd_height;
+				int fd_stride;
+				int fd_size;
+				int fd_bpp;
+				YI_INT64 fd_time;
+				error = g_yami_funcs.yami_decoder_get_fd_dst(decoder, &fd, &fd_width, &fd_height,
+						&fd_stride, &fd_size, &fd_bpp, &fd_time);
+				LLOGLN(10, ("xf_gdi_surface_h264: yami_decoder_get_fd_dst rv %d", error));
+				if (error == YI_SUCCESS)
+				{
+					LLOGLN(10, ("xf_gdi_surface_h264: yami_decoder_get_fd_dst fd %d "
+							"fd_width %d fd_height %d fd_stride %d fd_size %d fd_bpp %d "
+							"fd_time %lld", fd, fd_width, fd_height, fd_stride, fd_size,
+							fd_bpp, fd_time));
+					LLOGLN(10, ("xf_gdi_surface_h264: fd_bpp %d xfi->depth %d xfi->bpp %d",
+							fd_bpp, xfi->depth, xfi->bpp));
+					pixmap = xcb_generate_id(xfi->xcb);
+					cookie = xcb_dri3_pixmap_from_buffer(xfi->xcb, pixmap, xfi->drawable,
+							fd_size, fd_width, fd_height, fd_stride, xfi->depth, xfi->bpp, fd);
+					xcb_error = xcb_request_check(xfi->xcb, cookie);
+					free(xcb_error);
+					close(fd);
+				}
+				else
+				{
+					LLOGLN(0, ("xf_gdi_surface_h264: yami_decoder_get_fd_dst failed %d", error));
+				}
+			}
+			else
+			{
+				LLOGLN(0, ("xf_gdi_surface_h264: yami_decoder_decode failed %d", error));
+			}
+		}
+		else
+		{
+			LLOGLN(0, ("xf_gdi_surface_h264: error getting decoder"));
+		}
+	}
+	if (pixmap != None)
+	{
+		if ((src_width == dst_width) && (src_height == dst_height))
+		{
+			int x;
+			int y;
+			int cx;
+			int cy;
+			int lx;
+			int ly;
+			int index;
+			Drawable dst = xfi->skip_bs ? xfi->drawable : xfi->primary;
+			/* size of rects_p checked earlier */
+			stream_attach(s, rects_p, num_rects * 8);
+			for (index = 0; index < num_rects; index++)
+			{
+				stream_read_uint16(s, x);
+				stream_read_uint16(s, y);
+				stream_read_uint16(s, cx);
+				stream_read_uint16(s, cy);
+				lx = x + surface_bits_command->destLeft;
+				ly = y + surface_bits_command->destTop;
+				if (lx + cx > surface_bits_command->destRight)
+				{
+					cx = surface_bits_command->destRight - lx;
+				}
+				if (ly + cy > surface_bits_command->destBottom)
+				{
+					cy = surface_bits_command->destBottom - ly;
+				}
+				if ((cx > 0) && (cy > 0))
+				{
+					xcb_copy_area(xfi->xcb, pixmap, dst, xfi->xcb_gc, x, y, lx, ly, cx, cy);
+					if (!xfi->remote_app && !xfi->skip_bs)
+					{
+						xcb_copy_area(xfi->xcb, xfi->primary, xfi->drawable, xfi->xcb_gc, lx, ly, lx, ly, cx, cy);
+					}
+				}
+			}
+		}
+		else
+		{
+			LLOGLN(0, ("xf_gdi_surface_h264: xf_gdi_surface_bits: unsupported stretch"));
+		}
+		xcb_free_pixmap(xfi->xcb, pixmap);
+	}
+	stream_detach(s);
+	stream_free(s);
+	return 0;
+}
+#else
+static int xf_gdi_surface_h264(xfInfo* xfi, SURFACE_BITS_COMMAND* surface_bits_command)
+{
+	return 0;
+}
+#endif
+
 void xf_gdi_surface_bits(rdpContext* context, SURFACE_BITS_COMMAND* surface_bits_command)
 {
 	int i, tx, ty;
@@ -665,19 +862,7 @@ void xf_gdi_surface_bits(rdpContext* context, SURFACE_BITS_COMMAND* surface_bits
 
 	if (surface_bits_command->codecID == CODEC_ID_H264)
 	{
-		STREAM* s;
-		int num_rects;
-		int h264_bytes;
-
-		s = stream_new(0);
-		stream_attach(s, surface_bits_command->bitmapData, surface_bits_command->bitmapDataLength);
-		stream_read_uint16(s, num_rects);
-		stream_seek(s, num_rects * 8);
-		stream_read_uint32(s, h264_bytes);
-		stream_attach(s, 0, 0);
-		stream_free(s);
-		printf("h264 bytes %d num_rects %d h264_bytes %d\n",
-				surface_bits_command->bitmapDataLength, num_rects, h264_bytes);
+		xf_gdi_surface_h264(xfi, surface_bits_command);
 	}
 	else if (surface_bits_command->codecID == CODEC_ID_JPEG)
 	{

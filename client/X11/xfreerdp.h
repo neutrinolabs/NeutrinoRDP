@@ -33,6 +33,10 @@ typedef struct xf_info xfInfo;
 #include "xf_window.h"
 #include "xf_monitor.h"
 
+#ifdef WITH_YAMIINF
+#include <X11/Xlib-xcb.h>
+#endif
+
 /* 1 is grab keyboard, 2 is grab key */
 #define XF_GRAB_MODE 2
 
@@ -186,6 +190,11 @@ struct xf_info
 	int suppress_output;
 	int primary_adjust_x;
 	int primary_adjust_y;
+#ifdef WITH_YAMIINF
+	void* decoders[16];
+	xcb_connection_t* xcb;
+	int xcb_gc;
+#endif
 };
 
 void xf_toggle_fullscreen(xfInfo* xfi);
