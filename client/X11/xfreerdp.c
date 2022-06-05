@@ -66,6 +66,20 @@
 
 #include "xfreerdp.h"
 
+#ifdef WITH_YAMIINF
+#include <dlfcn.h> /* dlopen dlsym */
+#include <fcntl.h> /* open */
+#include YAMIINF_INC_FILE
+static void* g_yami_lib = NULL;
+static yami_get_funcs_proc g_get_funcs_func = NULL;
+static int g_drm_fd = -1;
+struct yami_funcs g_yami_funcs;
+#endif
+
+#define LLOG_LEVEL 1
+#define LLOGLN(_level, _args) \
+  do { if (_level < LLOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
+
 static freerdp_sem g_sem;
 static int g_thread_count = 0;
 static uint8 g_disconnect_reason = 0;
@@ -693,6 +707,12 @@ tbool xf_post_connect(freerdp* instance)
 
 	xf_create_window(xfi);
 
+#ifdef WITH_YAMIINF
+	xfi->xcb = XGetXCBConnection(xfi->display);
+	xfi->xcb_gc = xcb_generate_id(xfi->xcb);
+	xcb_create_gc(xfi->xcb, xfi->xcb_gc, xfi->drawable, 0, NULL);
+#endif
+
 	memset(&gcv, 0, sizeof(gcv));
 	xfi->modifier_map = XGetModifierMapping(xfi->display);
 
@@ -1142,13 +1162,97 @@ int main(int argc, char* argv[])
 	data = (struct thread_data*) xzalloc(sizeof(struct thread_data));
 	data->instance = instance;
 
+#ifdef WITH_YAMIINF
+	memset(&g_yami_funcs, 0, sizeof(g_yami_funcs));
+	g_drm_fd = open(YAMIINF_DRI_FILE, O_RDWR);
+	LLOGLN(0, ("main: open %s O_RDWR g_drm_fd is %d", YAMIINF_DRI_FILE, g_drm_fd));
+	if ((g_yami_lib == NULL) && (g_drm_fd != -1))
+	{
+		int failed = 1;
+		LLOGLN(0, ("main: loading %s", YAMIINF_LIB_FILE));
+		g_yami_lib = dlopen(YAMIINF_LIB_FILE, RTLD_LAZY);
+		if (g_yami_lib != NULL)
+		{
+			g_get_funcs_func = (yami_get_funcs_proc)dlsym(g_yami_lib, "yami_get_funcs");
+			if (g_get_funcs_func != NULL)
+			{
+				int error = g_get_funcs_func(&g_yami_funcs, YI_VERSION_INT(YI_MAJOR, YI_MINOR));
+				LLOGLN(0, ("main: g_get_funcs_func rv %d", error));
+				if (error == YI_SUCCESS)
+				{
+					int version;
+					error = g_yami_funcs.yami_get_version(&version);
+					LLOGLN(0, ("main: yami_get_version rv %d", error));
+					if (error == YI_SUCCESS)
+					{
+						LLOGLN(0, ("main: yami_inf version 0x%8.8x", version));
+						error = g_yami_funcs.yami_init(YI_TYPE_DRM, (void*)(size_t)g_drm_fd);
+						LLOGLN(0, ("main: yami_init rv %d", error));
+						if (error == YI_SUCCESS)
+						{
+							failed = 0;
+						}
+						else
+						{
+							LLOGLN(0, ("main: yami_init failed"));
+						}
+					}
+					else
+					{
+						LLOGLN(0, ("main: g_get_funcs_func failed"));
+					}
+				}
+				else
+				{
+					LLOGLN(0, ("main: yami_get_version failed"));
+				}
+			}
+			else
+			{
+				LLOGLN(0, ("main: dlsym lyami_get_funcs failed"));
+			}
+		}
+		else
+		{
+			LLOGLN(0, ("main: load libyami_inf.so failed"));
+		}
+		if (failed)
+		{
+			if (g_yami_lib != NULL)
+			{
+				dlclose(g_yami_lib);
+				g_yami_lib = NULL;
+			}
+			g_get_funcs_func = NULL;
+			memset(&g_yami_funcs, 0, sizeof(g_yami_funcs));
+			close(g_drm_fd);
+			g_drm_fd = -1;
+		}
+	}
+#endif
+
 	g_thread_count++;
 	pthread_create(&thread, 0, thread_func, data);
 
 	while (g_thread_count > 0)
 	{
-                freerdp_sem_wait(g_sem);
+		freerdp_sem_wait(g_sem);
 	}
+
+#ifdef WITH_YAMIINF
+	if (g_yami_lib != NULL)
+	{
+		dlclose(g_yami_lib);
+		g_yami_lib = NULL;
+	}
+	g_get_funcs_func = NULL;
+	memset(&g_yami_funcs, 0, sizeof(g_yami_funcs));
+	if (g_drm_fd != -1)
+	{
+		close(g_drm_fd);
+		g_drm_fd = -1;
+	}
+#endif
 
 	freerdp_channels_global_uninit();
 

@@ -92,6 +92,25 @@ if(WITH_XRANDR)
 	target_link_libraries(xfreerdp ${XRANDR_LIBRARIES})
 endif()
 
+# example cmake . -DWITH_YAMIINF=ON
+# example YAMIINF_DRM_FILE=/dev/dri/renderD128 YAMIINF_PATH=/opt/yami cmake . -DWITH_YAMIINF=ON
+if(WITH_YAMIINF)
+    add_definitions(-DWITH_YAMIINF)
+if(DEFINED ENV{YAMIINF_PATH})
+    add_definitions(-DYAMIINF_INC_FILE="$ENV{YAMIINF_PATH}/include/yami_inf.h")
+    add_definitions(-DYAMIINF_LIB_FILE="$ENV{YAMIINF_PATH}/lib/libyami_inf.so")
+else()
+    add_definitions(-DYAMIINF_INC_FILE="yami_inf.h")
+    add_definitions(-DYAMIINF_LIB_FILE="libyami_inf.so")
+endif()
+if(DEFINED ENV{YAMIINF_DRM_FILE})
+    add_definitions(-DYAMIINF_DRI_FILE="$ENV{YAMIINF_DRM_FILE}")
+else()
+    add_definitions(-DYAMIINF_DRI_FILE="/dev/dri/renderD128")
+endif()
+	target_link_libraries(xfreerdp -lxcb -lX11-xcb -lxcb-dri3)
+endif()
+
 include_directories(${CMAKE_SOURCE_DIR}/resources)
 
 target_link_libraries(xfreerdp freerdp-core)
