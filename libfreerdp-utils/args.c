@@ -432,11 +432,11 @@ int freerdp_parse_args(rdpSettings* settings, int argc, char** argv,
 		else if (strcmp("--h264", argv[index]) == 0)
 		{
 			settings->h264_codec = true;
-                        settings->fastpath_output = true;
-                        settings->color_depth = 32;
-                        settings->frame_acknowledge = true;
-                        settings->performance_flags = PERF_FLAG_NONE;
-                        settings->large_pointer = true;
+			settings->fastpath_output = true;
+			settings->color_depth = 32;
+			settings->frame_acknowledge = true;
+			settings->performance_flags = PERF_FLAG_NONE;
+			settings->large_pointer = true;
 		}
 #endif
 		else if (strcmp("--rfx", argv[index]) == 0)
