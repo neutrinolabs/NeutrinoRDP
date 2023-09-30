@@ -667,6 +667,9 @@ void gcc_write_client_core_data(STREAM* s, rdpSettings* settings)
 	connectionType = settings->connection_type;
 	earlyCapabilityFlags = RNS_UD_CS_SUPPORT_ERRINFO_PDU;
 
+	if (settings->h264_codec)
+		connectionType = CONNECTION_TYPE_LAN;
+
 	if (settings->rfx_codec)
 		connectionType = CONNECTION_TYPE_LAN;
 
