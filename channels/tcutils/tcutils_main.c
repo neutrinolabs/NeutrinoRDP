@@ -32,7 +32,7 @@ struct tcutils_plugin
 };
 
 /* globals */
-int  (*g_tcu_commands[TCU_CMD_LAST])();
+int  (*g_tcu_commands[TCU_CMD_LAST])(tcutilsPlugin*, STREAM*, int, int);
 int  g_inited = 0;
 
 /**
